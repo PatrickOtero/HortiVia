@@ -2,6 +2,7 @@ import type {
   ArticleAuthor,
   ArticleCategory,
   ArticleCategoryOption,
+  CreateArticlePayload,
   ArticleDetail,
   ArticleListItem,
   PaginatedResponse,
@@ -105,5 +106,43 @@ export function toPaginatedArticlesResponse(
   return {
     data: response.data.map(toArticleListItem),
     meta: response.meta,
+  };
+}
+
+function normalizeOptionalText(value: string | null | undefined) {
+  const normalizedValue = value?.trim();
+
+  if (!normalizedValue) {
+    return undefined;
+  }
+
+  return normalizedValue;
+}
+
+function normalizeTagsPayload(tags: string[] | undefined) {
+  if (!tags) {
+    return undefined;
+  }
+
+  return tags
+    .map(tag => tag.trim())
+    .filter(tag => tag.length > 0);
+}
+
+export function toArticlePayload(
+  payload: CreateArticlePayload,
+): Record<string, unknown> {
+  return {
+    title: payload.title.trim(),
+    summary: payload.summary.trim(),
+    content: payload.content.trim(),
+    category: payload.category,
+    ...(normalizeOptionalText(payload.imageUrl) !== undefined
+      ? { imageUrl: normalizeOptionalText(payload.imageUrl) }
+      : {}),
+    ...(normalizeTagsPayload(payload.tags) !== undefined
+      ? { tags: normalizeTagsPayload(payload.tags) }
+      : {}),
+    ...(payload.isPublished !== undefined ? { isPublished: payload.isPublished } : {}),
   };
 }

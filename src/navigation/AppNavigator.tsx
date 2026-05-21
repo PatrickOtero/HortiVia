@@ -3,6 +3,11 @@ import { useNavigation } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { AppTabsNavigator } from './AppTabsNavigator';
 import { BackButton } from '../components/BackButton';
+import { AdminArticleFormScreen } from '../features/admin/screens/AdminArticleFormScreen';
+import { AdminArticlesScreen } from '../features/admin/screens/AdminArticlesScreen';
+import { AdminHomeScreen } from '../features/admin/screens/AdminHomeScreen';
+import { AdminProductFormScreen } from '../features/admin/screens/AdminProductFormScreen';
+import { AdminProductsScreen } from '../features/admin/screens/AdminProductsScreen';
 import { useTheme } from '../hooks/useTheme';
 import { ArticleDetailScreen } from '../screens/ArticleDetail';
 import { EditProfileScreen } from '../screens/EditProfile';
@@ -63,6 +68,31 @@ export function AppNavigator() {
       <Stack.Screen
         name="EditProfile"
         component={EditProfileScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AdminHome"
+        component={AdminHomeScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AdminProducts"
+        component={AdminProductsScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AdminProductForm"
+        component={AdminProductFormScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AdminArticles"
+        component={AdminArticlesScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AdminArticleForm"
+        component={AdminArticleFormScreen}
         options={{ headerShown: false }}
       />
     </Stack.Navigator>

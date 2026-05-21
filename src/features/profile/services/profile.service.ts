@@ -1,5 +1,8 @@
 import { API_ENDPOINTS } from '../../../config/apiConfig';
-import { apiClient } from '../../../services/api/apiClient';
+import {
+  apiClient,
+  apiMultipartClient,
+} from '../../../services/api/apiClient';
 import {
   sanitizeUpdateProfilePayload,
   toUserProfile,
@@ -38,14 +41,13 @@ export const profileService = {
       } as unknown as Blob,
     );
 
-    const response = await apiClient.request({
+    const response = await apiMultipartClient.request({
       method: 'post',
       url: API_ENDPOINTS.profile.avatar,
       data: formData,
       headers: {
-        Accept: 'application/json',
+        'Content-Type': 'multipart/form-data',
       },
-      transformRequest: data => data,
     });
 
     return toUserProfile(response.data);

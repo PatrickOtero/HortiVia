@@ -47,6 +47,11 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
       return;
     }
 
+    if (row.actionKey === 'adminContent') {
+      navigation.navigate('AdminHome');
+      return;
+    }
+
     if (row.actionKey === 'appearance') {
       toggleAppearance();
       return;

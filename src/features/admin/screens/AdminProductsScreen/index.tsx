@@ -1,0 +1,205 @@
+import React, { useCallback, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
+import { NativeStackScreenProps } from '@react-navigation/native-stack';
+import {
+  BackButton,
+  EmptyStateCard,
+  PageHeader,
+  PrimaryButton,
+  SafeScreen,
+  SectionTitle,
+  SurfaceCard,
+} from '../../../../components';
+import { AppStackParamList } from '../../../../types/navigation';
+import { useTheme } from '../../../../hooks/useTheme';
+import { productsService } from '../../../products/services/products.service';
+import type { ProductListItem } from '../../../products/types/product';
+import { getProductCategoryLabel } from '../../../products/mappers/product.mapper';
+import { useAuth } from '../../../auth/hooks/useAuth';
+import { AdminAccessDenied } from '../../components/AdminAccessDenied';
+import { AdminListItem } from '../../components/AdminListItem';
+import * as S from './styles';
+
+type AdminProductsScreenProps = NativeStackScreenProps<
+  AppStackParamList,
+  'AdminProducts'
+>;
+
+function ListItemSeparator() {
+  return <S.ListSpacer />;
+}
+
+export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
+  const { theme } = useTheme();
+  const { user } = useAuth();
+  const [products, setProducts] = useState<ProductListItem[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  const loadProducts = useCallback(async (refresh = false) => {
+    if (refresh) {
+      setIsRefreshing(true);
+    } else {
+      setIsLoading(true);
+    }
+
+    try {
+      const response = await productsService.getProducts({
+        page: 1,
+        limit: 20,
+      });
+
+      setProducts(response.data);
+      setErrorMessage('');
+    } catch {
+      setErrorMessage('Nao foi possivel carregar os produtos.');
+    } finally {
+      setIsLoading(false);
+      setIsRefreshing(false);
+    }
+  }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      loadProducts();
+    }, [loadProducts]),
+  );
+
+  if (user?.role !== 'ADMIN') {
+    return <AdminAccessDenied onGoBack={() => navigation.goBack()} />;
+  }
+
+  function handleCreateProduct() {
+    navigation.navigate('AdminProductForm', {});
+  }
+
+  function handleEditProduct(productId: string) {
+    navigation.navigate('AdminProductForm', { productId });
+  }
+
+  function handleDeleteProduct(productId: string) {
+    Alert.alert(
+      'Remover produto?',
+      'Ele deixara de aparecer para os usuarios.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Remover',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingId(productId);
+
+            try {
+              await productsService.deleteProduct(productId);
+              setFeedbackMessage('Produto removido.');
+              await loadProducts(true);
+            } catch {
+              setErrorMessage('Nao foi possivel salvar o produto.');
+            } finally {
+              setDeletingId(null);
+            }
+          },
+        },
+      ],
+    );
+  }
+
+  function handleRetry() {
+    loadProducts();
+  }
+
+  function renderEmptyState() {
+    if (isLoading) {
+      return (
+        <SurfaceCard>
+          <S.StatusContent>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+            <SectionTitle
+              title="Carregando produtos"
+              subtitle="Aguarde um instante."
+            />
+          </S.StatusContent>
+        </SurfaceCard>
+      );
+    }
+
+    if (errorMessage) {
+      return (
+        <EmptyStateCard
+          title="Nao foi possivel carregar os produtos."
+          description="Tente novamente."
+        >
+          <PrimaryButton onPress={handleRetry}>Tentar novamente</PrimaryButton>
+        </EmptyStateCard>
+      );
+    }
+
+    return (
+      <EmptyStateCard
+        title="Nenhum produto encontrado."
+        description="Crie o primeiro produto para exibir no app."
+      >
+        <PrimaryButton onPress={handleCreateProduct}>Novo produto</PrimaryButton>
+      </EmptyStateCard>
+    );
+  }
+
+  return (
+    <SafeScreen>
+      <FlatList
+        data={products}
+        keyExtractor={item => item.id}
+        refreshing={isRefreshing}
+        onRefresh={() => loadProducts(true)}
+        ItemSeparatorComponent={ListItemSeparator}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{
+          paddingHorizontal: theme.layout.screenPadding,
+          paddingTop: theme.spacing.lg,
+          paddingBottom: theme.spacing.xl,
+        }}
+        ListHeaderComponent={
+          <S.HeaderContent>
+            <S.HeaderRow>
+              <BackButton onPress={() => navigation.goBack()} />
+              <S.HeaderCopy>
+                <S.HeaderTitle>Produtos</S.HeaderTitle>
+                <S.HeaderSubtitle>Gerencie o catalogo principal do app.</S.HeaderSubtitle>
+              </S.HeaderCopy>
+            </S.HeaderRow>
+
+            <SurfaceCard>
+              <S.PanelContent>
+                <PageHeader
+                  eyebrow="Administracao"
+                  title="Produtos cadastrados"
+                  subtitle="Crie, atualize ou remova itens exibidos aos usuarios."
+                />
+                <PrimaryButton onPress={handleCreateProduct}>Novo produto</PrimaryButton>
+                {feedbackMessage ? <S.SuccessText>{feedbackMessage}</S.SuccessText> : null}
+                {errorMessage && products.length > 0 ? (
+                  <S.ErrorText>{errorMessage}</S.ErrorText>
+                ) : null}
+              </S.PanelContent>
+            </SurfaceCard>
+          </S.HeaderContent>
+        }
+        renderItem={({ item }) => (
+          <AdminListItem
+            title={item.name}
+            meta={getProductCategoryLabel(item.category)}
+            subtitle={item.shortDescription}
+            onEdit={() => handleEditProduct(item.id)}
+            onDelete={() => handleDeleteProduct(item.id)}
+            isDeleting={deletingId === item.id}
+          />
+        )}
+        ListEmptyComponent={renderEmptyState()}
+      />
+    </SafeScreen>
+  );
+}

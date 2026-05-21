@@ -37,6 +37,18 @@ export type ArticleDetail = ArticleListItem & {
   updatedAt?: string;
 };
 
+export type CreateArticlePayload = {
+  title: string;
+  summary: string;
+  content: string;
+  category: ArticleCategory;
+  imageUrl?: string | null;
+  tags?: string[];
+  isPublished?: boolean;
+};
+
+export type UpdateArticlePayload = Partial<CreateArticlePayload>;
+
 export type PaginationMeta = {
   page: number;
   limit: number;

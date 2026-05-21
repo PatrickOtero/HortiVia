@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useAuth } from '../features/auth/hooks/useAuth';
 import { usePreferences } from '../features/preferences/hooks/usePreferences';
 import type { UserPreferenceKey } from '../features/preferences/types/preferences';
 import { getSettingsSections } from '../services/settingsService';
@@ -17,6 +18,7 @@ type UseSettingsResult = {
 };
 
 export function useSettings(): UseSettingsResult {
+  const { user } = useAuth();
   const { themeMode, toggleTheme } = useTheme();
   const {
     preferences,
@@ -29,7 +31,9 @@ export function useSettings(): UseSettingsResult {
 
   const sections = useMemo(
     () =>
-      getSettingsSections().map(section => ({
+      getSettingsSections({
+        isAdmin: user?.role === 'ADMIN',
+      }).map(section => ({
         ...section,
         rows: section.rows.map(row => {
           if (row.preferenceKey) {
@@ -49,7 +53,7 @@ export function useSettings(): UseSettingsResult {
           return row;
         }),
       })),
-    [preferences, themeMode],
+    [preferences, themeMode, user?.role],
   );
 
   async function togglePreference(key: UserPreferenceKey) {

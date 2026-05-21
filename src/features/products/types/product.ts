@@ -32,6 +32,21 @@ export type ProductDetail = ProductListItem & {
   updatedAt?: string;
 };
 
+export type CreateProductPayload = {
+  name: string;
+  category: ProductCategory;
+  shortDescription: string;
+  description?: string | null;
+  imageUrl?: string | null;
+  benefits?: string[];
+  howToChoose?: string[];
+  howToStore?: string[];
+  usageTips?: string[];
+  nutrients?: ProductNutrient[];
+};
+
+export type UpdateProductPayload = Partial<CreateProductPayload>;
+
 export type PaginationMeta = {
   page: number;
   limit: number;

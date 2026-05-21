@@ -9,6 +9,7 @@ export type SettingsRowType = 'navigation' | 'toggle' | 'action' | 'info' | 'the
 
 export type SettingsActionKey =
   | 'editProfile'
+  | 'adminContent'
   | 'preferences'
   | 'about'
   | 'help'

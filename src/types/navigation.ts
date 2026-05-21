@@ -21,4 +21,13 @@ export type AppStackParamList = {
     articleId: string;
   };
   EditProfile: undefined;
+  AdminHome: undefined;
+  AdminProducts: undefined;
+  AdminProductForm: {
+    productId?: string;
+  };
+  AdminArticles: undefined;
+  AdminArticleForm: {
+    articleId?: string;
+  };
 };

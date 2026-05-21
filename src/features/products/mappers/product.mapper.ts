@@ -1,4 +1,5 @@
 import type {
+  CreateProductPayload,
   PaginatedResponse,
   PaginationMeta,
   ProductCategory,
@@ -117,5 +118,69 @@ export function toPaginatedProductsResponse(
   return {
     data: response.data.map(toProductListItem),
     meta: response.meta,
+  };
+}
+
+function normalizeOptionalText(value: string | null | undefined) {
+  const normalizedValue = value?.trim();
+
+  if (!normalizedValue) {
+    return undefined;
+  }
+
+  return normalizedValue;
+}
+
+function normalizeStringListPayload(value: string[] | undefined) {
+  if (!value) {
+    return undefined;
+  }
+
+  return value
+    .map(item => item.trim())
+    .filter(item => item.length > 0);
+}
+
+function normalizeNutrientsPayload(value: ProductNutrient[] | undefined) {
+  if (!value) {
+    return undefined;
+  }
+
+  return value
+    .map(item => ({
+      label: item.label.trim(),
+      value: item.value.trim(),
+    }))
+    .filter(item => item.label.length > 0 && item.value.length > 0);
+}
+
+export function toProductPayload(
+  payload: CreateProductPayload,
+): Record<string, unknown> {
+  return {
+    name: payload.name.trim(),
+    category: payload.category,
+    shortDescription: payload.shortDescription.trim(),
+    ...(normalizeOptionalText(payload.description) !== undefined
+      ? { description: normalizeOptionalText(payload.description) }
+      : {}),
+    ...(normalizeOptionalText(payload.imageUrl) !== undefined
+      ? { imageUrl: normalizeOptionalText(payload.imageUrl) }
+      : {}),
+    ...(normalizeStringListPayload(payload.benefits) !== undefined
+      ? { benefits: normalizeStringListPayload(payload.benefits) }
+      : {}),
+    ...(normalizeStringListPayload(payload.howToChoose) !== undefined
+      ? { howToChoose: normalizeStringListPayload(payload.howToChoose) }
+      : {}),
+    ...(normalizeStringListPayload(payload.howToStore) !== undefined
+      ? { howToStore: normalizeStringListPayload(payload.howToStore) }
+      : {}),
+    ...(normalizeStringListPayload(payload.usageTips) !== undefined
+      ? { usageTips: normalizeStringListPayload(payload.usageTips) }
+      : {}),
+    ...(normalizeNutrientsPayload(payload.nutrients) !== undefined
+      ? { nutrients: normalizeNutrientsPayload(payload.nutrients) }
+      : {}),
   };
 }

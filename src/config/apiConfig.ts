@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'https://p01--frutinavigator--h2j28jgg9qgs.code.run';
+export const API_BASE_URL = 'http://192.168.1.69:3000';
 
 export const API_CONFIG = {
   baseURL: API_BASE_URL,
