@@ -7,11 +7,11 @@ type GetSettingsSectionsOptions = {
 
 const adminSection: SettingsSectionItem = {
   id: 'admin',
-  title: 'Administracao',
+  title: 'Administração',
   rows: [
     {
       id: 'admin-content',
-      label: 'Gerenciar conteudo',
+      label: 'Gerenciar conteúdo',
       description: 'Produtos e artigos do HortiVia.',
       type: 'navigation',
       actionKey: 'adminContent',

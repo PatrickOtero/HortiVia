@@ -10,10 +10,14 @@ import React, {
 import { authService } from '../services/auth.service';
 import { getToken, removeToken, setToken } from '../storage/authToken.storage';
 import type {
-  AuthResponse,
+  AuthActionResponse,
   AuthUser,
+  ConfirmEmailPayload,
   LoginPayload,
+  LoginResponse,
   RegisterPayload,
+  RegisterResponse,
+  ResendConfirmationPayload,
 } from '../types/auth';
 import {
   setApiAccessToken,
@@ -26,8 +30,12 @@ type AuthContextValue = {
   accessToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  signIn: (payload: LoginPayload) => Promise<AuthResponse>;
-  signUp: (payload: RegisterPayload) => Promise<AuthResponse>;
+  signIn: (payload: LoginPayload) => Promise<LoginResponse>;
+  registerAccount: (payload: RegisterPayload) => Promise<RegisterResponse>;
+  confirmEmail: (payload: ConfirmEmailPayload) => Promise<AuthActionResponse>;
+  resendConfirmation: (
+    payload: ResendConfirmationPayload,
+  ) => Promise<AuthActionResponse>;
   signOut: () => Promise<void>;
   loadAuthenticatedUser: (token?: string | null) => Promise<AuthUser | null>;
   syncUser: (user: AuthUser) => void;
@@ -68,7 +76,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setApiAccessToken(tokenToUse);
 
       try {
-        const authenticatedUser = await authService.getAuthenticatedUser();
+        const authenticatedUser = await authService.getMe();
+
+        if (!authenticatedUser.emailVerified) {
+          await clearSession(true);
+          return null;
+        }
 
         setAccessTokenState(tokenToUse);
         setUser(authenticatedUser);
@@ -93,7 +106,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   );
 
   const signIn = useCallback(async (payload: LoginPayload) => {
-    const response = await authService.signIn(payload);
+    const response = await authService.login(payload);
 
     await setToken(response.accessToken);
     setApiAccessToken(response.accessToken);
@@ -103,16 +116,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return response;
   }, []);
 
-  const signUp = useCallback(async (payload: RegisterPayload) => {
-    const response = await authService.signUp(payload);
-
-    await setToken(response.accessToken);
-    setApiAccessToken(response.accessToken);
-    setAccessTokenState(response.accessToken);
-    setUser(response.user);
+  const registerAccount = useCallback(async (payload: RegisterPayload) => {
+    const response = await authService.register(payload);
 
     return response;
   }, []);
+
+  const confirmEmail = useCallback(async (payload: ConfirmEmailPayload) => {
+    return authService.confirmEmail(payload);
+  }, []);
+
+  const resendConfirmation = useCallback(
+    async (payload: ResendConfirmationPayload) => {
+      return authService.resendConfirmation(payload);
+    },
+    [],
+  );
 
   const signOut = useCallback(async () => {
     await clearSession(true);
@@ -166,21 +185,25 @@ export function AuthProvider({ children }: AuthProviderProps) {
     () => ({
       user,
       accessToken,
-      isAuthenticated: Boolean(user && accessToken),
+      isAuthenticated: Boolean(user && accessToken && user.emailVerified),
       isLoading,
       signIn,
-      signUp,
+      registerAccount,
+      confirmEmail,
+      resendConfirmation,
       signOut,
       loadAuthenticatedUser,
       syncUser,
     }),
     [
       accessToken,
+      confirmEmail,
       isLoading,
       loadAuthenticatedUser,
+      registerAccount,
+      resendConfirmation,
       signIn,
       signOut,
-      signUp,
       syncUser,
       user,
     ],

@@ -52,6 +52,7 @@ export function toAuthUser(profile: UserProfile): AuthUser {
     avatarUrl: profile.avatarUrl,
     gender: profile.gender,
     role: profile.role,
+    emailVerified: true,
     createdAt: profile.createdAt,
     updatedAt: profile.updatedAt,
   };

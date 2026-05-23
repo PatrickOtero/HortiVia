@@ -1,5 +1,7 @@
 import { API_ENDPOINTS } from '../../../config/apiConfig';
 import { apiClient } from '../../../services/api/apiClient';
+import { buildSingleFileUploadFormData } from '../../../services/api/uploadFormData';
+import type { ImageUploadFile } from '../../../utils/images/imagePicker';
 import {
   toArticlePayload,
   toArticleDetail,
@@ -61,6 +63,18 @@ export const articlesService = {
         content: payload.content ?? '',
         category: payload.category ?? 'TIPS',
       }),
+    );
+
+    return toArticleDetail(response.data);
+  },
+
+  async uploadArticleImage(
+    articleId: string,
+    file: ImageUploadFile,
+  ): Promise<ArticleDetail> {
+    const response = await apiClient.post(
+      API_ENDPOINTS.articles.image(articleId),
+      buildSingleFileUploadFormData('image', file, 'article-image.jpg'),
     );
 
     return toArticleDetail(response.data);

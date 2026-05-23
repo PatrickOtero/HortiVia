@@ -1,13 +1,20 @@
 import { API_ENDPOINTS } from '../../../config/apiConfig';
 import { apiClient } from '../../../services/api/apiClient';
+import {
+  normalizeConfirmationCode,
+  normalizeEmail,
+} from '../validation/auth.validation';
 import type {
-  AuthResponse,
+  AuthActionResponse,
   AuthUser,
-  LoginPayload,
-  RegisterPayload,
+  ConfirmEmailPayload,
+  LoginResponse,
+  RegisterResponse,
 } from '../types/auth';
 
-function normalizeUser(user: AuthResponse['user']): AuthUser {
+type AuthUserResponse = LoginResponse['user'];
+
+function normalizeUser(user: AuthUserResponse): AuthUser {
   return {
     id: user.id,
     name: user.name,
@@ -15,38 +22,73 @@ function normalizeUser(user: AuthResponse['user']): AuthUser {
     avatarUrl: user.avatarUrl ?? null,
     gender: user.gender ?? null,
     role: user.role,
+    emailVerified: user.emailVerified,
     createdAt: user.createdAt,
     updatedAt: user.updatedAt,
   };
 }
 
-function normalizeAuthResponse(data: AuthResponse): AuthResponse {
+function normalizeLoginResponse(data: LoginResponse): LoginResponse {
   return {
     user: normalizeUser(data.user),
     accessToken: data.accessToken,
   };
 }
 
+function normalizeRegisterResponse(data: RegisterResponse): RegisterResponse {
+  return {
+    message: data.message,
+    user: normalizeUser(data.user),
+  };
+}
+
 export const authService = {
-  async signIn(payload: LoginPayload) {
-    const response = await apiClient.post<AuthResponse>(
-      API_ENDPOINTS.auth.login,
-      payload,
-    );
+  async login(payload: { email: string; password: string }) {
+    const response = await apiClient.post<LoginResponse>(API_ENDPOINTS.auth.login, {
+      email: normalizeEmail(payload.email),
+      password: payload.password,
+    });
 
-    return normalizeAuthResponse(response.data);
+    return normalizeLoginResponse(response.data);
   },
 
-  async signUp(payload: RegisterPayload) {
-    const response = await apiClient.post<AuthResponse>(
+  async register(payload: { name: string; email: string; password: string }) {
+    const response = await apiClient.post<RegisterResponse>(
       API_ENDPOINTS.auth.register,
-      payload,
+      {
+        name: payload.name.trim(),
+        email: normalizeEmail(payload.email),
+        password: payload.password,
+      },
     );
 
-    return normalizeAuthResponse(response.data);
+    return normalizeRegisterResponse(response.data);
   },
 
-  async getAuthenticatedUser() {
+  async confirmEmail(payload: ConfirmEmailPayload) {
+    const response = await apiClient.post<AuthActionResponse>(
+      API_ENDPOINTS.auth.confirmEmail,
+      {
+        email: normalizeEmail(payload.email),
+        code: normalizeConfirmationCode(payload.code),
+      },
+    );
+
+    return response.data;
+  },
+
+  async resendConfirmation(payload: { email: string }) {
+    const response = await apiClient.post<AuthActionResponse>(
+      API_ENDPOINTS.auth.resendConfirmation,
+      {
+        email: normalizeEmail(payload.email),
+      },
+    );
+
+    return response.data;
+  },
+
+  async getMe() {
     const response = await apiClient.get<AuthUser>(API_ENDPOINTS.auth.me);
 
     return normalizeUser(response.data);

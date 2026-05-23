@@ -49,8 +49,18 @@ export const RightAccessory = styled.View`
   padding-right: ${({ theme }) => theme.spacing.md}px;
 `;
 
-export const HelperText = styled.Text`
-  color: ${({ theme }) => theme.colors.textMuted};
+export const HelperText = styled.Text<{ $tone: 'default' | 'danger' | 'success' }>`
+  color: ${({ theme, $tone }) => {
+    if ($tone === 'danger') {
+      return theme.colors.danger;
+    }
+
+    if ($tone === 'success') {
+      return theme.colors.success;
+    }
+
+    return theme.colors.textMuted;
+  }};
   font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
   line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
 `;

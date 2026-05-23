@@ -17,7 +17,7 @@ export const ADMIN_PRODUCT_CATEGORY_OPTIONS: Option<ProductCategory>[] = [
 
 export const ADMIN_ARTICLE_CATEGORY_OPTIONS: Option<ArticleCategory>[] = [
   { value: 'TIPS', label: 'Dicas' },
-  { value: 'STORAGE', label: 'Conservacao' },
+  { value: 'STORAGE', label: 'Conservação' },
   { value: 'SEASONALITY', label: 'Safra' },
   { value: 'RECIPES', label: 'Uso na cozinha' },
   { value: 'WASTE_REDUCTION', label: 'Aproveitamento' },

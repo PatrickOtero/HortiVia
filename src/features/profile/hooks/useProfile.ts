@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   launchImageLibrary,
-  type Asset,
-  type ImageLibraryOptions,
 } from 'react-native-image-picker';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { toApiError } from '../../../services/api/apiError';
 import { toAuthUser } from '../mappers/profile.mapper';
 import { profileService } from '../services/profile.service';
+import {
+  IMAGE_LIBRARY_OPTIONS,
+  normalizeImageUploadFile,
+} from '../../../utils/images/imagePicker';
 import type {
   AvatarUploadFile,
   AvatarUploadMimeType,
@@ -25,11 +27,6 @@ const SAFE_AVATAR_ERROR_MESSAGES = new Set([
   'A imagem deve ter no maximo 2 MB.',
   'Formato de imagem nao permitido.',
 ]);
-const IMAGE_LIBRARY_OPTIONS: ImageLibraryOptions = {
-  mediaType: 'photo',
-  selectionLimit: 1,
-  includeBase64: false,
-};
 
 export type UserProfileFormValues = {
   name: string;
@@ -79,60 +76,16 @@ function validateProfileForm(values: UserProfileFormValues): UserProfileFormErro
   return errors;
 }
 
-function getFileNameFromValue(value?: string | null) {
-  if (!value) {
-    return undefined;
-  }
-
-  const normalizedValue = value.split('?')[0] ?? value;
-  const segments = normalizedValue.split('/');
-
-  return segments[segments.length - 1] || undefined;
-}
-
-function inferMimeTypeFromName(value?: string | null): AvatarUploadMimeType | null {
-  const fileName = getFileNameFromValue(value)?.toLowerCase();
-
-  if (!fileName) {
+function normalizeAvatarFile(file: AvatarUploadFile | null) {
+  if (!file) {
     return null;
   }
 
-  if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) {
-    return 'image/jpeg';
-  }
-
-  if (fileName.endsWith('.png')) {
-    return 'image/png';
-  }
-
-  if (fileName.endsWith('.webp')) {
-    return 'image/webp';
-  }
-
-  return null;
-}
-
-function normalizeAvatarFile(asset: Asset): AvatarUploadFile | null {
-  if (!asset.uri) {
+  if (!ALLOWED_AVATAR_MIME_TYPES.includes(file.type as AvatarUploadMimeType)) {
     return null;
   }
 
-  const resolvedType = (
-    ALLOWED_AVATAR_MIME_TYPES.includes(asset.type as AvatarUploadMimeType)
-      ? asset.type
-      : inferMimeTypeFromName(asset.fileName ?? asset.uri)
-  ) as AvatarUploadMimeType | null;
-
-  if (!resolvedType) {
-    return null;
-  }
-
-  return {
-    uri: asset.uri,
-    name: asset.fileName ?? `avatar.${resolvedType.split('/')[1] ?? 'jpg'}`,
-    type: resolvedType,
-    size: asset.fileSize,
-  };
+  return file;
 }
 
 export function useProfile(): UseProfileResult {
@@ -320,7 +273,9 @@ export function useProfile(): UseProfileResult {
         return false;
       }
 
-      const avatarFile = normalizeAvatarFile(selectedAsset);
+      const avatarFile = normalizeAvatarFile(
+        normalizeImageUploadFile(selectedAsset, 'avatar.jpg'),
+      );
 
       if (!avatarFile) {
         setAvatarErrorMessage('Escolha uma imagem valida.');

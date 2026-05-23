@@ -65,11 +65,29 @@ export const ActionGroup = styled.View`
   gap: ${({ theme }) => theme.spacing.md}px;
 `;
 
+export const InfoText = styled.Text`
+  color: ${({ theme }) => theme.colors.primaryStrong};
+  font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
+  line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
+  text-align: center;
+`;
+
 export const FormErrorText = styled.Text`
   color: ${({ theme }) => theme.colors.danger};
   font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
   line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
   text-align: center;
+`;
+
+export const InlineActionButton = styled.Pressable`
+  align-self: center;
+`;
+
+export const InlineActionText = styled.Text`
+  color: ${({ theme }) => theme.colors.primaryStrong};
+  font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
+  line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
 export const SecondaryActionRow = styled.View`

@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Platform, TextInput } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
@@ -8,49 +8,117 @@ import {
   SafeScreen,
 } from '../../components';
 import { useAuth } from '../../features/auth/hooks/useAuth';
-import { getAuthErrorMessage } from '../../services/api/apiError';
+import {
+  normalizeEmail,
+  validateEmail,
+} from '../../features/auth/validation/auth.validation';
+import {
+  getAuthErrorMessage,
+  isUnverifiedEmailError,
+} from '../../services/api/apiError';
 import { AuthStackParamList } from '../../types/navigation';
 import * as S from './styles';
 
 type LoginScreenProps = NativeStackScreenProps<AuthStackParamList, 'Login'>;
+type FieldName = 'email' | 'password';
 
-export function LoginScreen({ navigation }: LoginScreenProps) {
+export function LoginScreen({ navigation, route }: LoginScreenProps) {
   const { signIn } = useAuth();
   const passwordInputRef = useRef<TextInput>(null);
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(route.params?.email ?? '');
   const [password, setPassword] = useState('');
+  const [infoMessage, setInfoMessage] = useState(route.params?.infoMessage ?? null);
   const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+  const [hasSubmitted, setHasSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showResendConfirmationAction, setShowResendConfirmationAction] =
+    useState(false);
+  const [touchedFields, setTouchedFields] = useState<Record<FieldName, boolean>>({
+    email: false,
+    password: false,
+  });
 
-  const isFormValid = email.trim().length > 0 && password.trim().length > 0;
+  useEffect(() => {
+    if (route.params?.email) {
+      setEmail(route.params.email);
+    }
+
+    if (route.params?.infoMessage) {
+      setInfoMessage(route.params.infoMessage);
+    }
+  }, [route.params?.email, route.params?.infoMessage]);
+
+  function markFieldAsTouched(fieldName: FieldName) {
+    setTouchedFields(currentValue => ({
+      ...currentValue,
+      [fieldName]: true,
+    }));
+  }
+
+  function clearFeedback() {
+    if (errorMessage) {
+      setErrorMessage(null);
+    }
+
+    if (infoMessage) {
+      setInfoMessage(null);
+    }
+
+    if (showResendConfirmationAction) {
+      setShowResendConfirmationAction(false);
+    }
+  }
+
+  function getFieldError(fieldName: FieldName) {
+    if (!hasSubmitted && !touchedFields[fieldName]) {
+      return undefined;
+    }
+
+    if (fieldName === 'email') {
+      return validateEmail(email) ?? undefined;
+    }
+
+    if (!password) {
+      return 'Digite sua senha.';
+    }
+
+    return undefined;
+  }
 
   async function handleSignIn() {
-    if (!isFormValid || isSubmitting) {
+    setHasSubmitted(true);
+
+    const emailError = validateEmail(email);
+    const passwordError = !password ? 'Digite sua senha.' : null;
+
+    if (emailError || passwordError || isSubmitting) {
       return;
     }
 
     setErrorMessage(null);
+    setInfoMessage(null);
+    setShowResendConfirmationAction(false);
     setIsSubmitting(true);
 
     try {
       await signIn({
-        email: email.trim(),
+        email: normalizeEmail(email),
         password,
       });
     } catch (error) {
       setErrorMessage(getAuthErrorMessage(error, 'signIn'));
+      setShowResendConfirmationAction(isUnverifiedEmailError(error));
     } finally {
       setIsSubmitting(false);
     }
   }
 
-  function handlePasswordSubmit() {
-    handleSignIn();
-  }
-
-  function handlePrimaryActionPress() {
-    handleSignIn();
+  function handleResendConfirmationPress() {
+    navigation.navigate('VerifyEmail', {
+      email: normalizeEmail(email),
+      infoMessage: 'Digite o código enviado para o seu e-mail.',
+    });
   }
 
   return (
@@ -72,9 +140,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                 value={email}
                 onChangeText={value => {
                   setEmail(value);
-                  if (errorMessage) {
-                    setErrorMessage(null);
-                  }
+                  clearFeedback();
                 }}
                 editable={!isSubmitting}
                 autoCapitalize="none"
@@ -84,7 +150,10 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                 placeholder="seuemail@exemplo.com"
                 returnKeyType="next"
                 blurOnSubmit={false}
+                onBlur={() => markFieldAsTouched('email')}
                 onSubmitEditing={() => passwordInputRef.current?.focus()}
+                helperText={getFieldError('email')}
+                helperTone="danger"
               />
               <InputField
                 label="Senha"
@@ -92,9 +161,7 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                 value={password}
                 onChangeText={value => {
                   setPassword(value);
-                  if (errorMessage) {
-                    setErrorMessage(null);
-                  }
+                  clearFeedback();
                 }}
                 editable={!isSubmitting}
                 autoCapitalize="none"
@@ -103,7 +170,8 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                 secureTextEntry={!isPasswordVisible}
                 placeholder="Digite sua senha"
                 returnKeyType="done"
-                onSubmitEditing={handlePasswordSubmit}
+                onBlur={() => markFieldAsTouched('password')}
+                onSubmitEditing={handleSignIn}
                 rightAccessory={
                   <S.PasswordToggle
                     onPress={() => setIsPasswordVisible(currentValue => !currentValue)}
@@ -114,12 +182,24 @@ export function LoginScreen({ navigation }: LoginScreenProps) {
                     </S.PasswordToggleText>
                   </S.PasswordToggle>
                 }
+                helperText={getFieldError('password')}
+                helperTone="danger"
               />
               <S.ActionGroup>
+                {infoMessage ? <S.InfoText>{infoMessage}</S.InfoText> : null}
                 {errorMessage ? <S.FormErrorText>{errorMessage}</S.FormErrorText> : null}
+                {showResendConfirmationAction ? (
+                  <S.InlineActionButton
+                    onPress={handleResendConfirmationPress}
+                    disabled={isSubmitting}
+                    hitSlop={8}
+                  >
+                    <S.InlineActionText>Confirmar e-mail</S.InlineActionText>
+                  </S.InlineActionButton>
+                ) : null}
                 <PrimaryButton
-                  onPress={handlePrimaryActionPress}
-                  disabled={!isFormValid}
+                  onPress={handleSignIn}
+                  disabled={isSubmitting}
                   loading={isSubmitting}
                 >
                   Entrar

@@ -3,10 +3,19 @@ import axios from 'axios';
 type ApiErrorKind =
   | 'validation'
   | 'unauthorized'
+  | 'forbidden'
   | 'conflict'
+  | 'rateLimit'
   | 'network'
   | 'server'
   | 'unknown';
+
+type AuthAction =
+  | 'signIn'
+  | 'signUp'
+  | 'loadSession'
+  | 'confirmEmail'
+  | 'resendConfirmation';
 
 export class ApiError extends Error {
   kind: ApiErrorKind;
@@ -62,8 +71,16 @@ export function toApiError(error: unknown) {
       return new ApiError(message, 'unauthorized', status);
     }
 
+    if (status === 403) {
+      return new ApiError(message, 'forbidden', status);
+    }
+
     if (status === 409) {
       return new ApiError(message, 'conflict', status);
+    }
+
+    if (status === 429) {
+      return new ApiError(message, 'rateLimit', status);
     }
 
     if (status >= 500) {
@@ -79,39 +96,66 @@ export function toApiError(error: unknown) {
   );
 }
 
-export function getAuthErrorMessage(
-  error: unknown,
-  action: 'signIn' | 'signUp' | 'loadSession',
-) {
+export function isUnverifiedEmailError(error: unknown) {
+  const apiError = toApiError(error);
+
+  return apiError.kind === 'forbidden';
+}
+
+export function getAuthErrorMessage(error: unknown, action: AuthAction) {
   const apiError = toApiError(error);
 
   if (action === 'signIn') {
     if (apiError.kind === 'unauthorized') {
-      return 'E-mail ou senha invalidos.';
+      return 'E-mail ou senha inv\u00e1lidos.';
     }
 
-    if (apiError.kind === 'network') {
-      return 'Nao foi possivel entrar agora. Tente novamente.';
+    if (apiError.kind === 'forbidden') {
+      return 'Confirme seu e-mail antes de entrar.';
     }
 
-    return 'Nao foi possivel entrar agora. Tente novamente.';
+    return 'N\u00e3o foi poss\u00edvel entrar agora. Tente novamente.';
   }
 
   if (action === 'signUp') {
     if (apiError.kind === 'conflict') {
-      return 'Este e-mail ja esta em uso.';
+      return 'Este e-mail j\u00e1 est\u00e1 em uso.';
     }
 
     if (apiError.kind === 'validation') {
-      return 'Confira os dados informados.';
+      return 'Verifique os dados informados.';
     }
 
-    if (apiError.kind === 'network') {
-      return 'Nao foi possivel criar sua conta agora. Tente novamente.';
-    }
-
-    return 'Nao foi possivel criar sua conta agora. Tente novamente.';
+    return 'N\u00e3o foi poss\u00edvel criar sua conta agora. Tente novamente.';
   }
 
-  return 'Nao foi possivel continuar agora. Tente novamente.';
+  if (action === 'confirmEmail') {
+    if (apiError.kind === 'validation') {
+      return 'C\u00f3digo inv\u00e1lido ou expirado.';
+    }
+
+    if (apiError.kind === 'server' && apiError.message) {
+      return apiError.message;
+    }
+
+    return 'N\u00e3o foi poss\u00edvel concluir a opera\u00e7\u00e3o. Tente novamente.';
+  }
+
+  if (action === 'resendConfirmation') {
+    if (apiError.kind === 'validation') {
+      return 'Informe um e-mail v\u00e1lido.';
+    }
+
+    if (apiError.kind === 'rateLimit') {
+      return 'Aguarde um momento antes de solicitar outro c\u00f3digo.';
+    }
+
+    if (apiError.kind === 'server' && apiError.message) {
+      return apiError.message;
+    }
+
+    return 'N\u00e3o foi poss\u00edvel concluir a opera\u00e7\u00e3o. Tente novamente.';
+  }
+
+  return 'N\u00e3o foi poss\u00edvel concluir a opera\u00e7\u00e3o. Tente novamente.';
 }

@@ -24,18 +24,6 @@ export const apiClient: AxiosInstance = axios.create({
   headers: API_CONFIG.headers,
 });
 
-export const apiMultipartClient: AxiosInstance = axios.create({
-  baseURL: API_CONFIG.baseURL,
-  timeout: API_CONFIG.timeout,
-  headers: {
-    Accept: 'application/json',
-  },
-});
-
-delete apiMultipartClient.defaults.headers.post['Content-Type'];
-delete apiMultipartClient.defaults.headers.put['Content-Type'];
-delete apiMultipartClient.defaults.headers.patch['Content-Type'];
-
 function applyAuthAndMultipartHeaders(config: InternalAxiosRequestConfig) {
   if (typeof FormData !== 'undefined' && config.data instanceof FormData) {
     const headers = AxiosHeaders.from(config.headers);
@@ -53,9 +41,6 @@ function applyAuthAndMultipartHeaders(config: InternalAxiosRequestConfig) {
 }
 
 apiClient.interceptors.request.use(config => applyAuthAndMultipartHeaders(config));
-apiMultipartClient.interceptors.request.use(config =>
-  applyAuthAndMultipartHeaders(config),
-);
 
 function handleUnauthorizedError(error: unknown) {
   if (
@@ -78,11 +63,6 @@ function handleUnauthorizedError(error: unknown) {
 }
 
 apiClient.interceptors.response.use(
-  response => response,
-  error => handleUnauthorizedError(error),
-);
-
-apiMultipartClient.interceptors.response.use(
   response => response,
   error => handleUnauthorizedError(error),
 );

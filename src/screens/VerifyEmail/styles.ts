@@ -40,33 +40,17 @@ export const FormTitle = styled.Text`
   font-size: ${({ theme }) => theme.typography.headingLg.fontSize}px;
   line-height: ${({ theme }) => theme.typography.headingLg.lineHeight}px;
   font-weight: ${({ theme }) => theme.typography.headingLg.fontWeight};
+  text-align: center;
 `;
 
 export const FormSubtitle = styled.Text`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.bodyMd.fontSize}px;
   line-height: ${({ theme }) => theme.typography.bodyMd.lineHeight}px;
+  text-align: center;
 `;
 
-export const PasswordToggle = styled.Pressable`
-  min-height: 36px;
-  align-items: center;
-  justify-content: center;
-`;
-
-export const PasswordToggleText = styled.Text`
-  color: ${({ theme }) => theme.colors.primaryStrong};
-  font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
-  line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
-`;
-
-export const ActionGroup = styled.View`
-  gap: ${({ theme }) => theme.spacing.md}px;
-`;
-
-export const PasswordRulesCard = styled.View`
-  gap: ${({ theme }) => theme.spacing.xs}px;
+export const EmailHighlight = styled.View`
   padding: ${({ theme }) => theme.spacing.md}px;
   background-color: ${({ theme }) => theme.colors.primarySoft};
   border-width: 1px;
@@ -74,44 +58,57 @@ export const PasswordRulesCard = styled.View`
   border-radius: ${({ theme }) => theme.radius.lg}px;
 `;
 
-export const PasswordRuleRow = styled.View`
-  flex-direction: row;
-  align-items: center;
-  gap: ${({ theme }) => theme.spacing.sm}px;
-`;
-
-export const PasswordRuleIndicator = styled.View<{ $isValid: boolean }>`
-  width: 8px;
-  height: 8px;
-  border-radius: 4px;
-  background-color: ${({ theme, $isValid }) =>
-    $isValid ? theme.colors.success : theme.colors.borderStrong};
-`;
-
-export const PasswordRuleText = styled.Text<{ $isValid: boolean }>`
-  flex: 1;
-  color: ${({ theme, $isValid }) =>
-    $isValid ? theme.colors.primaryStrong : theme.colors.textMuted};
-  font-size: ${({ theme }) => theme.typography.caption.fontSize}px;
-  line-height: ${({ theme }) => theme.typography.caption.lineHeight}px;
-  font-weight: ${({ theme, $isValid }) =>
-    $isValid ? theme.typography.label.fontWeight : theme.typography.bodySm.fontWeight};
-`;
-
-export const FormErrorText = styled.Text`
-  color: ${({ theme }) => theme.colors.danger};
-  font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
-  line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
+export const EmailValue = styled.Text`
+  color: ${({ theme }) => theme.colors.primaryStrong};
+  font-size: ${({ theme }) => theme.typography.bodyMd.fontSize}px;
+  line-height: ${({ theme }) => theme.typography.bodyMd.lineHeight}px;
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
   text-align: center;
 `;
 
-export const SecondaryActionButton = styled.Pressable`
-  align-self: center;
+export const CodePreviewRow = styled.View`
+  flex-direction: row;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  justify-content: center;
 `;
 
-export const SecondaryActionText = styled.Text`
-  color: ${({ theme }) => theme.colors.primaryStrong};
+export const CodePreviewCell = styled.View<{ $isFilled: boolean }>`
+  width: 44px;
+  height: 52px;
+  border-radius: ${({ theme }) => theme.radius.md}px;
+  border-width: 1px;
+  border-color: ${({ theme, $isFilled }) =>
+    $isFilled ? theme.colors.primaryStrong : theme.colors.border};
+  background-color: ${({ theme, $isFilled }) =>
+    $isFilled ? theme.colors.primarySoft : theme.colors.surface};
+  align-items: center;
+  justify-content: center;
+`;
+
+export const CodePreviewDigit = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: ${({ theme }) => theme.typography.headingMd.fontSize}px;
+  line-height: ${({ theme }) => theme.typography.headingMd.lineHeight}px;
+  font-weight: ${({ theme }) => theme.typography.headingMd.fontWeight};
+`;
+
+export const ActionGroup = styled.View`
+  gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
+export const FeedbackText = styled.Text<{ $tone: 'info' | 'success' | 'danger' }>`
+  color: ${({ theme, $tone }) => {
+    if ($tone === 'success') {
+      return theme.colors.success;
+    }
+
+    if ($tone === 'danger') {
+      return theme.colors.danger;
+    }
+
+    return theme.colors.primaryStrong;
+  }};
   font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
   line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+  text-align: center;
 `;

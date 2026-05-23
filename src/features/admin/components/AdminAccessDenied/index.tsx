@@ -5,6 +5,7 @@ import {
   SafeScreen,
   ScreenContainer,
 } from '../../../../components';
+import { ADMIN_ACCESS_DENIED_MESSAGE } from '../../utils/adminFeedback';
 import * as S from './styles';
 
 type AdminAccessDeniedProps = {
@@ -17,7 +18,7 @@ export function AdminAccessDenied({ onGoBack }: AdminAccessDeniedProps) {
       <ScreenContainer scrollable>
         <S.Content>
           <EmptyStateCard
-            title="Voce nao tem permissao para acessar esta area."
+            title={ADMIN_ACCESS_DENIED_MESSAGE}
             description="Volte para continuar usando o app."
           >
             <PrimaryButton onPress={onGoBack}>Voltar</PrimaryButton>

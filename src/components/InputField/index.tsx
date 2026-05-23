@@ -5,6 +5,7 @@ import * as S from './styles';
 type InputFieldProps = TextInputProps & {
   label?: string;
   helperText?: string;
+  helperTone?: 'default' | 'danger' | 'success';
   rightAccessory?: React.ReactNode;
 };
 
@@ -12,6 +13,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(function InputF
   {
     label,
     helperText,
+    helperTone = 'default',
     rightAccessory,
     onBlur,
     onFocus,
@@ -45,7 +47,7 @@ export const InputField = forwardRef<TextInput, InputFieldProps>(function InputF
         />
         {rightAccessory ? <S.RightAccessory>{rightAccessory}</S.RightAccessory> : null}
       </S.InputShell>
-      {helperText ? <S.HelperText>{helperText}</S.HelperText> : null}
+      {helperText ? <S.HelperText $tone={helperTone}>{helperText}</S.HelperText> : null}
     </S.Container>
   );
 });

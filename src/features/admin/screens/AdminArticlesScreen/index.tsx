@@ -11,6 +11,7 @@ import {
   SectionTitle,
   SurfaceCard,
 } from '../../../../components';
+import { toApiError } from '../../../../services/api/apiError';
 import { AppStackParamList } from '../../../../types/navigation';
 import { useTheme } from '../../../../hooks/useTheme';
 import { articlesService } from '../../../articles/services/articles.service';
@@ -20,6 +21,12 @@ import { useAuth } from '../../../auth/hooks/useAuth';
 import { AdminAccessDenied } from '../../components/AdminAccessDenied';
 import { AdminListItem } from '../../components/AdminListItem';
 import { formatPublishedDate } from '../../utils/adminContent';
+import {
+  ADMIN_REMOVE_ERROR_MESSAGE,
+  ADMIN_RETRY_MESSAGE,
+  isAdminAccessDeniedError,
+} from '../../utils/adminFeedback';
+import { goBackFromAdmin } from '../../utils/adminNavigation';
 import * as S from './styles';
 
 type AdminArticlesScreenProps = NativeStackScreenProps<
@@ -40,6 +47,7 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
   const [errorMessage, setErrorMessage] = useState('');
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [hasAccessDeniedError, setHasAccessDeniedError] = useState(false);
 
   const loadArticles = useCallback(async (refresh = false) => {
     if (refresh) {
@@ -56,8 +64,16 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
 
       setArticles(response.data);
       setErrorMessage('');
-    } catch {
-      setErrorMessage('Nao foi possivel carregar os artigos.');
+      setHasAccessDeniedError(false);
+    } catch (error) {
+      if (isAdminAccessDeniedError(error)) {
+        setHasAccessDeniedError(true);
+        setErrorMessage('');
+        return;
+      }
+
+      toApiError(error);
+      setErrorMessage('Não foi possível carregar os artigos.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -70,8 +86,8 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
     }, [loadArticles]),
   );
 
-  if (user?.role !== 'ADMIN') {
-    return <AdminAccessDenied onGoBack={() => navigation.goBack()} />;
+  if (user?.role !== 'ADMIN' || hasAccessDeniedError) {
+    return <AdminAccessDenied onGoBack={() => goBackFromAdmin(navigation)} />;
   }
 
   function handleCreateArticle() {
@@ -85,7 +101,7 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
   function handleDeleteArticle(articleId: string) {
     Alert.alert(
       'Remover artigo?',
-      'Ele deixara de aparecer para os usuarios.',
+      'Ele deixará de aparecer para os usuários.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -97,9 +113,15 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
             try {
               await articlesService.deleteArticle(articleId);
               setFeedbackMessage('Artigo removido.');
+              setErrorMessage('');
               await loadArticles(true);
-            } catch {
-              setErrorMessage('Nao foi possivel salvar o artigo.');
+            } catch (error) {
+              if (isAdminAccessDeniedError(error)) {
+                setHasAccessDeniedError(true);
+                return;
+              }
+
+              setErrorMessage(ADMIN_REMOVE_ERROR_MESSAGE);
             } finally {
               setDeletingId(null);
             }
@@ -131,8 +153,8 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
     if (errorMessage) {
       return (
         <EmptyStateCard
-          title="Nao foi possivel carregar os artigos."
-          description="Tente novamente."
+          title="Não foi possível carregar os artigos."
+          description={ADMIN_RETRY_MESSAGE}
         >
           <PrimaryButton onPress={handleRetry}>Tentar novamente</PrimaryButton>
         </EmptyStateCard>
@@ -141,7 +163,7 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
 
     return (
       <EmptyStateCard
-        title="Nenhum artigo encontrado."
+        title="Nenhum artigo cadastrado."
         description="Crie um artigo para exibir no feed."
       >
         <PrimaryButton onPress={handleCreateArticle}>Novo artigo</PrimaryButton>
@@ -166,17 +188,17 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
         ListHeaderComponent={
           <S.HeaderContent>
             <S.HeaderRow>
-              <BackButton onPress={() => navigation.goBack()} />
+              <BackButton onPress={() => goBackFromAdmin(navigation)} />
               <S.HeaderCopy>
                 <S.HeaderTitle>Artigos</S.HeaderTitle>
-                <S.HeaderSubtitle>Gerencie os conteudos exibidos no feed.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>Gerencie os conteúdos exibidos no feed.</S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
 
             <SurfaceCard>
               <S.PanelContent>
                 <PageHeader
-                  eyebrow="Administracao"
+                  eyebrow="Administração"
                   title="Artigos publicados"
                   subtitle="Crie, atualize ou remova leituras para o HortiVia."
                 />
@@ -199,6 +221,8 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
               .filter(Boolean)
               .join(' | ')}
             subtitle={item.summary}
+            imageUrl={item.imageUrl}
+            imageFallbackLabel="Artigo"
             onEdit={() => handleEditArticle(item.id)}
             onDelete={() => handleDeleteArticle(item.id)}
             isDeleting={deletingId === item.id}

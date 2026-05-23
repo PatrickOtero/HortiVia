@@ -1,5 +1,7 @@
 import { API_ENDPOINTS } from '../../../config/apiConfig';
 import { apiClient } from '../../../services/api/apiClient';
+import { buildSingleFileUploadFormData } from '../../../services/api/uploadFormData';
+import type { ImageUploadFile } from '../../../utils/images/imagePicker';
 import {
   toProductPayload,
   toPaginatedProductsResponse,
@@ -60,6 +62,18 @@ export const productsService = {
         category: payload.category ?? 'FRUIT',
         shortDescription: payload.shortDescription ?? '',
       }),
+    );
+
+    return toProductDetail(response.data);
+  },
+
+  async uploadProductImage(
+    productId: string,
+    file: ImageUploadFile,
+  ): Promise<ProductDetail> {
+    const response = await apiClient.post(
+      API_ENDPOINTS.products.image(productId),
+      buildSingleFileUploadFormData('image', file, 'product-image.jpg'),
     );
 
     return toProductDetail(response.data);

@@ -13,15 +13,19 @@ export const API_ENDPOINTS = {
   auth: {
     login: '/auth/login',
     register: '/auth/register',
+    confirmEmail: '/auth/confirm-email',
+    resendConfirmation: '/auth/resend-confirmation',
     me: '/auth/me',
   },
   products: {
     list: '/products',
     detail: (productId: string) => `/products/${productId}`,
+    image: (productId: string) => `/products/${productId}/image`,
   },
   articles: {
     list: '/articles',
     detail: (articleId: string) => `/articles/${articleId}`,
+    image: (articleId: string) => `/articles/${articleId}/image`,
   },
   profile: {
     get: '/profile',

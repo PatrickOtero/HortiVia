@@ -1,8 +1,19 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 
 export type AuthStackParamList = {
-  Login: undefined;
+  Login:
+    | {
+        email?: string;
+        infoMessage?: string;
+      }
+    | undefined;
   Register: undefined;
+  VerifyEmail:
+    | {
+        email?: string;
+        infoMessage?: string;
+      }
+    | undefined;
   SessionLoading: undefined;
 };
 

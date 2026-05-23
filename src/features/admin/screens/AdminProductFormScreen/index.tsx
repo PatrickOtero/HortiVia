@@ -1,5 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   BackButton,
@@ -14,15 +20,28 @@ import {
   SurfaceCard,
 } from '../../../../components';
 import { AppStackParamList } from '../../../../types/navigation';
+import {
+  IMAGE_LIBRARY_OPTIONS,
+  normalizeImageUploadFile,
+  validateImageUploadFile,
+  type ImageUploadFile,
+} from '../../../../utils/images/imagePicker';
+import { useTheme } from '../../../../hooks/useTheme';
+import { useAuth } from '../../../auth/hooks/useAuth';
 import { productsService } from '../../../products/services/products.service';
 import type {
   CreateProductPayload,
   ProductCategory,
 } from '../../../products/types/product';
-import { useAuth } from '../../../auth/hooks/useAuth';
-import { useTheme } from '../../../../hooks/useTheme';
 import { AdminAccessDenied } from '../../components/AdminAccessDenied';
 import { AdminFormSection } from '../../components/AdminFormSection';
+import {
+  ADMIN_LOAD_DATA_ERROR_MESSAGE,
+  ADMIN_RETRY_MESSAGE,
+  getSafeAdminImageErrorMessage,
+  isAdminAccessDeniedError,
+} from '../../utils/adminFeedback';
+import { goBackFromAdmin } from '../../utils/adminNavigation';
 import {
   ADMIN_PRODUCT_CATEGORY_OPTIONS,
   formatMultilineList,
@@ -54,6 +73,15 @@ type ProductFormErrors = Partial<
   Record<'name' | 'category' | 'shortDescription', string>
 >;
 
+const MAX_PRODUCT_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
+const PRODUCT_IMAGE_FALLBACK_FILE_NAME = 'product-image.jpg';
+const PRODUCT_IMAGE_INVALID_MESSAGE = 'Escolha uma imagem válida.';
+const PRODUCT_IMAGE_TOO_LARGE_MESSAGE = 'A imagem deve ter no máximo 5 MB.';
+const PRODUCT_IMAGE_UPLOAD_ERROR_MESSAGE = 'Não foi possível enviar a imagem.';
+const PRODUCT_IMAGE_SUCCESS_MESSAGE = 'Imagem atualizada.';
+const SAVE_PRODUCT_BEFORE_IMAGE_MESSAGE =
+  'Salve o item antes de enviar uma imagem.';
+
 const INITIAL_FORM_VALUES: ProductFormValues = {
   name: '',
   category: null,
@@ -79,7 +107,7 @@ function validateForm(values: ProductFormValues): ProductFormErrors {
   }
 
   if (!values.shortDescription.trim()) {
-    errors.shortDescription = 'Informe a descricao curta.';
+    errors.shortDescription = 'Informe uma descrição curta.';
   }
 
   return errors;
@@ -91,20 +119,36 @@ export function AdminProductFormScreen({
 }: AdminProductFormScreenProps) {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const productId = route.params?.productId;
-  const isEditing = Boolean(productId);
+  const [currentProductId, setCurrentProductId] = useState<string | null>(
+    route.params?.productId ?? null,
+  );
+  const isEditing = Boolean(currentProductId);
   const [formValues, setFormValues] = useState<ProductFormValues>(INITIAL_FORM_VALUES);
   const [formErrors, setFormErrors] = useState<ProductFormErrors>({});
   const [screenError, setScreenError] = useState('');
   const [isLoading, setIsLoading] = useState(isEditing);
   const [isSaving, setIsSaving] = useState(false);
+  const [remoteImageUrl, setRemoteImageUrl] = useState<string | null>(null);
+  const [selectedImageFile, setSelectedImageFile] = useState<ImageUploadFile | null>(
+    null,
+  );
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imageSuccessMessage, setImageSuccessMessage] = useState('');
+  const [imageErrorMessage, setImageErrorMessage] = useState('');
+  const [hasImageLoadError, setHasImageLoadError] = useState(false);
+  const [hasAccessDeniedError, setHasAccessDeniedError] = useState(false);
 
   useEffect(() => {
-    if (!productId) {
+    setCurrentProductId(route.params?.productId ?? null);
+  }, [route.params?.productId]);
+
+  useEffect(() => {
+    if (!currentProductId) {
+      setIsLoading(false);
       return;
     }
 
-    const currentProductId = productId;
+    const nextProductId = currentProductId;
     let isMounted = true;
 
     async function loadProduct() {
@@ -112,7 +156,7 @@ export function AdminProductFormScreen({
       setScreenError('');
 
       try {
-        const product = await productsService.getProductById(currentProductId);
+        const product = await productsService.getProductById(nextProductId);
 
         if (!isMounted) {
           return;
@@ -130,10 +174,23 @@ export function AdminProductFormScreen({
           usageTips: formatMultilineList(product.usageTips),
           nutrients: formatNutrients(product.nutrients),
         });
-      } catch {
-        if (isMounted) {
-          setScreenError('Nao foi possivel carregar os produtos.');
+        setRemoteImageUrl(product.imageUrl ?? null);
+        setSelectedImageFile(null);
+        setImageErrorMessage('');
+        setImageSuccessMessage('');
+        setHasAccessDeniedError(false);
+      } catch (error) {
+        if (!isMounted) {
+          return;
         }
+
+        if (isAdminAccessDeniedError(error)) {
+          setHasAccessDeniedError(true);
+          setScreenError('');
+          return;
+        }
+
+        setScreenError(ADMIN_LOAD_DATA_ERROR_MESSAGE);
       } finally {
         if (isMounted) {
           setIsLoading(false);
@@ -146,15 +203,27 @@ export function AdminProductFormScreen({
     return () => {
       isMounted = false;
     };
-  }, [productId]);
+  }, [currentProductId]);
+
+  useEffect(() => {
+    setHasImageLoadError(false);
+  }, [remoteImageUrl, selectedImageFile?.uri]);
 
   const submitLabel = useMemo(
-    () => (isEditing ? 'Salvar alteracoes' : 'Salvar produto'),
+    () => (isEditing ? 'Salvar alterações' : 'Salvar produto'),
     [isEditing],
   );
 
-  if (user?.role !== 'ADMIN') {
-    return <AdminAccessDenied onGoBack={() => navigation.goBack()} />;
+  const previewImageUrl = selectedImageFile?.uri ?? remoteImageUrl;
+  const shouldShowImage = Boolean(previewImageUrl) && !hasImageLoadError;
+
+  if (user?.role !== 'ADMIN' || hasAccessDeniedError) {
+    return <AdminAccessDenied onGoBack={() => goBackFromAdmin(navigation)} />;
+  }
+
+  function clearImageFeedback() {
+    setImageErrorMessage('');
+    setImageSuccessMessage('');
   }
 
   function updateField<K extends keyof ProductFormValues>(
@@ -174,6 +243,114 @@ export function AdminProductFormScreen({
     if (screenError) {
       setScreenError('');
     }
+  }
+
+  async function handleSelectImage() {
+    if (isUploadingImage) {
+      return;
+    }
+
+    clearImageFeedback();
+
+    try {
+      const pickerResponse = await launchImageLibrary(IMAGE_LIBRARY_OPTIONS);
+
+      if (pickerResponse.didCancel) {
+        return;
+      }
+
+      if (pickerResponse.errorCode || pickerResponse.errorMessage) {
+        setImageErrorMessage(PRODUCT_IMAGE_UPLOAD_ERROR_MESSAGE);
+        return;
+      }
+
+      const selectedAsset = pickerResponse.assets?.[0];
+
+      if (!selectedAsset) {
+        setImageErrorMessage(PRODUCT_IMAGE_INVALID_MESSAGE);
+        return;
+      }
+
+      const nextImageFile = normalizeImageUploadFile(
+        selectedAsset,
+        PRODUCT_IMAGE_FALLBACK_FILE_NAME,
+      );
+
+      if (!nextImageFile) {
+        setImageErrorMessage(PRODUCT_IMAGE_INVALID_MESSAGE);
+        return;
+      }
+
+      const validationMessage = validateImageUploadFile(nextImageFile, {
+        invalidMessage: PRODUCT_IMAGE_INVALID_MESSAGE,
+        maxSizeInBytes: MAX_PRODUCT_IMAGE_FILE_SIZE,
+        tooLargeMessage: PRODUCT_IMAGE_TOO_LARGE_MESSAGE,
+      });
+
+      if (validationMessage) {
+        setImageErrorMessage(validationMessage);
+        return;
+      }
+
+      setSelectedImageFile(nextImageFile);
+      setHasImageLoadError(false);
+    } catch {
+      setImageErrorMessage(PRODUCT_IMAGE_UPLOAD_ERROR_MESSAGE);
+    }
+  }
+
+  async function uploadSelectedImage(productId: string) {
+    if (!selectedImageFile || isUploadingImage) {
+      return false;
+    }
+
+    setIsUploadingImage(true);
+    setImageErrorMessage('');
+    setImageSuccessMessage('');
+
+    try {
+      const updatedProduct = await productsService.uploadProductImage(
+        productId,
+        selectedImageFile,
+      );
+
+      setRemoteImageUrl(updatedProduct.imageUrl ?? null);
+      setSelectedImageFile(null);
+      setHasImageLoadError(false);
+      setFormValues(current => ({
+        ...current,
+        imageUrl: updatedProduct.imageUrl ?? '',
+      }));
+      setImageSuccessMessage(PRODUCT_IMAGE_SUCCESS_MESSAGE);
+
+      return true;
+    } catch (error) {
+      if (isAdminAccessDeniedError(error)) {
+        setHasAccessDeniedError(true);
+        return false;
+      }
+
+      setImageErrorMessage(
+        getSafeAdminImageErrorMessage(error, {
+          invalidMessage: PRODUCT_IMAGE_INVALID_MESSAGE,
+          tooLargeMessage: PRODUCT_IMAGE_TOO_LARGE_MESSAGE,
+          uploadMessage: PRODUCT_IMAGE_UPLOAD_ERROR_MESSAGE,
+        }),
+      );
+      return false;
+    } finally {
+      setIsUploadingImage(false);
+    }
+  }
+
+  async function handleUploadImage() {
+    if (!currentProductId) {
+      setImageSuccessMessage('');
+      setImageErrorMessage(SAVE_PRODUCT_BEFORE_IMAGE_MESSAGE);
+      return;
+    }
+
+    await uploadSelectedImage(currentProductId);
   }
 
   async function handleSubmit() {
@@ -197,28 +374,52 @@ export function AdminProductFormScreen({
       nutrients: parseNutrients(formValues.nutrients),
     };
 
+    const wasEditing = Boolean(currentProductId);
+
     setIsSaving(true);
     setScreenError('');
 
     try {
-      if (productId) {
-        await productsService.updateProduct(productId, payload);
-      } else {
-        await productsService.createProduct(payload);
+      const savedProduct = currentProductId
+        ? await productsService.updateProduct(currentProductId, payload)
+        : await productsService.createProduct(payload);
+
+      setCurrentProductId(savedProduct.id);
+      setRemoteImageUrl(savedProduct.imageUrl ?? null);
+      setFormValues(current => ({
+        ...current,
+        imageUrl: savedProduct.imageUrl ?? '',
+      }));
+
+      if (selectedImageFile) {
+        const didUploadImage = await uploadSelectedImage(savedProduct.id);
+
+        if (!didUploadImage) {
+          Alert.alert(
+            wasEditing ? 'Produto atualizado.' : 'Produto salvo.',
+            PRODUCT_IMAGE_UPLOAD_ERROR_MESSAGE,
+          );
+          return;
+        }
       }
 
       Alert.alert(
-        isEditing ? 'Produto atualizado.' : 'Produto salvo.',
-        undefined,
+        wasEditing ? 'Produto atualizado.' : 'Produto salvo.',
+        selectedImageFile ? PRODUCT_IMAGE_SUCCESS_MESSAGE : undefined,
         [
           {
             text: 'OK',
-            onPress: () => navigation.goBack(),
+            onPress: () => goBackFromAdmin(navigation),
           },
         ],
       );
-    } catch {
-      setScreenError('Nao foi possivel salvar o produto.');
+    } catch (error) {
+      if (isAdminAccessDeniedError(error)) {
+        setHasAccessDeniedError(true);
+        return;
+      }
+
+      setScreenError('Não foi possível salvar o produto.');
     } finally {
       setIsSaving(false);
     }
@@ -230,10 +431,10 @@ export function AdminProductFormScreen({
         <ScreenContainer scrollable>
           <S.Content>
             <S.HeaderRow>
-              <BackButton onPress={() => navigation.goBack()} />
+              <BackButton onPress={() => goBackFromAdmin(navigation)} />
               <S.HeaderCopy>
                 <S.HeaderTitle>{isEditing ? 'Editar produto' : 'Novo produto'}</S.HeaderTitle>
-                <S.HeaderSubtitle>Prepare as informacoes exibidas no app.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>Prepare as informações exibidas no app.</S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
             <SurfaceCard>
@@ -257,21 +458,27 @@ export function AdminProductFormScreen({
         <ScreenContainer scrollable>
           <S.Content>
             <S.HeaderRow>
-              <BackButton onPress={() => navigation.goBack()} />
+              <BackButton onPress={() => goBackFromAdmin(navigation)} />
               <S.HeaderCopy>
                 <S.HeaderTitle>Editar produto</S.HeaderTitle>
-                <S.HeaderSubtitle>Prepare as informacoes exibidas no app.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>Prepare as informações exibidas no app.</S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
             <EmptyStateCard
-              title="Nao foi possivel carregar os produtos."
-              description="Tente novamente."
+              title={ADMIN_LOAD_DATA_ERROR_MESSAGE}
+              description={ADMIN_RETRY_MESSAGE}
             >
               <S.Actions>
-                <PrimaryButton onPress={() => navigation.replace('AdminProductForm', { productId })}>
+                <PrimaryButton
+                  onPress={() =>
+                    navigation.replace('AdminProductForm', {
+                      productId: currentProductId ?? undefined,
+                    })
+                  }
+                >
                   Tentar novamente
                 </PrimaryButton>
-                <SecondaryButton onPress={() => navigation.goBack()}>
+                <SecondaryButton onPress={() => goBackFromAdmin(navigation)}>
                   Voltar
                 </SecondaryButton>
               </S.Actions>
@@ -291,10 +498,12 @@ export function AdminProductFormScreen({
         <ScreenContainer scrollable keyboardShouldPersistTaps="handled">
           <S.Content>
             <S.HeaderRow>
-              <BackButton onPress={() => navigation.goBack()} />
+              <BackButton onPress={() => goBackFromAdmin(navigation)} />
               <S.HeaderCopy>
                 <S.HeaderTitle>{isEditing ? 'Editar produto' : 'Novo produto'}</S.HeaderTitle>
-                <S.HeaderSubtitle>Preencha os dados que aparecem para os usuarios.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>
+                  Preencha os dados que aparecem para os usuários.
+                </S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
 
@@ -329,14 +538,14 @@ export function AdminProductFormScreen({
                   </S.CategoryGroup>
 
                   <InputField
-                    label="Descricao curta"
+                    label="Descrição curta"
                     value={formValues.shortDescription}
                     onChangeText={value => updateField('shortDescription', value)}
                     helperText={formErrors.shortDescription}
                   />
 
                   <InputField
-                    label="Descricao"
+                    label="Descrição"
                     value={formValues.description}
                     onChangeText={value => updateField('description', value)}
                     multiline
@@ -344,20 +553,74 @@ export function AdminProductFormScreen({
                     textAlignVertical="top"
                   />
 
-                  <InputField
-                    label="URL da imagem"
-                    value={formValues.imageUrl}
-                    onChangeText={value => updateField('imageUrl', value)}
-                    autoCapitalize="none"
-                  />
+                  <S.ImageCard>
+                    <S.ImagePreviewFrame>
+                      {shouldShowImage ? (
+                        <S.ImagePreview
+                          source={{ uri: previewImageUrl ?? undefined }}
+                          resizeMode="cover"
+                          onError={() => setHasImageLoadError(true)}
+                        />
+                      ) : (
+                        <S.ImageFallback>
+                          <S.ImageFallbackBadge>
+                            <S.ImageFallbackBadgeText>HortiVia</S.ImageFallbackBadgeText>
+                          </S.ImageFallbackBadge>
+                          <S.ImageFallbackTitle>Imagem do produto</S.ImageFallbackTitle>
+                          <S.ImageFallbackDescription>
+                            Adicione uma imagem para destacar este item no app.
+                          </S.ImageFallbackDescription>
+                        </S.ImageFallback>
+                      )}
+                    </S.ImagePreviewFrame>
+
+                    <S.ImageMeta>
+                      <S.ImageMetaTitle>Imagem do produto</S.ImageMetaTitle>
+                      <S.ImageMetaDescription>
+                        {currentProductId
+                          ? 'Escolha uma nova imagem e envie quando estiver pronta.'
+                          : 'Escolha uma imagem agora e o envio será feito depois do salvamento.'}
+                      </S.ImageMetaDescription>
+                    </S.ImageMeta>
+
+                    <S.ImageActions>
+                      <SecondaryButton
+                        fullWidth={false}
+                        onPress={handleSelectImage}
+                        disabled={isSaving || isUploadingImage}
+                      >
+                        Alterar imagem
+                      </SecondaryButton>
+                      <PrimaryButton
+                        fullWidth={false}
+                        onPress={handleUploadImage}
+                        loading={isUploadingImage}
+                        disabled={!selectedImageFile || !currentProductId || isSaving}
+                      >
+                        Enviar imagem
+                      </PrimaryButton>
+                    </S.ImageActions>
+
+                    {!currentProductId && selectedImageFile ? (
+                      <S.ImageMetaDescription>
+                        {SAVE_PRODUCT_BEFORE_IMAGE_MESSAGE}
+                      </S.ImageMetaDescription>
+                    ) : null}
+                    {imageSuccessMessage ? (
+                      <S.SuccessText>{imageSuccessMessage}</S.SuccessText>
+                    ) : null}
+                    {imageErrorMessage ? (
+                      <S.ErrorText>{imageErrorMessage}</S.ErrorText>
+                    ) : null}
+                  </S.ImageCard>
                 </AdminFormSection>
 
                 <AdminFormSection
-                  title="Informacoes complementares"
+                  title="Informações complementares"
                   description="Use uma linha por item e o formato label: valor para nutrientes."
                 >
                   <InputField
-                    label="Beneficios"
+                    label="Benefícios"
                     value={formValues.benefits}
                     onChangeText={value => updateField('benefits', value)}
                     multiline
@@ -401,10 +664,17 @@ export function AdminProductFormScreen({
                 {screenError ? <S.ErrorText>{screenError}</S.ErrorText> : null}
 
                 <S.Actions>
-                  <PrimaryButton onPress={handleSubmit} loading={isSaving}>
+                  <PrimaryButton
+                    onPress={handleSubmit}
+                    loading={isSaving}
+                    disabled={isUploadingImage}
+                  >
                     {submitLabel}
                   </PrimaryButton>
-                  <SecondaryButton onPress={() => navigation.goBack()} disabled={isSaving}>
+                  <SecondaryButton
+                    onPress={() => goBackFromAdmin(navigation)}
+                    disabled={isSaving || isUploadingImage}
+                  >
                     Cancelar
                   </SecondaryButton>
                 </S.Actions>

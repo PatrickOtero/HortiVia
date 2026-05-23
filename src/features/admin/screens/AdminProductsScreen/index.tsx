@@ -11,6 +11,7 @@ import {
   SectionTitle,
   SurfaceCard,
 } from '../../../../components';
+import { toApiError } from '../../../../services/api/apiError';
 import { AppStackParamList } from '../../../../types/navigation';
 import { useTheme } from '../../../../hooks/useTheme';
 import { productsService } from '../../../products/services/products.service';
@@ -19,6 +20,12 @@ import { getProductCategoryLabel } from '../../../products/mappers/product.mappe
 import { useAuth } from '../../../auth/hooks/useAuth';
 import { AdminAccessDenied } from '../../components/AdminAccessDenied';
 import { AdminListItem } from '../../components/AdminListItem';
+import {
+  ADMIN_REMOVE_ERROR_MESSAGE,
+  ADMIN_RETRY_MESSAGE,
+  isAdminAccessDeniedError,
+} from '../../utils/adminFeedback';
+import { goBackFromAdmin } from '../../utils/adminNavigation';
 import * as S from './styles';
 
 type AdminProductsScreenProps = NativeStackScreenProps<
@@ -39,6 +46,7 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
   const [errorMessage, setErrorMessage] = useState('');
   const [feedbackMessage, setFeedbackMessage] = useState('');
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [hasAccessDeniedError, setHasAccessDeniedError] = useState(false);
 
   const loadProducts = useCallback(async (refresh = false) => {
     if (refresh) {
@@ -55,8 +63,16 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
 
       setProducts(response.data);
       setErrorMessage('');
-    } catch {
-      setErrorMessage('Nao foi possivel carregar os produtos.');
+      setHasAccessDeniedError(false);
+    } catch (error) {
+      if (isAdminAccessDeniedError(error)) {
+        setHasAccessDeniedError(true);
+        setErrorMessage('');
+        return;
+      }
+
+      toApiError(error);
+      setErrorMessage('Não foi possível carregar os produtos.');
     } finally {
       setIsLoading(false);
       setIsRefreshing(false);
@@ -69,8 +85,8 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
     }, [loadProducts]),
   );
 
-  if (user?.role !== 'ADMIN') {
-    return <AdminAccessDenied onGoBack={() => navigation.goBack()} />;
+  if (user?.role !== 'ADMIN' || hasAccessDeniedError) {
+    return <AdminAccessDenied onGoBack={() => goBackFromAdmin(navigation)} />;
   }
 
   function handleCreateProduct() {
@@ -84,7 +100,7 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
   function handleDeleteProduct(productId: string) {
     Alert.alert(
       'Remover produto?',
-      'Ele deixara de aparecer para os usuarios.',
+      'Ele deixará de aparecer para os usuários.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -96,9 +112,15 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
             try {
               await productsService.deleteProduct(productId);
               setFeedbackMessage('Produto removido.');
+              setErrorMessage('');
               await loadProducts(true);
-            } catch {
-              setErrorMessage('Nao foi possivel salvar o produto.');
+            } catch (error) {
+              if (isAdminAccessDeniedError(error)) {
+                setHasAccessDeniedError(true);
+                return;
+              }
+
+              setErrorMessage(ADMIN_REMOVE_ERROR_MESSAGE);
             } finally {
               setDeletingId(null);
             }
@@ -130,8 +152,8 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
     if (errorMessage) {
       return (
         <EmptyStateCard
-          title="Nao foi possivel carregar os produtos."
-          description="Tente novamente."
+          title="Não foi possível carregar os produtos."
+          description={ADMIN_RETRY_MESSAGE}
         >
           <PrimaryButton onPress={handleRetry}>Tentar novamente</PrimaryButton>
         </EmptyStateCard>
@@ -140,7 +162,7 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
 
     return (
       <EmptyStateCard
-        title="Nenhum produto encontrado."
+        title="Nenhum produto cadastrado."
         description="Crie o primeiro produto para exibir no app."
       >
         <PrimaryButton onPress={handleCreateProduct}>Novo produto</PrimaryButton>
@@ -165,19 +187,19 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
         ListHeaderComponent={
           <S.HeaderContent>
             <S.HeaderRow>
-              <BackButton onPress={() => navigation.goBack()} />
+              <BackButton onPress={() => goBackFromAdmin(navigation)} />
               <S.HeaderCopy>
                 <S.HeaderTitle>Produtos</S.HeaderTitle>
-                <S.HeaderSubtitle>Gerencie o catalogo principal do app.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>Gerencie o catálogo principal do app.</S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
 
             <SurfaceCard>
               <S.PanelContent>
                 <PageHeader
-                  eyebrow="Administracao"
+                  eyebrow="Administração"
                   title="Produtos cadastrados"
-                  subtitle="Crie, atualize ou remova itens exibidos aos usuarios."
+                  subtitle="Crie, atualize ou remova itens exibidos aos usuários."
                 />
                 <PrimaryButton onPress={handleCreateProduct}>Novo produto</PrimaryButton>
                 {feedbackMessage ? <S.SuccessText>{feedbackMessage}</S.SuccessText> : null}
@@ -193,6 +215,8 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
             title={item.name}
             meta={getProductCategoryLabel(item.category)}
             subtitle={item.shortDescription}
+            imageUrl={item.imageUrl}
+            imageFallbackLabel="Produto"
             onEdit={() => handleEditProduct(item.id)}
             onDelete={() => handleDeleteProduct(item.id)}
             isDeleting={deletingId === item.id}
