@@ -61,11 +61,11 @@ export function validateEmail(email: string) {
   const normalizedEmail = normalizeEmail(email);
 
   if (!normalizedEmail || normalizedEmail.length > EMAIL_MAX_LENGTH) {
-    return 'Informe um e-mail v\u00e1lido.';
+    return 'Informe um e-mail válido.';
   }
 
   if (!EMAIL_PATTERN.test(normalizedEmail)) {
-    return 'Informe um e-mail v\u00e1lido.';
+    return 'Informe um e-mail válido.';
   }
 
   return null;
@@ -83,7 +83,7 @@ export function validateName(name: string) {
   }
 
   if (trimmedName.length > NAME_MAX_LENGTH) {
-    return 'O nome deve ter no m\u00e1ximo 80 caracteres.';
+    return 'O nome deve ter no máximo 80 caracteres.';
   }
 
   return null;
@@ -109,11 +109,11 @@ export function validatePassword(password: string) {
   const rules = getPasswordRules(password);
 
   if (!rules.hasTrimmedEdges) {
-    return 'A senha n\u00e3o pode come\u00e7ar ou terminar com espa\u00e7os.';
+    return 'A senha não pode começar ou terminar com espaços.';
   }
 
   if (!rules.hasNoLineBreaks) {
-    return 'A senha n\u00e3o pode conter quebra de linha.';
+    return 'A senha não pode conter quebra de linha.';
   }
 
   if (!rules.hasValidLength) {
@@ -126,7 +126,7 @@ export function validatePassword(password: string) {
     !rules.hasNumber ||
     !rules.hasSpecialCharacter
   ) {
-    return 'A senha deve incluir letra mai\u00fascula, letra min\u00fascula, n\u00famero e caractere especial.';
+    return 'A senha deve incluir letra maiúscula, letra minúscula, número e caractere especial.';
   }
 
   return null;
@@ -137,7 +137,7 @@ export function validateConfirmPassword(
   confirmPassword: string,
 ) {
   if (!confirmPassword || password !== confirmPassword) {
-    return 'As senhas n\u00e3o conferem.';
+    return 'As senhas não conferem.';
   }
 
   return null;
@@ -151,11 +151,25 @@ export function validateConfirmationCode(code: string) {
   const normalizedCode = normalizeConfirmationCode(code);
 
   if (!normalizedCode) {
-    return 'Informe o c\u00f3digo de confirma\u00e7\u00e3o.';
+    return 'Informe o código de confirmação.';
   }
 
   if (!CONFIRMATION_CODE_PATTERN.test(normalizedCode)) {
-    return 'O c\u00f3digo deve ter 6 d\u00edgitos.';
+    return 'O código deve ter 6 dígitos.';
+  }
+
+  return null;
+}
+
+export function validatePasswordResetCode(code: string) {
+  const normalizedCode = normalizeConfirmationCode(code);
+
+  if (!normalizedCode) {
+    return 'Informe o código de redefinição.';
+  }
+
+  if (!CONFIRMATION_CODE_PATTERN.test(normalizedCode)) {
+    return 'O código deve ter 6 dígitos.';
   }
 
   return null;

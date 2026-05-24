@@ -10,6 +10,9 @@ jest.mock('../services/auth.service', () => ({
     register: jest.fn(),
     confirmEmail: jest.fn(),
     resendConfirmation: jest.fn(),
+    requestPasswordReset: jest.fn(),
+    resendPasswordResetCode: jest.fn(),
+    resetPassword: jest.fn(),
     getMe: jest.fn(),
   },
 }));

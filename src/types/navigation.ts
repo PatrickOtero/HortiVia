@@ -8,6 +8,17 @@ export type AuthStackParamList = {
       }
     | undefined;
   Register: undefined;
+  ForgotPassword:
+    | {
+        email?: string;
+      }
+    | undefined;
+  ResetPassword:
+    | {
+        email?: string;
+        infoMessage?: string;
+      }
+    | undefined;
   VerifyEmail:
     | {
         email?: string;

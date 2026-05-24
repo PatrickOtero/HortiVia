@@ -6,6 +6,7 @@ import {
   validateConfirmPassword,
   validateEmail,
   validatePassword,
+  validatePasswordResetCode,
 } from './auth.validation';
 
 describe('auth.validation', () => {
@@ -109,5 +110,20 @@ describe('auth.validation', () => {
       hasTrimmedEdges: true,
       hasNoLineBreaks: true,
     });
+  });
+  it('rejects missing password reset code', () => {
+    expect(validatePasswordResetCode('')).toBe(
+      'Informe o código de redefinição.',
+    );
+  });
+
+  it('rejects password reset code with letters', () => {
+    expect(validatePasswordResetCode('12a456')).toBe(
+      'O código deve ter 6 dígitos.',
+    );
+  });
+
+  it('accepts a valid 6-digit password reset code', () => {
+    expect(validatePasswordResetCode('123456')).toBeNull();
   });
 });

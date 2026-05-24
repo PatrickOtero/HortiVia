@@ -51,3 +51,17 @@ export type ConfirmEmailPayload = {
 export type ResendConfirmationPayload = {
   email: string;
 };
+
+export type RequestPasswordResetPayload = {
+  email: string;
+};
+
+export type ResetPasswordPayload = {
+  email: string;
+  code: string;
+  password: string;
+};
+
+export type ResendPasswordResetCodePayload = {
+  email: string;
+};

@@ -15,7 +15,10 @@ type AuthAction =
   | 'signUp'
   | 'loadSession'
   | 'confirmEmail'
-  | 'resendConfirmation';
+  | 'resendConfirmation'
+  | 'requestPasswordReset'
+  | 'resetPassword'
+  | 'resendPasswordResetCode';
 
 export class ApiError extends Error {
   kind: ApiErrorKind;
@@ -45,6 +48,13 @@ function getMessageFromResponse(data: unknown) {
   return response.message;
 }
 
+function normalizeMessageForComparison(message: string) {
+  return message
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
 export function toApiError(error: unknown) {
   if (error instanceof ApiError) {
     return error;
@@ -53,7 +63,7 @@ export function toApiError(error: unknown) {
   if (axios.isAxiosError(error)) {
     if (!error.response) {
       return new ApiError(
-        'Nao foi possivel se conectar agora. Tente novamente.',
+        'Não foi possível se conectar agora. Tente novamente.',
         'network',
       );
     }
@@ -61,7 +71,7 @@ export function toApiError(error: unknown) {
     const status = error.response.status;
     const message =
       getMessageFromResponse(error.response.data) ??
-      'Nao foi possivel concluir esta acao.';
+      'Não foi possível concluir esta ação.';
 
     if (status === 400) {
       return new ApiError(message, 'validation', status);
@@ -91,7 +101,7 @@ export function toApiError(error: unknown) {
   }
 
   return new ApiError(
-    'Nao foi possivel concluir esta acao agora. Tente novamente.',
+    'Não foi possível concluir esta ação agora. Tente novamente.',
     'unknown',
   );
 }
@@ -104,58 +114,121 @@ export function isUnverifiedEmailError(error: unknown) {
 
 export function getAuthErrorMessage(error: unknown, action: AuthAction) {
   const apiError = toApiError(error);
+  const normalizedMessage = normalizeMessageForComparison(apiError.message);
 
   if (action === 'signIn') {
     if (apiError.kind === 'unauthorized') {
-      return 'E-mail ou senha inv\u00e1lidos.';
+      return 'E-mail ou senha inválidos.';
     }
 
     if (apiError.kind === 'forbidden') {
       return 'Confirme seu e-mail antes de entrar.';
     }
 
-    return 'N\u00e3o foi poss\u00edvel entrar agora. Tente novamente.';
+    return 'Não foi possível entrar agora. Tente novamente.';
   }
 
   if (action === 'signUp') {
     if (apiError.kind === 'conflict') {
-      return 'Este e-mail j\u00e1 est\u00e1 em uso.';
+      return 'Este e-mail já está em uso.';
     }
 
     if (apiError.kind === 'validation') {
       return 'Verifique os dados informados.';
     }
 
-    return 'N\u00e3o foi poss\u00edvel criar sua conta agora. Tente novamente.';
+    return 'Não foi possível criar sua conta agora. Tente novamente.';
   }
 
   if (action === 'confirmEmail') {
     if (apiError.kind === 'validation') {
-      return 'C\u00f3digo inv\u00e1lido ou expirado.';
+      return 'Código inválido ou expirado.';
     }
 
     if (apiError.kind === 'server' && apiError.message) {
       return apiError.message;
     }
 
-    return 'N\u00e3o foi poss\u00edvel concluir a opera\u00e7\u00e3o. Tente novamente.';
+    return 'Não foi possível concluir a operação. Tente novamente.';
   }
 
   if (action === 'resendConfirmation') {
     if (apiError.kind === 'validation') {
-      return 'Informe um e-mail v\u00e1lido.';
+      return 'Informe um e-mail válido.';
     }
 
     if (apiError.kind === 'rateLimit') {
-      return 'Aguarde um momento antes de solicitar outro c\u00f3digo.';
+      return 'Aguarde um momento antes de solicitar outro código.';
     }
 
     if (apiError.kind === 'server' && apiError.message) {
       return apiError.message;
     }
 
-    return 'N\u00e3o foi poss\u00edvel concluir a opera\u00e7\u00e3o. Tente novamente.';
+    return 'Não foi possível concluir a operação. Tente novamente.';
   }
 
-  return 'N\u00e3o foi poss\u00edvel concluir a opera\u00e7\u00e3o. Tente novamente.';
+  if (action === 'requestPasswordReset') {
+    if (apiError.kind === 'validation') {
+      return 'Informe um e-mail válido.';
+    }
+
+    return 'Não foi possível enviar o código agora. Tente novamente.';
+  }
+
+  if (action === 'resetPassword') {
+    if (apiError.kind === 'validation') {
+      if (normalizedMessage.includes('expir') && normalizedMessage.includes('codigo')) {
+        return 'Código inválido ou expirado.';
+      }
+
+      if (normalizedMessage.includes('e-mail') || normalizedMessage.includes('email')) {
+        return 'Informe um e-mail válido.';
+      }
+
+      if (normalizedMessage.includes('nova senha')) {
+        return 'Informe uma nova senha.';
+      }
+
+      if (
+        normalizedMessage.includes('caractere especial') ||
+        normalizedMessage.includes('letra maiuscula') ||
+        normalizedMessage.includes('letra minuscula')
+      ) {
+        return 'A senha deve incluir letra maiúscula, letra minúscula, número e caractere especial.';
+      }
+
+      if (normalizedMessage.includes('10') && normalizedMessage.includes('72')) {
+        return 'A senha deve ter entre 10 e 72 caracteres.';
+      }
+
+      if (normalizedMessage.includes('espaco')) {
+        return 'A senha não pode começar ou terminar com espaços.';
+      }
+
+      if (normalizedMessage.includes('quebra de linha')) {
+        return 'A senha não pode conter quebra de linha.';
+      }
+    }
+
+    return 'Não foi possível concluir a operação. Tente novamente.';
+  }
+
+  if (action === 'resendPasswordResetCode') {
+    if (apiError.kind === 'validation') {
+      return 'Informe um e-mail válido.';
+    }
+
+    if (apiError.kind === 'rateLimit') {
+      return 'Aguarde um momento antes de solicitar outro código.';
+    }
+
+    return 'Não foi possível concluir a operação. Tente novamente.';
+  }
+
+  if (action === 'loadSession') {
+    return 'Não foi possível recuperar sua sessão agora.';
+  }
+
+  return 'Não foi possível concluir a operação. Tente novamente.';
 }

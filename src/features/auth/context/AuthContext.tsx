@@ -15,9 +15,12 @@ import type {
   ConfirmEmailPayload,
   LoginPayload,
   LoginResponse,
+  RequestPasswordResetPayload,
   RegisterPayload,
   RegisterResponse,
   ResendConfirmationPayload,
+  ResendPasswordResetCodePayload,
+  ResetPasswordPayload,
 } from '../types/auth';
 import {
   setApiAccessToken,
@@ -36,6 +39,13 @@ type AuthContextValue = {
   resendConfirmation: (
     payload: ResendConfirmationPayload,
   ) => Promise<AuthActionResponse>;
+  requestPasswordReset: (
+    payload: RequestPasswordResetPayload,
+  ) => Promise<AuthActionResponse>;
+  resendPasswordResetCode: (
+    payload: ResendPasswordResetCodePayload,
+  ) => Promise<AuthActionResponse>;
+  resetPassword: (payload: ResetPasswordPayload) => Promise<AuthActionResponse>;
   signOut: () => Promise<void>;
   loadAuthenticatedUser: (token?: string | null) => Promise<AuthUser | null>;
   syncUser: (user: AuthUser) => void;
@@ -133,6 +143,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
     [],
   );
 
+  const requestPasswordReset = useCallback(
+    async (payload: RequestPasswordResetPayload) => {
+      return authService.requestPasswordReset(payload);
+    },
+    [],
+  );
+
+  const resendPasswordResetCode = useCallback(
+    async (payload: ResendPasswordResetCodePayload) => {
+      return authService.resendPasswordResetCode(payload);
+    },
+    [],
+  );
+
+  const resetPassword = useCallback(async (payload: ResetPasswordPayload) => {
+    return authService.resetPassword(payload);
+  }, []);
+
   const signOut = useCallback(async () => {
     await clearSession(true);
   }, [clearSession]);
@@ -191,6 +219,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       registerAccount,
       confirmEmail,
       resendConfirmation,
+      requestPasswordReset,
+      resendPasswordResetCode,
+      resetPassword,
       signOut,
       loadAuthenticatedUser,
       syncUser,
@@ -200,8 +231,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       confirmEmail,
       isLoading,
       loadAuthenticatedUser,
+      requestPasswordReset,
       registerAccount,
+      resendPasswordResetCode,
       resendConfirmation,
+      resetPassword,
       signIn,
       signOut,
       syncUser,

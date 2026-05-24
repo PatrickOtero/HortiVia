@@ -97,4 +97,73 @@ describe('authService', () => {
       'Se o e-mail estiver cadastrado, enviaremos um novo código de confirmação.',
     );
   });
+  it('requestPasswordReset calls the correct endpoint', async () => {
+    mockedApiClient.post.mockResolvedValue({
+      data: {
+        message:
+          'Se o e-mail estiver cadastrado, enviaremos um código para redefinir sua senha.',
+      },
+    });
+
+    const result = await authService.requestPasswordReset({
+      email: ' Patrick@Email.com ',
+    });
+
+    expect(mockedApiClient.post).toHaveBeenCalledWith(
+      API_ENDPOINTS.auth.forgotPassword,
+      {
+        email: 'patrick@email.com',
+      },
+    );
+    expect(result.message).toBe(
+      'Se o e-mail estiver cadastrado, enviaremos um código para redefinir sua senha.',
+    );
+  });
+
+  it('resetPassword calls the correct endpoint with e-mail, code and password', async () => {
+    mockedApiClient.post.mockResolvedValue({
+      data: {
+        message: 'Senha redefinida com sucesso.',
+      },
+    });
+
+    const result = await authService.resetPassword({
+      email: ' Patrick@Email.com ',
+      code: '12a-34 56',
+      password: 'NovaSenha@123',
+    });
+
+    expect(mockedApiClient.post).toHaveBeenCalledWith(
+      API_ENDPOINTS.auth.resetPassword,
+      {
+        email: 'patrick@email.com',
+        code: '123456',
+        password: 'NovaSenha@123',
+      },
+    );
+    expect(result.message).toBe('Senha redefinida com sucesso.');
+  });
+
+  it('resendPasswordResetCode calls the correct endpoint', async () => {
+    mockedApiClient.post.mockResolvedValue({
+      data: {
+        message:
+          'Se o e-mail estiver cadastrado, enviaremos um novo código.',
+      },
+    });
+
+    const result = await authService.resendPasswordResetCode({
+      email: ' Patrick@Email.com ',
+    });
+
+    expect(mockedApiClient.post).toHaveBeenCalledWith(
+      API_ENDPOINTS.auth.resendPasswordResetCode,
+      {
+        email: 'patrick@email.com',
+      },
+    );
+    expect(result.message).toBe(
+      'Se o e-mail estiver cadastrado, enviaremos um novo código.',
+    );
+  });
 });

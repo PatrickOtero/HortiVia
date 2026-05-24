@@ -90,6 +90,21 @@ export const InlineActionText = styled.Text`
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
+export const AuxiliaryActionRow = styled.View`
+  align-items: flex-end;
+`;
+
+export const AuxiliaryActionButton = styled.Pressable`
+  padding-vertical: ${({ theme }) => theme.spacing.xs}px;
+`;
+
+export const AuxiliaryActionText = styled.Text`
+  color: ${({ theme }) => theme.colors.primaryStrong};
+  font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
+  line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
+  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+`;
+
 export const SecondaryActionRow = styled.View`
   flex-direction: row;
   align-items: center;

@@ -9,7 +9,10 @@ import type {
   AuthUser,
   ConfirmEmailPayload,
   LoginResponse,
+  RequestPasswordResetPayload,
   RegisterResponse,
+  ResendPasswordResetCodePayload,
+  ResetPasswordPayload,
 } from '../types/auth';
 
 type AuthUserResponse = LoginResponse['user'];
@@ -82,6 +85,41 @@ export const authService = {
       API_ENDPOINTS.auth.resendConfirmation,
       {
         email: normalizeEmail(payload.email),
+      },
+    );
+
+    return response.data;
+  },
+
+  async requestPasswordReset(payload: RequestPasswordResetPayload) {
+    const response = await apiClient.post<AuthActionResponse>(
+      API_ENDPOINTS.auth.forgotPassword,
+      {
+        email: normalizeEmail(payload.email),
+      },
+    );
+
+    return response.data;
+  },
+
+  async resendPasswordResetCode(payload: ResendPasswordResetCodePayload) {
+    const response = await apiClient.post<AuthActionResponse>(
+      API_ENDPOINTS.auth.resendPasswordResetCode,
+      {
+        email: normalizeEmail(payload.email),
+      },
+    );
+
+    return response.data;
+  },
+
+  async resetPassword(payload: ResetPasswordPayload) {
+    const response = await apiClient.post<AuthActionResponse>(
+      API_ENDPOINTS.auth.resetPassword,
+      {
+        email: normalizeEmail(payload.email),
+        code: normalizeConfirmationCode(payload.code),
+        password: payload.password,
       },
     );
 

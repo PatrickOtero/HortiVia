@@ -117,7 +117,13 @@ export function LoginScreen({ navigation, route }: LoginScreenProps) {
   function handleResendConfirmationPress() {
     navigation.navigate('VerifyEmail', {
       email: normalizeEmail(email),
-      infoMessage: 'Digite o código enviado para o seu e-mail.',
+      infoMessage: 'Digite o c\u00f3digo enviado para o seu e-mail.',
+    });
+  }
+
+  function handleForgotPasswordPress() {
+    navigation.navigate('ForgotPassword', {
+      email: email.trim().length > 0 ? normalizeEmail(email) : undefined,
     });
   }
 
@@ -185,6 +191,15 @@ export function LoginScreen({ navigation, route }: LoginScreenProps) {
                 helperText={getFieldError('password')}
                 helperTone="danger"
               />
+              <S.AuxiliaryActionRow>
+                <S.AuxiliaryActionButton
+                  onPress={handleForgotPasswordPress}
+                  disabled={isSubmitting}
+                  hitSlop={8}
+                >
+                  <S.AuxiliaryActionText>Esqueci minha senha</S.AuxiliaryActionText>
+                </S.AuxiliaryActionButton>
+              </S.AuxiliaryActionRow>
               <S.ActionGroup>
                 {infoMessage ? <S.InfoText>{infoMessage}</S.InfoText> : null}
                 {errorMessage ? <S.FormErrorText>{errorMessage}</S.FormErrorText> : null}

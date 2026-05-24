@@ -26,21 +26,46 @@ describe('apiError auth mapping', () => {
   });
 
   it('maps invalid confirmation code to a safe message', () => {
-    const error = createAxiosLikeError(400, 'Código inválido ou expirado.');
+    const error = createAxiosLikeError(
+      400,
+      'C\u00f3digo inv\u00e1lido ou expirado.',
+    );
 
     expect(getAuthErrorMessage(error, 'confirmEmail')).toBe(
-      'Código inválido ou expirado.',
+      'C\u00f3digo inv\u00e1lido ou expirado.',
     );
   });
 
   it('maps resend cooldown to a safe message', () => {
     const error = createAxiosLikeError(
       429,
-      'Aguarde um momento antes de solicitar outro código.',
+      'Aguarde um momento antes de solicitar outro c\u00f3digo.',
     );
 
     expect(getAuthErrorMessage(error, 'resendConfirmation')).toBe(
-      'Aguarde um momento antes de solicitar outro código.',
+      'Aguarde um momento antes de solicitar outro c\u00f3digo.',
+    );
+  });
+
+  it('maps password reset invalid code to a safe message', () => {
+    const error = createAxiosLikeError(
+      400,
+      'C\u00f3digo inv\u00e1lido ou expirado.',
+    );
+
+    expect(getAuthErrorMessage(error, 'resetPassword')).toBe(
+      'C\u00f3digo inv\u00e1lido ou expirado.',
+    );
+  });
+
+  it('maps password reset resend cooldown to a safe message', () => {
+    const error = createAxiosLikeError(
+      429,
+      'Aguarde um momento antes de solicitar outro c\u00f3digo.',
+    );
+
+    expect(getAuthErrorMessage(error, 'resendPasswordResetCode')).toBe(
+      'Aguarde um momento antes de solicitar outro c\u00f3digo.',
     );
   });
 });
