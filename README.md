@@ -61,8 +61,5 @@ Projeto desenvolvido com React Native, TypeScript, NestJS, Prisma e PostgreSQL.
 
 ## Documentação complementar
 
-- Vitrine visual e captura de prints: [docs/visual-showcase.md](docs/visual-showcase.md)
-- Galeria para portfólio e redes: [docs/portfolio-gallery.md](docs/portfolio-gallery.md)
-- Orientações de captura: [docs/screenshot-capture-checklist.md](docs/screenshot-capture-checklist.md)
 - Execução local e notas técnicas: [docs/development.md](docs/development.md)
 - Arquitetura e organização interna: [docs/architecture.md](docs/architecture.md)
