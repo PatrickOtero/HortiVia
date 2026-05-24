@@ -53,4 +53,4 @@ Se essas propriedades não forem fornecidas, o build de release usa assinatura d
 
 ## Backend
 
-As instruções técnicas da API estão em [../../backend/docs/backend-setup.md](../../backend/docs/backend-setup.md).
+As instruções técnicas da API estão em https://github.com/PatrickOtero/HortiVia-API/blob/main/docs/backend-setup.md.
