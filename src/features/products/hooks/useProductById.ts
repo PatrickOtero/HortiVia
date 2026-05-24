@@ -18,7 +18,7 @@ export function useProductById({ productId }: UseProductByIdOptions) {
     if (!productId) {
       setProduct(null);
       setIsNotFound(true);
-      setErrorMessage('Produto nao encontrado.');
+      setErrorMessage('Produto não encontrado.');
       setIsLoading(false);
       return;
     }
@@ -50,8 +50,8 @@ export function useProductById({ productId }: UseProductByIdOptions) {
       setIsNotFound(missingProduct);
       setErrorMessage(
         missingProduct
-          ? 'Produto nao encontrado.'
-          : 'Nao foi possivel carregar este produto.',
+          ? 'Produto não encontrado.'
+          : 'Não foi possível carregar este produto.',
       );
     } finally {
       if (requestId !== requestIdRef.current) {

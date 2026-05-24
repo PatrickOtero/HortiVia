@@ -16,7 +16,7 @@ export const GENDER_OPTIONS: GenderOption[] = [
   { value: 'MALE', label: 'Masculino' },
   { value: 'FEMALE', label: 'Feminino' },
   { value: 'OTHER', label: 'Outro' },
-  { value: 'PREFER_NOT_TO_SAY', label: 'Prefiro nao informar' },
+  { value: 'PREFER_NOT_TO_SAY', label: 'Prefiro não informar' },
 ];
 
 const GENDER_LABELS = Object.fromEntries(

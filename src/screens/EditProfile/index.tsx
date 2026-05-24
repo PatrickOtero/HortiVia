@@ -7,9 +7,9 @@ import {
   PrimaryButton,
   ProfileAvatarEditor,
   ProfileForm,
-  SecondaryButton,
   SafeScreen,
   ScreenContainer,
+  SecondaryButton,
   SectionTitle,
   SurfaceCard,
 } from '../../components';
@@ -87,11 +87,13 @@ export function EditProfileScreen({ navigation }: EditProfileScreenProps) {
               </SurfaceCard>
             ) : !profile ? (
               <EmptyStateCard
-                title="Nao foi possivel carregar seu perfil."
+                title="Não foi possível carregar seu perfil."
                 description="Tente novamente."
               >
                 <S.UnavailableActions>
-                  <PrimaryButton onPress={handleRetryLoadProfile}>Tentar novamente</PrimaryButton>
+                  <PrimaryButton onPress={handleRetryLoadProfile}>
+                    Tentar novamente
+                  </PrimaryButton>
                   <SecondaryButton onPress={handleCancel}>Voltar</SecondaryButton>
                 </S.UnavailableActions>
               </EmptyStateCard>

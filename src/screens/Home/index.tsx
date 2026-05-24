@@ -76,7 +76,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     if (isError) {
       return (
         <EmptyStateCard
-          title="Nao foi possivel carregar os produtos."
+          title="Não foi possível carregar os produtos."
           description="Tente novamente."
         >
           <PrimaryButton onPress={handleRetry}>Tentar novamente</PrimaryButton>
@@ -98,7 +98,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
 
   const totalProducts = meta.total;
   const productsSubtitle = isLoading && products.length === 0
-    ? 'Buscando itens para voce.'
+    ? 'Buscando itens para você.'
     : totalProducts === 1
       ? '1 item encontrado.'
       : `${totalProducts} itens encontrados.`;
@@ -124,8 +124,8 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           <S.HeaderContent>
             <S.HeaderRow>
               <PageHeader
-                title="O que voce quer conhecer hoje?"
-                subtitle="Busque frutas, verduras ou legumes e encontre orientacoes simples."
+                title="O que você quer conhecer hoje?"
+                subtitle="Busque frutas, verduras ou legumes e encontre orientações simples."
                 rightSlot={<Avatar label={APP_NAME} />}
               />
             </S.HeaderRow>

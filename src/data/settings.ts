@@ -14,8 +14,8 @@ export const settingsSections: SettingsSectionItem[] = [
       },
       {
         id: 'general-preferences',
-        label: 'Preferencias',
-        description: 'Ajustes da sua experiencia no app.',
+        label: 'Preferências',
+        description: 'Ajustes da sua experiência no app.',
         type: 'info',
         actionKey: 'preferences',
       },
@@ -23,26 +23,26 @@ export const settingsSections: SettingsSectionItem[] = [
   },
   {
     id: 'preferences',
-    title: 'Preferencias',
+    title: 'Preferências',
     rows: [
       {
         id: 'seasonal-tips',
-        label: 'Dicas da estacao',
-        description: 'Receba sugestoes sobre frutas, verduras e legumes da epoca.',
+        label: 'Dicas da estação',
+        description: 'Receba sugestões sobre frutas, verduras e legumes da época.',
         type: 'toggle',
         preferenceKey: 'seasonalTipsEnabled',
       },
       {
         id: 'notifications',
-        label: 'Notificacoes',
+        label: 'Notificações',
         description: 'Ative lembretes e novidades do HortiVia.',
         type: 'toggle',
         preferenceKey: 'notificationsEnabled',
       },
       {
         id: 'appearance',
-        label: 'Aparencia',
-        description: 'Ajuste o modo de visualizacao.',
+        label: 'Aparência',
+        description: 'Ajuste o modo de visualização.',
         type: 'theme',
         actionKey: 'appearance',
       },
@@ -62,7 +62,7 @@ export const settingsSections: SettingsSectionItem[] = [
       {
         id: 'help',
         label: 'Ajuda',
-        description: 'Tire duvidas sobre o uso do app.',
+        description: 'Tire dúvidas sobre o uso do app.',
         type: 'info',
         actionKey: 'help',
       },
@@ -70,7 +70,7 @@ export const settingsSections: SettingsSectionItem[] = [
   },
   {
     id: 'session',
-    title: 'Sessao',
+    title: 'Sessão',
     rows: [
       {
         id: 'sign-out',

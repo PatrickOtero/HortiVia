@@ -70,7 +70,7 @@ export function useArticles({ activeCategory }: UseArticlesOptions) {
         return;
       }
 
-      setErrorMessage('Nao foi possivel carregar os artigos.');
+      setErrorMessage('Não foi possível carregar os artigos.');
 
       if (!hasCurrentItems) {
         setArticles([]);

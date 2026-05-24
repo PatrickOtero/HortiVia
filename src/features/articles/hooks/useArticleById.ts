@@ -18,7 +18,7 @@ export function useArticleById({ articleId }: UseArticleByIdOptions) {
     if (!articleId) {
       setArticle(null);
       setIsNotFound(true);
-      setErrorMessage('Artigo nao encontrado.');
+      setErrorMessage('Artigo não encontrado.');
       setIsLoading(false);
       return;
     }
@@ -50,8 +50,8 @@ export function useArticleById({ articleId }: UseArticleByIdOptions) {
       setIsNotFound(missingArticle);
       setErrorMessage(
         missingArticle
-          ? 'Artigo nao encontrado.'
-          : 'Nao foi possivel carregar este artigo.',
+          ? 'Artigo não encontrado.'
+          : 'Não foi possível carregar este artigo.',
       );
     } finally {
       if (requestId !== requestIdRef.current) {

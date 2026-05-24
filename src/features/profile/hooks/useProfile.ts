@@ -1,7 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  launchImageLibrary,
-} from 'react-native-image-picker';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { useAuth } from '../../auth/hooks/useAuth';
 import { toApiError } from '../../../services/api/apiError';
 import { toAuthUser } from '../mappers/profile.mapper';
@@ -23,9 +21,9 @@ const ALLOWED_AVATAR_MIME_TYPES: AvatarUploadMimeType[] = [
   'image/webp',
 ];
 const SAFE_AVATAR_ERROR_MESSAGES = new Set([
-  'Envie uma imagem valida.',
-  'A imagem deve ter no maximo 2 MB.',
-  'Formato de imagem nao permitido.',
+  'Envie uma imagem válida.',
+  'A imagem deve ter no máximo 2 MB.',
+  'Formato de imagem não permitido.',
 ]);
 
 export type UserProfileFormValues = {
@@ -70,7 +68,7 @@ function validateProfileForm(values: UserProfileFormValues): UserProfileFormErro
   }
 
   if (!values.email.trim() || !emailPattern.test(values.email.trim())) {
-    errors.email = 'Informe um e-mail valido.';
+    errors.email = 'Informe um e-mail válido.';
   }
 
   return errors;
@@ -153,7 +151,7 @@ export function useProfile(): UseProfileResult {
         setProfile(null);
       }
 
-      setErrorMessage('Nao foi possivel carregar seu perfil.');
+      setErrorMessage('Não foi possível carregar seu perfil.');
     } finally {
       setIsLoading(false);
     }
@@ -234,9 +232,9 @@ export function useProfile(): UseProfileResult {
       const apiError = toApiError(error);
 
       if (apiError.kind === 'conflict' || apiError.kind === 'validation') {
-        setErrorMessage('Nao foi possivel salvar suas alteracoes.');
+        setErrorMessage('Não foi possível salvar suas alterações.');
       } else {
-        setErrorMessage('Nao foi possivel salvar suas alteracoes.');
+        setErrorMessage('Não foi possível salvar suas alterações.');
       }
 
       setSuccessMessage('');
@@ -262,14 +260,14 @@ export function useProfile(): UseProfileResult {
       }
 
       if (pickerResponse.errorCode || pickerResponse.errorMessage) {
-        setAvatarErrorMessage('Nao foi possivel enviar a imagem.');
+        setAvatarErrorMessage('Não foi possível enviar a imagem.');
         return false;
       }
 
       const selectedAsset = pickerResponse.assets?.[0];
 
       if (!selectedAsset) {
-        setAvatarErrorMessage('Escolha uma imagem valida.');
+        setAvatarErrorMessage('Escolha uma imagem válida.');
         return false;
       }
 
@@ -278,7 +276,7 @@ export function useProfile(): UseProfileResult {
       );
 
       if (!avatarFile) {
-        setAvatarErrorMessage('Escolha uma imagem valida.');
+        setAvatarErrorMessage('Escolha uma imagem válida.');
         return false;
       }
 
@@ -286,7 +284,7 @@ export function useProfile(): UseProfileResult {
         typeof avatarFile.size === 'number' &&
         avatarFile.size > MAX_AVATAR_FILE_SIZE
       ) {
-        setAvatarErrorMessage('A imagem deve ter no maximo 2 MB.');
+        setAvatarErrorMessage('A imagem deve ter no máximo 2 MB.');
         return false;
       }
 
@@ -306,7 +304,7 @@ export function useProfile(): UseProfileResult {
       const apiError = toApiError(error);
       const safeMessage = SAFE_AVATAR_ERROR_MESSAGES.has(apiError.message)
         ? apiError.message
-        : 'Nao foi possivel enviar a imagem.';
+        : 'Não foi possível enviar a imagem.';
 
       setAvatarErrorMessage(safeMessage);
       setAvatarSuccessMessage('');

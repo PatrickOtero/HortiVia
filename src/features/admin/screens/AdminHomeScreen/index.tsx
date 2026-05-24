@@ -44,12 +44,12 @@ export function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
               />
               <AdminMenuCard
                 title="Produtos"
-                description="Crie, atualize e remova produtos exibidos para os usuarios."
+                description="Crie, atualize e remova produtos exibidos para os usuários."
                 onPress={() => navigation.navigate('AdminProducts')}
               />
               <AdminMenuCard
                 title="Artigos"
-                description="Gerencie os conteudos exibidos no feed do HortiVia."
+                description="Gerencie os conteúdos exibidos no feed do HortiVia."
                 onPress={() => navigation.navigate('AdminArticles')}
               />
             </S.CardStack>

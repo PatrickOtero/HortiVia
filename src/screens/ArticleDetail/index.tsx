@@ -142,8 +142,8 @@ export function ArticleDetailScreen({
             <EmptyStateCard
               title={
                 isNotFound
-                  ? 'Artigo nao encontrado.'
-                  : 'Nao foi possivel carregar este artigo.'
+                  ? 'Artigo não encontrado.'
+                  : 'Não foi possível carregar este artigo.'
               }
               description={isNotFound ? 'Volte e escolha outra leitura.' : 'Tente novamente.'}
             >
@@ -227,7 +227,7 @@ export function ArticleDetailScreen({
             <S.ContentCard>
               <SectionTitle
                 title="Leitura"
-                subtitle="Confira o conteudo completo abaixo."
+                subtitle="Confira o conteúdo completo abaixo."
               />
               {contentParagraphs.map(paragraph => (
                 <S.Paragraph key={paragraph}>{paragraph}</S.Paragraph>

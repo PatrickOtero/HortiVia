@@ -72,7 +72,7 @@ export function ProductDetailScreen({
             </S.HeaderRow>
 
             <EmptyStateCard
-              title={isNotFound ? 'Produto nao encontrado.' : 'Nao foi possivel carregar este produto.'}
+              title={isNotFound ? 'Produto não encontrado.' : 'Não foi possível carregar este produto.'}
               description={isNotFound ? 'Volte e escolha outro item.' : 'Tente novamente.'}
             >
               {isNotFound ? (
@@ -122,7 +122,7 @@ export function ProductDetailScreen({
           {product.nutrients?.length ? (
             <SurfaceCard>
               <SectionTitle
-                title="Informacoes rapidas"
+                title="Informações rápidas"
                 subtitle="Dados gerais para orientar sua escolha."
               />
               <NutritionGrid nutrients={product.nutrients} />
@@ -140,7 +140,7 @@ export function ProductDetailScreen({
           {product.howToStore?.length ? (
             <ProductInfoSection
               title="Como conservar"
-              subtitle="Cuidados rapidos para manter a qualidade."
+                subtitle="Cuidados rápidos para manter a qualidade."
               items={product.howToStore}
             />
           ) : null}
@@ -148,7 +148,7 @@ export function ProductDetailScreen({
           {product.usageTips?.length ? (
             <ProductInfoSection
               title="Como usar"
-              subtitle="Ideias praticas para incluir no cardapio."
+                subtitle="Ideias práticas para incluir no cardápio."
               items={product.usageTips}
             />
           ) : null}

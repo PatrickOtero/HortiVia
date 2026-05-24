@@ -54,7 +54,7 @@ export function usePreferences(): UsePreferencesResult {
         return;
       }
 
-      setErrorMessage('Nao foi possivel carregar suas preferencias.');
+      setErrorMessage('Não foi possível carregar suas preferências.');
     } finally {
       if (requestId !== requestIdRef.current) {
         return;
@@ -85,7 +85,7 @@ export function usePreferences(): UsePreferencesResult {
       setPreferences(nextPreferences);
       return true;
     } catch {
-      setErrorMessage('Nao foi possivel atualizar esta preferencia.');
+      setErrorMessage('Não foi possível atualizar esta preferência.');
       return false;
     } finally {
       setUpdatingPreferenceKey(null);

@@ -42,7 +42,7 @@ type ApiPaginatedResponse<T> = {
 export const ARTICLE_CATEGORY_OPTIONS: ArticleCategoryOption[] = [
   { value: 'ALL', label: 'Todos' },
   { value: 'TIPS', label: 'Dicas' },
-  { value: 'STORAGE', label: 'Conservacao' },
+  { value: 'STORAGE', label: 'Conservação' },
   { value: 'SEASONALITY', label: 'Safra' },
   { value: 'RECIPES', label: 'Uso na cozinha' },
   { value: 'WASTE_REDUCTION', label: 'Aproveitamento' },
@@ -50,7 +50,7 @@ export const ARTICLE_CATEGORY_OPTIONS: ArticleCategoryOption[] = [
 
 const ARTICLE_CATEGORY_LABELS: Record<ArticleCategory, string> = {
   TIPS: 'Dicas',
-  STORAGE: 'Conservacao',
+  STORAGE: 'Conservação',
   SEASONALITY: 'Safra',
   RECIPES: 'Uso na cozinha',
   WASTE_REDUCTION: 'Aproveitamento',

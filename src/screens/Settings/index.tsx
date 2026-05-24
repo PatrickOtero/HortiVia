@@ -17,9 +17,9 @@ import {
 } from '../../components';
 import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useSettings } from '../../hooks/useSettings';
-import { SettingsRowItem } from '../../types/settings';
 import { useTheme } from '../../hooks/useTheme';
 import { AppStackParamList, AppTabParamList } from '../../types/navigation';
+import { SettingsRowItem } from '../../types/settings';
 import * as S from './styles';
 
 type SettingsScreenProps = CompositeScreenProps<
@@ -108,8 +108,8 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
         <S.Content>
           <PageHeader
             eyebrow="Conta"
-            title="Configuracoes"
-            subtitle="Ajuste sua conta e suas preferencias."
+            title="Configurações"
+            subtitle="Ajuste sua conta e suas preferências."
           />
 
           {isLoading ? (
@@ -117,7 +117,7 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
               <S.StatusContent>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
                 <SectionTitle
-                  title="Carregando preferencias"
+                  title="Carregando preferências"
                   subtitle="Aguarde um instante."
                 />
               </S.StatusContent>
@@ -126,10 +126,12 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
 
           {isError && !isLoading ? (
             <EmptyStateCard
-              title="Nao foi possivel carregar suas preferencias."
+              title="Não foi possível carregar suas preferências."
               description="Tente novamente."
             >
-              <PrimaryButton onPress={handleRetryLoadSettings}>Tentar novamente</PrimaryButton>
+              <PrimaryButton onPress={handleRetryLoadSettings}>
+                Tentar novamente
+              </PrimaryButton>
             </EmptyStateCard>
           ) : null}
 
@@ -137,11 +139,13 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
             <S.FeedbackText>{errorMessage}</S.FeedbackText>
           ) : null}
 
-          {!isLoading && !isError ? sections.map(section => (
-            <SettingsSection key={section.id} title={section.title}>
-              {section.rows.map(renderRow)}
-            </SettingsSection>
-          )) : null}
+          {!isLoading && !isError
+            ? sections.map(section => (
+                <SettingsSection key={section.id} title={section.title}>
+                  {section.rows.map(renderRow)}
+                </SettingsSection>
+              ))
+            : null}
         </S.Content>
       </ScreenContainer>
     </SafeScreen>

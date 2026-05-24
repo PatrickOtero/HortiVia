@@ -76,7 +76,7 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
     if (isError) {
       return (
         <EmptyStateCard
-          title="Nao foi possivel carregar os artigos."
+          title="Não foi possível carregar os artigos."
           description="Tente novamente."
         >
           <PrimaryButton onPress={handleRetry}>Tentar novamente</PrimaryButton>
@@ -98,7 +98,7 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
 
   const totalArticles = meta.total;
   const articlesSubtitle = isLoading && articles.length === 0
-    ? 'Buscando leituras para voce.'
+    ? 'Buscando leituras para você.'
     : totalArticles === 1
       ? '1 artigo encontrado.'
       : `${totalArticles} artigos encontrados.`;
@@ -134,7 +134,7 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
             <S.SectionBlock>
               <SectionTitle
                 title="Categorias"
-                subtitle="Encontre conteudos para a sua rotina."
+                subtitle="Encontre conteúdos para a sua rotina."
               />
               <S.ChipRow>
                 {categories.map(category => (

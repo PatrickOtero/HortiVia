@@ -90,7 +90,7 @@ export function useProducts({
       }
 
       toApiError(error);
-      setErrorMessage('Nao foi possivel carregar os produtos.');
+      setErrorMessage('Não foi possível carregar os produtos.');
 
       if (!hasCurrentItems) {
         setProducts([]);
