@@ -71,7 +71,7 @@ export function toApiError(error: unknown) {
     const status = error.response.status;
     const message =
       getMessageFromResponse(error.response.data) ??
-      'Não foi possível concluir esta ação.';
+      'Não foi possível concluir agora.';
 
     if (status === 400) {
       return new ApiError(message, 'validation', status);
@@ -149,7 +149,7 @@ export function getAuthErrorMessage(error: unknown, action: AuthAction) {
       return apiError.message;
     }
 
-    return 'Não foi possível concluir a operação. Tente novamente.';
+    return 'Não foi possível concluir agora. Tente novamente.';
   }
 
   if (action === 'resendConfirmation') {
@@ -158,14 +158,14 @@ export function getAuthErrorMessage(error: unknown, action: AuthAction) {
     }
 
     if (apiError.kind === 'rateLimit') {
-      return 'Aguarde um momento antes de solicitar outro código.';
+      return 'Aguarde um momento antes de pedir outro código.';
     }
 
     if (apiError.kind === 'server' && apiError.message) {
       return apiError.message;
     }
 
-    return 'Não foi possível concluir a operação. Tente novamente.';
+    return 'Não foi possível concluir agora. Tente novamente.';
   }
 
   if (action === 'requestPasswordReset') {
@@ -211,7 +211,7 @@ export function getAuthErrorMessage(error: unknown, action: AuthAction) {
       }
     }
 
-    return 'Não foi possível concluir a operação. Tente novamente.';
+    return 'Não foi possível concluir agora. Tente novamente.';
   }
 
   if (action === 'resendPasswordResetCode') {
@@ -220,15 +220,15 @@ export function getAuthErrorMessage(error: unknown, action: AuthAction) {
     }
 
     if (apiError.kind === 'rateLimit') {
-      return 'Aguarde um momento antes de solicitar outro código.';
+      return 'Aguarde um momento antes de pedir outro código.';
     }
 
-    return 'Não foi possível concluir a operação. Tente novamente.';
+    return 'Não foi possível concluir agora. Tente novamente.';
   }
 
   if (action === 'loadSession') {
-    return 'Não foi possível recuperar sua sessão agora.';
+    return 'Não foi possível abrir sua conta agora.';
   }
 
-  return 'Não foi possível concluir a operação. Tente novamente.';
+  return 'Não foi possível concluir agora. Tente novamente.';
 }

@@ -80,7 +80,7 @@ const PRODUCT_IMAGE_TOO_LARGE_MESSAGE = 'A imagem deve ter no máximo 5 MB.';
 const PRODUCT_IMAGE_UPLOAD_ERROR_MESSAGE = 'Não foi possível enviar a imagem.';
 const PRODUCT_IMAGE_SUCCESS_MESSAGE = 'Imagem atualizada.';
 const SAVE_PRODUCT_BEFORE_IMAGE_MESSAGE =
-  'Salve o item antes de enviar uma imagem.';
+  'Salve o produto antes de enviar a imagem.';
 
 const INITIAL_FORM_VALUES: ProductFormValues = {
   name: '',
@@ -107,7 +107,7 @@ function validateForm(values: ProductFormValues): ProductFormErrors {
   }
 
   if (!values.shortDescription.trim()) {
-    errors.shortDescription = 'Informe uma descrição curta.';
+    errors.shortDescription = 'Informe um resumo curto.';
   }
 
   return errors;
@@ -434,7 +434,7 @@ export function AdminProductFormScreen({
               <BackButton onPress={() => goBackFromAdmin(navigation)} />
               <S.HeaderCopy>
                 <S.HeaderTitle>{isEditing ? 'Editar produto' : 'Novo produto'}</S.HeaderTitle>
-                <S.HeaderSubtitle>Prepare as informações exibidas no app.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>Revise as informações mostradas no app.</S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
             <SurfaceCard>
@@ -461,7 +461,7 @@ export function AdminProductFormScreen({
               <BackButton onPress={() => goBackFromAdmin(navigation)} />
               <S.HeaderCopy>
                 <S.HeaderTitle>Editar produto</S.HeaderTitle>
-                <S.HeaderSubtitle>Prepare as informações exibidas no app.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>Revise as informações mostradas no app.</S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
             <EmptyStateCard
@@ -502,7 +502,7 @@ export function AdminProductFormScreen({
               <S.HeaderCopy>
                 <S.HeaderTitle>{isEditing ? 'Editar produto' : 'Novo produto'}</S.HeaderTitle>
                 <S.HeaderSubtitle>
-                  Preencha os dados que aparecem para os usuários.
+                  Preencha os dados que aparecem no app.
                 </S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
@@ -511,7 +511,7 @@ export function AdminProductFormScreen({
               <S.FormStack>
                 <AdminFormSection
                   title="Dados principais"
-                  description="Nome, categoria e resumo do produto."
+                  description="Nome, categoria e resumo que aparecem no app."
                 >
                   <InputField
                     label="Nome"
@@ -568,7 +568,7 @@ export function AdminProductFormScreen({
                           </S.ImageFallbackBadge>
                           <S.ImageFallbackTitle>Imagem do produto</S.ImageFallbackTitle>
                           <S.ImageFallbackDescription>
-                            Adicione uma imagem para destacar este item no app.
+                            Adicione uma imagem para destacar este item.
                           </S.ImageFallbackDescription>
                         </S.ImageFallback>
                       )}
@@ -579,7 +579,7 @@ export function AdminProductFormScreen({
                       <S.ImageMetaDescription>
                         {currentProductId
                           ? 'Escolha uma nova imagem e envie quando estiver pronta.'
-                          : 'Escolha uma imagem agora e o envio será feito depois do salvamento.'}
+                          : 'Escolha uma imagem agora e envie depois de salvar.'}
                       </S.ImageMetaDescription>
                     </S.ImageMeta>
 
@@ -617,7 +617,7 @@ export function AdminProductFormScreen({
 
                 <AdminFormSection
                   title="Informações complementares"
-                  description="Use uma linha por item e o formato label: valor para nutrientes."
+                  description="Use uma linha por item. Em nutrientes, use o formato nome: valor."
                 >
                   <InputField
                     label="Benefícios"

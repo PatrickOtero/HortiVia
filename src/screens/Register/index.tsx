@@ -135,7 +135,7 @@ export function RegisterScreen({ navigation }: RegisterScreenProps) {
               <S.FormHeader>
                 <S.FormTitle>Criar conta</S.FormTitle>
                 <S.FormSubtitle>
-                  {'Cadastre-se para salvar suas prefer\u00eancias e acessar o '}
+                  {'Crie sua conta para salvar suas preferências no '}
                   {APP_NAME}
                   {'.'}
                 </S.FormSubtitle>

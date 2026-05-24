@@ -232,9 +232,9 @@ export function useProfile(): UseProfileResult {
       const apiError = toApiError(error);
 
       if (apiError.kind === 'conflict' || apiError.kind === 'validation') {
-        setErrorMessage('Não foi possível salvar suas alterações.');
+        setErrorMessage('Não foi possível salvar agora. Tente novamente.');
       } else {
-        setErrorMessage('Não foi possível salvar suas alterações.');
+        setErrorMessage('Não foi possível salvar agora. Tente novamente.');
       }
 
       setSuccessMessage('');

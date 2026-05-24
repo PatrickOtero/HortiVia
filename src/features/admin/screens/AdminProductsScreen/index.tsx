@@ -100,7 +100,7 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
   function handleDeleteProduct(productId: string) {
     Alert.alert(
       'Remover produto?',
-      'Ele deixará de aparecer para os usuários.',
+      'Ele deixará de aparecer no app.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -163,7 +163,7 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
     return (
       <EmptyStateCard
         title="Nenhum produto cadastrado."
-        description="Crie o primeiro produto para exibir no app."
+        description="Crie o primeiro produto para começar."
       >
         <PrimaryButton onPress={handleCreateProduct}>Novo produto</PrimaryButton>
       </EmptyStateCard>
@@ -190,16 +190,16 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
               <BackButton onPress={() => goBackFromAdmin(navigation)} />
               <S.HeaderCopy>
                 <S.HeaderTitle>Produtos</S.HeaderTitle>
-                <S.HeaderSubtitle>Gerencie o catálogo principal do app.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>Atualize os produtos exibidos no app.</S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
 
             <SurfaceCard>
               <S.PanelContent>
                 <PageHeader
-                  eyebrow="Administração"
-                  title="Produtos cadastrados"
-                  subtitle="Crie, atualize ou remova itens exibidos aos usuários."
+                  eyebrow="Área interna"
+                  title="Produtos do app"
+                  subtitle="Crie, edite ou remova itens do catálogo."
                 />
                 <PrimaryButton onPress={handleCreateProduct}>Novo produto</PrimaryButton>
                 {feedbackMessage ? <S.SuccessText>{feedbackMessage}</S.SuccessText> : null}

@@ -71,7 +71,7 @@ export function EditProfileScreen({ navigation }: EditProfileScreenProps) {
               <BackButton onPress={() => navigation.goBack()} />
               <S.HeaderCopy>
                 <S.HeaderTitle>Editar perfil</S.HeaderTitle>
-                <S.HeaderSubtitle>Atualize seus dados principais.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>Atualize seus dados e sua foto.</S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
 
@@ -88,7 +88,7 @@ export function EditProfileScreen({ navigation }: EditProfileScreenProps) {
             ) : !profile ? (
               <EmptyStateCard
                 title="Não foi possível carregar seu perfil."
-                description="Tente novamente."
+                description="Tente novamente em instantes."
               >
                 <S.UnavailableActions>
                   <PrimaryButton onPress={handleRetryLoadProfile}>

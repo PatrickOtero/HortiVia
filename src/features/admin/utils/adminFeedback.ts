@@ -1,7 +1,7 @@
 import { toApiError } from '../../../services/api/apiError';
 
 export const ADMIN_ACCESS_DENIED_MESSAGE =
-  'Você não tem permissão para acessar esta área.';
+  'Você não pode acessar esta área.';
 export const ADMIN_LOAD_DATA_ERROR_MESSAGE = 'Não foi possível carregar os dados.';
 export const ADMIN_SAVE_ERROR_MESSAGE = 'Não foi possível salvar.';
 export const ADMIN_REMOVE_ERROR_MESSAGE = 'Não foi possível remover.';

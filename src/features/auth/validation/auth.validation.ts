@@ -151,7 +151,7 @@ export function validateConfirmationCode(code: string) {
   const normalizedCode = normalizeConfirmationCode(code);
 
   if (!normalizedCode) {
-    return 'Informe o código de confirmação.';
+    return 'Informe o código.';
   }
 
   if (!CONFIRMATION_CODE_PATTERN.test(normalizedCode)) {
@@ -165,7 +165,7 @@ export function validatePasswordResetCode(code: string) {
   const normalizedCode = normalizeConfirmationCode(code);
 
   if (!normalizedCode) {
-    return 'Informe o código de redefinição.';
+    return 'Informe o código.';
   }
 
   if (!CONFIRMATION_CODE_PATTERN.test(normalizedCode)) {

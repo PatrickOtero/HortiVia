@@ -139,7 +139,7 @@ export function LoginScreen({ navigation, route }: LoginScreenProps) {
             <S.FormCard>
               <S.FormHeader>
                 <S.FormTitle>Entrar</S.FormTitle>
-                <S.FormSubtitle>Acesse sua conta para continuar.</S.FormSubtitle>
+                <S.FormSubtitle>Entre para continuar no HortiVia.</S.FormSubtitle>
               </S.FormHeader>
               <InputField
                 label="E-mail"
@@ -209,7 +209,7 @@ export function LoginScreen({ navigation, route }: LoginScreenProps) {
                     disabled={isSubmitting}
                     hitSlop={8}
                   >
-                    <S.InlineActionText>Confirmar e-mail</S.InlineActionText>
+                    <S.InlineActionText>Inserir código</S.InlineActionText>
                   </S.InlineActionButton>
                 ) : null}
                 <PrimaryButton

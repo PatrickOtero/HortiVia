@@ -77,7 +77,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
       return (
         <EmptyStateCard
           title="Não foi possível carregar os produtos."
-          description="Tente novamente."
+          description="Tente novamente em instantes."
         >
           <PrimaryButton onPress={handleRetry}>Tentar novamente</PrimaryButton>
         </EmptyStateCard>
@@ -88,7 +88,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
       return (
         <EmptyStateCard
           title="Nenhum produto encontrado."
-          description="Tente ajustar sua busca ou trocar de categoria."
+          description="Tente buscar por outro nome ou alterar os filtros."
         />
       );
     }
@@ -98,7 +98,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
 
   const totalProducts = meta.total;
   const productsSubtitle = isLoading && products.length === 0
-    ? 'Buscando itens para você.'
+    ? 'Preparando a lista para você.'
     : totalProducts === 1
       ? '1 item encontrado.'
       : `${totalProducts} itens encontrados.`;
@@ -124,8 +124,8 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           <S.HeaderContent>
             <S.HeaderRow>
               <PageHeader
-                title="O que você quer conhecer hoje?"
-                subtitle="Busque frutas, verduras ou legumes e encontre orientações simples."
+                title="Explore frutas, verduras e legumes"
+                subtitle="Encontre orientações rápidas para escolher, conservar e aproveitar melhor."
                 rightSlot={<Avatar label={APP_NAME} />}
               />
             </S.HeaderRow>
@@ -133,7 +133,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             <SearchInput
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholder="Buscar frutas, verduras ou legumes"
+              placeholder="Buscar por nome do alimento"
               autoCapitalize="none"
               autoCorrect={false}
               returnKeyType="search"
@@ -142,7 +142,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             <S.SectionBlock>
               <SectionTitle
                 title="Categorias"
-                subtitle="Filtre pelos grupos mais buscados."
+                subtitle="Escolha uma categoria para filtrar."
               />
               <S.ChipRow>
                 {categories.map(category => (

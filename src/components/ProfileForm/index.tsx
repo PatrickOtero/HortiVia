@@ -64,7 +64,7 @@ export function ProfileForm({
 
       <S.Actions>
         <PrimaryButton onPress={onSubmit} loading={isSubmitting}>
-          Salvar alterações
+          Salvar
         </PrimaryButton>
         <SecondaryButton onPress={onCancel} disabled={isSubmitting}>
           Cancelar

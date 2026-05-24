@@ -14,8 +14,8 @@ export function SessionLoadingScreen() {
         <S.Content>
           <PageHeader
             eyebrow={APP_NAME}
-            title="Abrindo sua conta"
-            subtitle="Isso leva só um instante."
+            title="Abrindo o HortiVia"
+            subtitle="Aguarde só um instante."
           />
           <ActivityIndicator size="small" color={theme.colors.primary} />
         </S.Content>

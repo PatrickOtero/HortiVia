@@ -65,7 +65,7 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
           <S.StatusContent>
             <ActivityIndicator size="small" color={theme.colors.primary} />
             <SectionTitle
-              title="Carregando artigos"
+              title="Carregando leituras"
               subtitle="Aguarde um instante."
             />
           </S.StatusContent>
@@ -77,7 +77,7 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
       return (
         <EmptyStateCard
           title="Não foi possível carregar os artigos."
-          description="Tente novamente."
+          description="Tente novamente em instantes."
         >
           <PrimaryButton onPress={handleRetry}>Tentar novamente</PrimaryButton>
         </EmptyStateCard>
@@ -87,8 +87,8 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
     if (isEmpty) {
       return (
         <EmptyStateCard
-          title="Nenhum artigo encontrado."
-          description="Tente explorar outra categoria."
+          title="Ainda não há artigos por aqui."
+          description="Volte mais tarde para ver novos conteúdos."
         />
       );
     }
@@ -98,7 +98,7 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
 
   const totalArticles = meta.total;
   const articlesSubtitle = isLoading && articles.length === 0
-    ? 'Buscando leituras para você.'
+    ? 'Separando leituras para você.'
     : totalArticles === 1
       ? '1 artigo encontrado.'
       : `${totalArticles} artigos encontrados.`;
@@ -128,13 +128,13 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
             <PageHeader
               eyebrow="Leituras"
               title="Artigos e dicas"
-              subtitle="Aprenda a escolher, conservar e aproveitar melhor."
+              subtitle="Aprenda formas simples de escolher, conservar e aproveitar melhor os alimentos."
             />
 
             <S.SectionBlock>
               <SectionTitle
                 title="Categorias"
-                subtitle="Encontre conteúdos para a sua rotina."
+                subtitle="Escolha um tema para começar."
               />
               <S.ChipRow>
                 {categories.map(category => (

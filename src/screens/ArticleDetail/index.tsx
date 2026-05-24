@@ -119,7 +119,7 @@ export function ArticleDetailScreen({
               <S.StatusContent>
                 <ActivityIndicator size="small" color={theme.colors.primary} />
                 <SectionTitle
-                  title="Carregando artigo"
+                  title="Carregando leitura"
                   subtitle="Aguarde um instante."
                 />
               </S.StatusContent>
@@ -142,10 +142,10 @@ export function ArticleDetailScreen({
             <EmptyStateCard
               title={
                 isNotFound
-                  ? 'Artigo não encontrado.'
+                  ? 'Esta leitura não está disponível.'
                   : 'Não foi possível carregar este artigo.'
               }
-              description={isNotFound ? 'Volte e escolha outra leitura.' : 'Tente novamente.'}
+              description={isNotFound ? 'Volte e escolha outra leitura.' : 'Tente novamente em instantes.'}
             >
               {isNotFound ? (
                 <PrimaryButton onPress={handleGoBack}>Voltar</PrimaryButton>
@@ -204,7 +204,7 @@ export function ArticleDetailScreen({
                 <Avatar label={article.author.name} size={40} />
                 <S.AuthorCopy>
                   <S.AuthorName>{article.author.name}</S.AuthorName>
-                  <S.AuthorLabel>Autor</S.AuthorLabel>
+                    <S.AuthorLabel>Leitura</S.AuthorLabel>
                 </S.AuthorCopy>
               </S.AuthorRow>
 
@@ -226,8 +226,8 @@ export function ArticleDetailScreen({
           <SurfaceCard>
             <S.ContentCard>
               <SectionTitle
-                title="Leitura"
-                subtitle="Confira o conteúdo completo abaixo."
+                title="Texto completo"
+                subtitle="Dicas e orientações para o dia a dia."
               />
               {contentParagraphs.map(paragraph => (
                 <S.Paragraph key={paragraph}>{paragraph}</S.Paragraph>
@@ -240,7 +240,7 @@ export function ArticleDetailScreen({
               <S.ContentCard>
                 <SectionTitle
                   title="Temas relacionados"
-                  subtitle="Atalhos simples para o assunto principal."
+                  subtitle="Assuntos desta leitura."
                 />
                 <S.TagsRow>
                   {article.tags.map(tag => (

@@ -107,9 +107,9 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
       <ScreenContainer scrollable withTabBarSpacing>
         <S.Content>
           <PageHeader
-            eyebrow="Conta"
-            title="Configurações"
-            subtitle="Ajuste sua conta e suas preferências."
+            eyebrow="Ajustes"
+            title="Perfil e preferências"
+            subtitle="Escolha como quer usar o HortiVia."
           />
 
           {isLoading ? (
@@ -126,8 +126,8 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
 
           {isError && !isLoading ? (
             <EmptyStateCard
-              title="Não foi possível carregar suas preferências."
-              description="Tente novamente."
+              title="Não foi possível carregar seus ajustes."
+              description="Tente novamente em instantes."
             >
               <PrimaryButton onPress={handleRetryLoadSettings}>
                 Tentar novamente

@@ -72,8 +72,8 @@ export function ProductDetailScreen({
             </S.HeaderRow>
 
             <EmptyStateCard
-              title={isNotFound ? 'Produto não encontrado.' : 'Não foi possível carregar este produto.'}
-              description={isNotFound ? 'Volte e escolha outro item.' : 'Tente novamente.'}
+              title={isNotFound ? 'Esse produto não está disponível.' : 'Não foi possível carregar este produto.'}
+              description={isNotFound ? 'Volte e escolha outro item.' : 'Tente novamente em instantes.'}
             >
               {isNotFound ? (
                 <PrimaryButton onPress={handleGoBack}>Voltar</PrimaryButton>
@@ -99,15 +99,15 @@ export function ProductDetailScreen({
 
           {product.description ? (
             <SurfaceCard>
-              <SectionTitle title="Sobre este item" subtitle={product.description} />
+              <SectionTitle title="Sobre o alimento" subtitle={product.description} />
             </SurfaceCard>
           ) : null}
 
           {product.benefits?.length ? (
             <SurfaceCard>
               <SectionTitle
-                title="Por que incluir"
-                subtitle="Pontos simples para considerar no dia a dia."
+                title="No dia a dia"
+                subtitle="Formas simples de incluir esse item na rotina."
               />
               <S.BenefitsRow>
                 {product.benefits.map(benefit => (
@@ -122,8 +122,8 @@ export function ProductDetailScreen({
           {product.nutrients?.length ? (
             <SurfaceCard>
               <SectionTitle
-                title="Informações rápidas"
-                subtitle="Dados gerais para orientar sua escolha."
+                title="Resumo rápido"
+                subtitle="Informações gerais para consulta rápida."
               />
               <NutritionGrid nutrients={product.nutrients} />
             </SurfaceCard>
@@ -132,7 +132,7 @@ export function ProductDetailScreen({
           {product.howToChoose?.length ? (
             <ProductInfoSection
               title="Como escolher"
-              subtitle="Observe alguns sinais simples na hora da compra."
+              subtitle="Veja o que vale observar na hora da compra."
               items={product.howToChoose}
             />
           ) : null}
@@ -140,7 +140,7 @@ export function ProductDetailScreen({
           {product.howToStore?.length ? (
             <ProductInfoSection
               title="Como conservar"
-                subtitle="Cuidados rápidos para manter a qualidade."
+              subtitle="Cuidados simples para manter a qualidade."
               items={product.howToStore}
             />
           ) : null}
@@ -148,7 +148,7 @@ export function ProductDetailScreen({
           {product.usageTips?.length ? (
             <ProductInfoSection
               title="Como usar"
-                subtitle="Ideias práticas para incluir no cardápio."
+              subtitle="Ideias práticas para usar esse alimento no dia a dia."
               items={product.usageTips}
             />
           ) : null}

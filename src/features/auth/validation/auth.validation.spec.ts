@@ -112,9 +112,7 @@ describe('auth.validation', () => {
     });
   });
   it('rejects missing password reset code', () => {
-    expect(validatePasswordResetCode('')).toBe(
-      'Informe o código de redefinição.',
-    );
+    expect(validatePasswordResetCode('')).toBe('Informe o código.');
   });
 
   it('rejects password reset code with letters', () => {

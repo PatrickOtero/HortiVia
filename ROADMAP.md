@@ -3,18 +3,17 @@
 ## Próximas evoluções
 
 - Favoritos para salvar produtos e leituras recorrentes
-- Comentários e curtidas em artigos
-- Histórico de consultas recentes
-- Troca de e-mail com confirmação
-- Sessões com refresh token
-- Gestão avançada de mídia para conteúdos e imagens
+- Histórico de produtos consultados
+- Conteúdos relacionados por categoria
+- Recomendações com base nas preferências do usuário
+- Recursos sociais em conteúdos educativos
 
 ## Escopo atual
 
 A versão atual está concentrada em:
 
-- autenticação segura com confirmação de e-mail
-- guia de produtos hortifruti
-- artigos educativos
-- perfil e preferências
-- administração de conteúdo
+- guia de frutas, verduras e legumes
+- orientações para escolher melhor cada alimento
+- dicas de conservação e aproveitamento no dia a dia
+- leituras educativas sobre hortifruti
+- perfil e preferências de uso

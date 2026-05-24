@@ -43,7 +43,7 @@ describe('apiError auth mapping', () => {
     );
 
     expect(getAuthErrorMessage(error, 'resendConfirmation')).toBe(
-      'Aguarde um momento antes de solicitar outro c\u00f3digo.',
+      'Aguarde um momento antes de pedir outro c\u00f3digo.',
     );
   });
 
@@ -65,7 +65,7 @@ describe('apiError auth mapping', () => {
     );
 
     expect(getAuthErrorMessage(error, 'resendPasswordResetCode')).toBe(
-      'Aguarde um momento antes de solicitar outro c\u00f3digo.',
+      'Aguarde um momento antes de pedir outro c\u00f3digo.',
     );
   });
 });

@@ -84,7 +84,7 @@ export function ForgotPasswordScreen({
               <S.FormHeader>
                 <S.FormTitle>Recuperar senha</S.FormTitle>
                 <S.FormSubtitle>
-                  {'Informe seu e-mail para receber um c\u00f3digo de redefini\u00e7\u00e3o.'}
+                  {'Informe seu e-mail para receber um código.'}
                 </S.FormSubtitle>
               </S.FormHeader>
 

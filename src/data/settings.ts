@@ -3,19 +3,19 @@ import { SettingsSectionItem } from '../types/settings';
 export const settingsSections: SettingsSectionItem[] = [
   {
     id: 'account',
-    title: 'Conta',
+    title: 'Perfil',
     rows: [
       {
         id: 'profile',
         label: 'Meu perfil',
-        description: 'Nome, e-mail e dados da conta.',
+        description: 'Atualize nome, e-mail e foto.',
         type: 'navigation',
         actionKey: 'editProfile',
       },
       {
         id: 'general-preferences',
         label: 'Preferências',
-        description: 'Ajustes da sua experiência no app.',
+        description: 'Escolha como prefere usar o HortiVia.',
         type: 'info',
         actionKey: 'preferences',
       },
@@ -28,21 +28,21 @@ export const settingsSections: SettingsSectionItem[] = [
       {
         id: 'seasonal-tips',
         label: 'Dicas da estação',
-        description: 'Receba sugestões sobre frutas, verduras e legumes da época.',
+        description: 'Receba sugestões ligadas aos alimentos da estação.',
         type: 'toggle',
         preferenceKey: 'seasonalTipsEnabled',
       },
       {
         id: 'notifications',
         label: 'Notificações',
-        description: 'Ative lembretes e novidades do HortiVia.',
+        description: 'Receba avisos e novidades do app.',
         type: 'toggle',
         preferenceKey: 'notificationsEnabled',
       },
       {
         id: 'appearance',
         label: 'Aparência',
-        description: 'Ajuste o modo de visualização.',
+        description: 'Escolha o modo de visualização.',
         type: 'theme',
         actionKey: 'appearance',
       },
@@ -55,14 +55,14 @@ export const settingsSections: SettingsSectionItem[] = [
       {
         id: 'about',
         label: 'Sobre o HortiVia',
-        description: 'Guia de frutas, verduras e legumes.',
+        description: 'Entenda a proposta do HortiVia.',
         type: 'info',
         actionKey: 'about',
       },
       {
         id: 'help',
         label: 'Ajuda',
-        description: 'Tire dúvidas sobre o uso do app.',
+        description: 'Veja como aproveitar melhor o app.',
         type: 'info',
         actionKey: 'help',
       },
@@ -70,11 +70,11 @@ export const settingsSections: SettingsSectionItem[] = [
   },
   {
     id: 'session',
-    title: 'Sessão',
+    title: 'Acesso',
     rows: [
       {
         id: 'sign-out',
-        label: 'Sair da conta',
+        label: 'Sair',
         type: 'action',
         actionKey: 'signOut',
         tone: 'danger',

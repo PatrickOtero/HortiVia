@@ -19,7 +19,7 @@ export function AdminAccessDenied({ onGoBack }: AdminAccessDeniedProps) {
         <S.Content>
           <EmptyStateCard
             title={ADMIN_ACCESS_DENIED_MESSAGE}
-            description="Volte para continuar usando o app."
+            description="Volte para continuar no app."
           >
             <PrimaryButton onPress={onGoBack}>Voltar</PrimaryButton>
           </EmptyStateCard>

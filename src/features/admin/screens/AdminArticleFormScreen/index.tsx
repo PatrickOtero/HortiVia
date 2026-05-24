@@ -76,7 +76,7 @@ const ARTICLE_IMAGE_TOO_LARGE_MESSAGE = 'A imagem deve ter no máximo 5 MB.';
 const ARTICLE_IMAGE_UPLOAD_ERROR_MESSAGE = 'Não foi possível enviar a imagem.';
 const ARTICLE_IMAGE_SUCCESS_MESSAGE = 'Imagem atualizada.';
 const SAVE_ARTICLE_BEFORE_IMAGE_MESSAGE =
-  'Salve o item antes de enviar uma imagem.';
+  'Salve o artigo antes de enviar a imagem.';
 
 const INITIAL_FORM_VALUES: ArticleFormValues = {
   title: '',
@@ -425,7 +425,7 @@ export function AdminArticleFormScreen({
               <BackButton onPress={() => goBackFromAdmin(navigation)} />
               <S.HeaderCopy>
                 <S.HeaderTitle>{isEditing ? 'Editar artigo' : 'Novo artigo'}</S.HeaderTitle>
-                <S.HeaderSubtitle>Prepare o conteúdo que será exibido no feed.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>Revise o conteúdo que será exibido no feed.</S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
             <SurfaceCard>
@@ -452,7 +452,7 @@ export function AdminArticleFormScreen({
               <BackButton onPress={() => goBackFromAdmin(navigation)} />
               <S.HeaderCopy>
                 <S.HeaderTitle>Editar artigo</S.HeaderTitle>
-                <S.HeaderSubtitle>Prepare o conteúdo que será exibido no feed.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>Revise o conteúdo que será exibido no feed.</S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
             <EmptyStateCard
@@ -500,7 +500,7 @@ export function AdminArticleFormScreen({
               <S.FormStack>
                 <AdminFormSection
                   title="Dados principais"
-                  description="Título, resumo e categoria do artigo."
+                  description="Título, resumo e categoria da leitura."
                 >
                   <InputField
                     label="Título"
@@ -550,7 +550,7 @@ export function AdminArticleFormScreen({
                           </S.ImageFallbackBadge>
                           <S.ImageFallbackTitle>Imagem do artigo</S.ImageFallbackTitle>
                           <S.ImageFallbackDescription>
-                            Adicione uma imagem para dar contexto visual ao conteúdo.
+                            Adicione uma imagem para acompanhar a leitura.
                           </S.ImageFallbackDescription>
                         </S.ImageFallback>
                       )}
@@ -561,7 +561,7 @@ export function AdminArticleFormScreen({
                       <S.ImageMetaDescription>
                         {currentArticleId
                           ? 'Escolha uma nova imagem e envie quando estiver pronta.'
-                          : 'Escolha uma imagem agora e o envio será feito depois do salvamento.'}
+                          : 'Escolha uma imagem agora e envie depois de salvar.'}
                       </S.ImageMetaDescription>
                     </S.ImageMeta>
 
@@ -607,7 +607,7 @@ export function AdminArticleFormScreen({
                     <S.ToggleCopy>
                       <S.ToggleTitle>Publicado</S.ToggleTitle>
                       <S.ToggleDescription>
-                        Controle se o artigo deve aparecer para os usuários.
+                        Escolha se a leitura deve aparecer no app.
                       </S.ToggleDescription>
                     </S.ToggleCopy>
                     <Switch
@@ -624,7 +624,7 @@ export function AdminArticleFormScreen({
 
                 <AdminFormSection
                   title="Conteúdo"
-                  description="Escreva o texto completo do artigo."
+                  description="Escreva o texto completo da leitura."
                 >
                   <InputField
                     label="Conteúdo"

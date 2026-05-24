@@ -30,26 +30,26 @@ export function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
           <S.HeaderRow>
             <BackButton onPress={() => goBackFromAdmin(navigation)} />
             <S.HeaderCopy>
-              <S.HeaderTitle>Gerenciar conteúdo</S.HeaderTitle>
-              <S.HeaderSubtitle>Produtos e artigos do HortiVia.</S.HeaderSubtitle>
+              <S.HeaderTitle>Conteúdo</S.HeaderTitle>
+              <S.HeaderSubtitle>Produtos e artigos exibidos no app.</S.HeaderSubtitle>
             </S.HeaderCopy>
           </S.HeaderRow>
 
           <SurfaceCard>
             <S.CardStack>
               <PageHeader
-                eyebrow="Administração"
-                title="Escolha o que deseja editar"
-                subtitle="Acesse os cadastros principais do app."
+                eyebrow="Área interna"
+                title="Escolha o que editar"
+                subtitle="Atualize os conteúdos mostrados para os usuários."
               />
               <AdminMenuCard
                 title="Produtos"
-                description="Crie, atualize e remova produtos exibidos para os usuários."
+                description="Atualize os produtos mostrados no app."
                 onPress={() => navigation.navigate('AdminProducts')}
               />
               <AdminMenuCard
                 title="Artigos"
-                description="Gerencie os conteúdos exibidos no feed do HortiVia."
+                description="Atualize as leituras mostradas no feed."
                 onPress={() => navigation.navigate('AdminArticles')}
               />
             </S.CardStack>

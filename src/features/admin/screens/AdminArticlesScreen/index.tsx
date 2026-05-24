@@ -101,7 +101,7 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
   function handleDeleteArticle(articleId: string) {
     Alert.alert(
       'Remover artigo?',
-      'Ele deixará de aparecer para os usuários.',
+      'Ele deixará de aparecer no app.',
       [
         { text: 'Cancelar', style: 'cancel' },
         {
@@ -164,7 +164,7 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
     return (
       <EmptyStateCard
         title="Nenhum artigo cadastrado."
-        description="Crie um artigo para exibir no feed."
+        description="Crie o primeiro artigo para começar."
       >
         <PrimaryButton onPress={handleCreateArticle}>Novo artigo</PrimaryButton>
       </EmptyStateCard>
@@ -191,16 +191,16 @@ export function AdminArticlesScreen({ navigation }: AdminArticlesScreenProps) {
               <BackButton onPress={() => goBackFromAdmin(navigation)} />
               <S.HeaderCopy>
                 <S.HeaderTitle>Artigos</S.HeaderTitle>
-                <S.HeaderSubtitle>Gerencie os conteúdos exibidos no feed.</S.HeaderSubtitle>
+                <S.HeaderSubtitle>Atualize as leituras exibidas no feed.</S.HeaderSubtitle>
               </S.HeaderCopy>
             </S.HeaderRow>
 
             <SurfaceCard>
               <S.PanelContent>
                 <PageHeader
-                  eyebrow="Administração"
-                  title="Artigos publicados"
-                  subtitle="Crie, atualize ou remova leituras para o HortiVia."
+                  eyebrow="Área interna"
+                  title="Artigos do app"
+                  subtitle="Crie, edite ou remova leituras do feed."
                 />
                 <PrimaryButton onPress={handleCreateArticle}>Novo artigo</PrimaryButton>
                 {feedbackMessage ? <S.SuccessText>{feedbackMessage}</S.SuccessText> : null}

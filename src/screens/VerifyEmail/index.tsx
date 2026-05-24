@@ -97,7 +97,7 @@ export function VerifyEmailScreen({
       navigation.replace('Login', {
         email: normalizedEmail,
         infoMessage:
-          'E-mail confirmado com sucesso. Agora entre com seu e-mail e senha.',
+          'E-mail confirmado. Agora você já pode entrar.',
       });
     } catch (error) {
       setFeedbackMessage(getAuthErrorMessage(error, 'confirmEmail'));
@@ -155,7 +155,7 @@ export function VerifyEmailScreen({
               <S.FormHeader>
                 <S.FormTitle>Confirme seu e-mail</S.FormTitle>
                 <S.FormSubtitle>
-                  {'Enviamos um c\u00f3digo de confirma\u00e7\u00e3o para:'}
+                  {'Enviamos um código para:'}
                 </S.FormSubtitle>
               </S.FormHeader>
 
@@ -184,7 +184,7 @@ export function VerifyEmailScreen({
               )}
 
               <S.FormSubtitle>
-                {'Digite o c\u00f3digo de 6 d\u00edgitos para ativar sua conta.'}
+                {'Digite o código de 6 dígitos para continuar.'}
               </S.FormSubtitle>
 
               <S.CodePreviewRow>
@@ -201,7 +201,7 @@ export function VerifyEmailScreen({
               </S.CodePreviewRow>
 
               <InputField
-                label={'C\u00f3digo de confirma\u00e7\u00e3o'}
+                label={'Código'}
                 value={normalizedCode}
                 onChangeText={handleCodeChange}
                 editable={!isBusy}
