@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://192.168.1.69:3000';
+export const API_BASE_URL = 'https://p01--frutinavigator--h2j28jgg9qgs.code.run';
 
 export const API_CONFIG = {
   baseURL: API_BASE_URL,
@@ -15,6 +15,9 @@ export const API_ENDPOINTS = {
     register: '/auth/register',
     confirmEmail: '/auth/confirm-email',
     resendConfirmation: '/auth/resend-confirmation',
+    forgotPassword: '/auth/forgot-password',
+    resetPassword: '/auth/reset-password',
+    resendPasswordResetCode: '/auth/resend-password-reset-code',
     me: '/auth/me',
   },
   products: {
