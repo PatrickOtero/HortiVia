@@ -25,6 +25,18 @@ Muitas pessoas compram hortifruti sem saber avaliar qualidade, ponto de consumo 
 - Informações voltadas à redução de desperdício
 - Experiência mobile simples para consulta rápida
 
+## Demonstração visual
+
+Alguns registros da experiência mobile do HortiVia serão adicionados nesta seção para mostrar a navegação principal, a consulta de produtos e os conteúdos educativos.
+
+![Tela inicial do HortiVia](docs/screenshots/home.png)
+
+![Filtro por categoria no guia de produtos](docs/screenshots/filters.png)
+
+![Detalhe de produto com orientações práticas](docs/screenshots/product-detail.png)
+
+![Feed de leituras educativas](docs/screenshots/articles.png)
+
 ## Status
 
 Versão funcional em fase de testes internos.
@@ -43,5 +55,8 @@ Projeto desenvolvido com React Native, TypeScript, NestJS, Prisma e PostgreSQL.
 
 ## Documentação complementar
 
+- Vitrine visual e captura de prints: [docs/visual-showcase.md](docs/visual-showcase.md)
+- Galeria para portfólio e redes: [docs/portfolio-gallery.md](docs/portfolio-gallery.md)
+- Orientações de captura: [docs/screenshot-capture-checklist.md](docs/screenshot-capture-checklist.md)
 - Execução local e notas técnicas: [docs/development.md](docs/development.md)
 - Arquitetura e organização interna: [docs/architecture.md](docs/architecture.md)
