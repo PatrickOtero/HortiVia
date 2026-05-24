@@ -27,13 +27,19 @@ Muitas pessoas compram hortifruti sem saber avaliar qualidade, ponto de consumo 
 
 ## Demonstração visual
 
-Alguns registros da experiência mobile do HortiVia serão adicionados nesta seção para mostrar a navegação principal, a consulta de produtos e os conteúdos educativos.
+### Home
 
 ![Tela inicial do HortiVia](docs/screenshots/home.png)
 
+### Filtro por categoria
+
 ![Filtro por categoria no guia de produtos](docs/screenshots/filters.png)
 
+### Detalhe do produto
+
 ![Detalhe de produto com orientações práticas](docs/screenshots/product-detail.png)
+
+### Leituras
 
 ![Feed de leituras educativas](docs/screenshots/articles.png)
 
