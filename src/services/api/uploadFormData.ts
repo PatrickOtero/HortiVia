@@ -5,14 +5,35 @@ export function buildSingleFileUploadFormData(
   file: ImageUploadFile,
   fallbackFileName: string,
 ) {
+  return buildMultipartFormData({
+    fileFieldName: fieldName,
+    file,
+    fallbackFileName,
+  });
+}
+
+export function buildMultipartFormData(options: {
+  fileFieldName: string;
+  file: ImageUploadFile;
+  fallbackFileName: string;
+  fields?: Record<string, string | number | boolean | null | undefined>;
+}) {
   const formData = new FormData();
 
+  Object.entries(options.fields ?? {}).forEach(([key, value]) => {
+    if (value === undefined || value === null) {
+      return;
+    }
+
+    formData.append(key, String(value));
+  });
+
   formData.append(
-    fieldName,
+    options.fileFieldName,
     {
-      uri: file.uri,
-      name: file.name ?? fallbackFileName,
-      type: file.type,
+      uri: options.file.uri,
+      name: options.file.name ?? options.fallbackFileName,
+      type: options.file.type,
     } as unknown as Blob,
   );
 

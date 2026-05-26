@@ -1,18 +1,31 @@
 import { API_ENDPOINTS } from '../../../config/apiConfig';
 import { apiClient } from '../../../services/api/apiClient';
-import { buildSingleFileUploadFormData } from '../../../services/api/uploadFormData';
+import {
+  buildMultipartFormData,
+  buildSingleFileUploadFormData,
+} from '../../../services/api/uploadFormData';
 import type { ImageUploadFile } from '../../../utils/images/imagePicker';
 import {
+  toProductGuideImage,
+  toProductGuideSectionPayload,
   toProductPayload,
+  toProductImagePayload,
   toPaginatedProductsResponse,
   toProductDetail,
+  toSingleProductGuideSection,
 } from '../mappers/product.mapper';
 import type {
+  CreateProductGuideSectionPayload,
+  CreateProductImagePayload,
   CreateProductPayload,
   ListProductsParams,
   PaginatedResponse,
   ProductDetail,
+  ProductGuideSection,
+  ProductGuideImage,
   ProductListItem,
+  UpdateProductGuideSectionPayload,
+  UpdateProductImagePayload,
   UpdateProductPayload,
 } from '../types/product';
 
@@ -81,5 +94,145 @@ export const productsService = {
 
   async deleteProduct(productId: string): Promise<void> {
     await apiClient.delete(API_ENDPOINTS.products.detail(productId));
+  },
+
+  async createProductImage(
+    productId: string,
+    payload: CreateProductImagePayload,
+  ): Promise<ProductGuideImage> {
+    const response = await apiClient.post(
+      API_ENDPOINTS.products.images(productId),
+      toProductImagePayload(payload),
+    );
+
+    return toProductGuideImage(response.data)!;
+  },
+
+  async updateProductImage(
+    productId: string,
+    imageId: string,
+    payload: UpdateProductImagePayload,
+  ): Promise<ProductGuideImage> {
+    const response = await apiClient.patch(
+      API_ENDPOINTS.products.imageDetail(productId, imageId),
+      toProductImagePayload(payload),
+    );
+
+    return toProductGuideImage(response.data)!;
+  },
+
+  async deleteProductImage(productId: string, imageId: string): Promise<void> {
+    await apiClient.delete(API_ENDPOINTS.products.imageDetail(productId, imageId));
+  },
+
+  async createProductImageWithUpload(
+    productId: string,
+    file: ImageUploadFile,
+    payload: CreateProductImagePayload,
+  ): Promise<ProductGuideImage> {
+    const fields = {
+      kind: payload.kind,
+      alt: payload.alt,
+      caption: payload.caption,
+      sortOrder: payload.sortOrder,
+      isPrimary: payload.isPrimary,
+    };
+
+    const response = await apiClient.post(
+      API_ENDPOINTS.products.imagesUpload(productId),
+      buildMultipartFormData({
+        fileFieldName: 'image',
+        file,
+        fallbackFileName: 'product-gallery-image.jpg',
+        fields,
+      }),
+    );
+
+    return toProductGuideImage(response.data)!;
+  },
+
+  async replaceProductImageFile(
+    productId: string,
+    imageId: string,
+    file: ImageUploadFile,
+    payload: UpdateProductImagePayload = {},
+  ): Promise<ProductGuideImage> {
+    const fields = {
+      kind: payload.kind,
+      alt: payload.alt,
+      caption: payload.caption,
+      sortOrder: payload.sortOrder,
+      isPrimary: payload.isPrimary,
+    };
+
+    const response = await apiClient.post(
+      API_ENDPOINTS.products.imageFile(productId, imageId),
+      buildMultipartFormData({
+        fileFieldName: 'image',
+        file,
+        fallbackFileName: 'product-gallery-image.jpg',
+        fields,
+      }),
+    );
+
+    return toProductGuideImage(response.data)!;
+  },
+
+  async createProductGuideSection(
+    productId: string,
+    payload: CreateProductGuideSectionPayload,
+  ): Promise<ProductGuideSection> {
+    const response = await apiClient.post(
+      API_ENDPOINTS.products.guideSections(productId),
+      toProductGuideSectionPayload(payload),
+    );
+
+    return toSingleProductGuideSection(response.data)!;
+  },
+
+  async updateProductGuideSection(
+    productId: string,
+    sectionId: string,
+    payload: UpdateProductGuideSectionPayload,
+  ): Promise<ProductGuideSection> {
+    const response = await apiClient.patch(
+      API_ENDPOINTS.products.guideSectionDetail(productId, sectionId),
+      toProductGuideSectionPayload(payload),
+    );
+
+    return toSingleProductGuideSection(response.data)!;
+  },
+
+  async deleteProductGuideSection(
+    productId: string,
+    sectionId: string,
+  ): Promise<void> {
+    await apiClient.delete(
+      API_ENDPOINTS.products.guideSectionDetail(productId, sectionId),
+    );
+  },
+
+  async uploadProductGuideSectionImage(
+    productId: string,
+    sectionId: string,
+    file: ImageUploadFile,
+  ): Promise<ProductGuideSection> {
+    const response = await apiClient.post(
+      API_ENDPOINTS.products.guideSectionImage(productId, sectionId),
+      buildSingleFileUploadFormData('image', file, 'product-guide-section.jpg'),
+    );
+
+    return toSingleProductGuideSection(response.data)!;
+  },
+
+  async removeProductGuideSectionImage(
+    productId: string,
+    sectionId: string,
+  ): Promise<ProductGuideSection> {
+    const response = await apiClient.delete(
+      API_ENDPOINTS.products.guideSectionImage(productId, sectionId),
+    );
+
+    return toSingleProductGuideSection(response.data)!;
   },
 };

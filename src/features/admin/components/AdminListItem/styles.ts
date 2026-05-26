@@ -87,6 +87,7 @@ export const Subtitle = styled.Text`
 
 export const Actions = styled.View`
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: ${({ theme }) => theme.spacing.sm}px;
 `;

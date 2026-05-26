@@ -8,6 +8,8 @@ type AdminListItemProps = {
   meta?: string | null;
   imageUrl?: string | null;
   imageFallbackLabel: string;
+  extraActionLabel?: string;
+  onExtraAction?: () => void;
   onEdit: () => void;
   onDelete: () => void;
   isDeleting?: boolean;
@@ -19,6 +21,8 @@ export function AdminListItem({
   meta,
   imageUrl,
   imageFallbackLabel,
+  extraActionLabel,
+  onExtraAction,
   onEdit,
   onDelete,
   isDeleting = false,
@@ -56,6 +60,11 @@ export function AdminListItem({
         </S.ImageFrame>
       </S.ContentRow>
       <S.Actions>
+        {extraActionLabel && onExtraAction ? (
+          <SecondaryButton fullWidth={false} onPress={onExtraAction}>
+            {extraActionLabel}
+          </SecondaryButton>
+        ) : null}
         <SecondaryButton fullWidth={false} onPress={onEdit}>
           Editar
         </SecondaryButton>

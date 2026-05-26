@@ -48,6 +48,9 @@ export type AppStackParamList = {
   AdminProductForm: {
     productId?: string;
   };
+  AdminProductVisualContent: {
+    productId: string;
+  };
   AdminArticles: undefined;
   AdminArticleForm: {
     articleId?: string;

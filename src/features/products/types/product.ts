@@ -12,6 +12,59 @@ export type ProductNutrient = {
   value: string;
 };
 
+export type ProductGuideImage = {
+  id: string;
+  imageUrl: string;
+  alt?: string | null;
+  label?: string | null;
+  caption?: string | null;
+  kind?: ProductImageKind | string | null;
+  sortOrder?: number | null;
+  isPrimary?: boolean;
+  isLegacyFallback?: boolean;
+};
+
+export type ProductImageKind =
+  | 'HERO'
+  | 'WHOLE'
+  | 'CUT'
+  | 'IDEAL_STATE'
+  | 'UNRIPE_STATE'
+  | 'DEFECT'
+  | 'STORAGE'
+  | 'USAGE'
+  | 'OTHER';
+
+export type ProductGuideSectionKind =
+  | 'choose'
+  | 'observe'
+  | 'store'
+  | 'use'
+  | 'quickFacts'
+  | 'other';
+
+export type ProductGuideSectionKindValue =
+  | 'CHOOSE'
+  | 'OBSERVE'
+  | 'STORE'
+  | 'USE'
+  | 'QUICK_FACTS'
+  | 'OTHER';
+
+export type ProductGuideSection = {
+  id: string;
+  kind: ProductGuideSectionKind;
+  title: string;
+  body?: string | null;
+  bullets: string[];
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  imageCaption?: string | null;
+  idealPoints?: string[];
+  avoidPoints?: string[];
+  sortOrder?: number;
+};
+
 export type ProductListItem = {
   id: string;
   name: string;
@@ -28,6 +81,8 @@ export type ProductDetail = ProductListItem & {
   howToStore: string[];
   usageTips: string[];
   nutrients: ProductNutrient[];
+  mainImages: ProductGuideImage[];
+  guideSections: ProductGuideSection[];
   createdAt?: string;
   updatedAt?: string;
 };
@@ -46,6 +101,33 @@ export type CreateProductPayload = {
 };
 
 export type UpdateProductPayload = Partial<CreateProductPayload>;
+
+export type CreateProductImagePayload = {
+  url: string;
+  alt?: string | null;
+  caption?: string | null;
+  kind: ProductImageKind;
+  sortOrder?: number;
+  isPrimary?: boolean;
+};
+
+export type UpdateProductImagePayload = Partial<CreateProductImagePayload>;
+
+export type CreateProductGuideSectionPayload = {
+  kind: ProductGuideSectionKindValue;
+  title: string;
+  body: string;
+  imageUrl?: string | null;
+  imageAlt?: string | null;
+  imageCaption?: string | null;
+  bullets?: string[];
+  idealPoints?: string[];
+  avoidPoints?: string[];
+  sortOrder?: number;
+};
+
+export type UpdateProductGuideSectionPayload =
+  Partial<CreateProductGuideSectionPayload>;
 
 export type PaginationMeta = {
   page: number;

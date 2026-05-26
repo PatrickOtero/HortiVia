@@ -664,6 +664,18 @@ export function AdminProductFormScreen({
                 {screenError ? <S.ErrorText>{screenError}</S.ErrorText> : null}
 
                 <S.Actions>
+                  {currentProductId ? (
+                    <SecondaryButton
+                      onPress={() =>
+                        navigation.navigate('AdminProductVisualContent', {
+                          productId: currentProductId,
+                        })
+                      }
+                      disabled={isSaving || isUploadingImage}
+                    >
+                      Conteúdo visual
+                    </SecondaryButton>
+                  ) : null}
                   <PrimaryButton
                     onPress={handleSubmit}
                     loading={isSaving}

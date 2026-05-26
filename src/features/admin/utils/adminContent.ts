@@ -24,8 +24,31 @@ export const ADMIN_ARTICLE_CATEGORY_OPTIONS: Option<ArticleCategory>[] = [
 ];
 
 export function parseMultilineList(value: string) {
-  return value
-    .split(/\r?\n/)
+  const normalizedValue = value.trim();
+
+  if (!normalizedValue) {
+    return [];
+  }
+
+  if (normalizedValue.startsWith('[') && normalizedValue.endsWith(']')) {
+    try {
+      const parsedValue = JSON.parse(normalizedValue);
+
+      if (Array.isArray(parsedValue)) {
+        return parsedValue
+          .filter((item): item is string => typeof item === 'string')
+          .map(item => item.trim())
+          .filter(item => item.length > 0);
+      }
+    } catch {
+      // Falls back to text parsing below.
+    }
+  }
+
+  const separator = normalizedValue.includes('\n') ? /\r?\n/ : ',';
+
+  return normalizedValue
+    .split(separator)
     .map(item => item.trim())
     .filter(item => item.length > 0);
 }

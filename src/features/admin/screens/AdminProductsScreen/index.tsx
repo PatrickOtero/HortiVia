@@ -97,6 +97,10 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
     navigation.navigate('AdminProductForm', { productId });
   }
 
+  function handleOpenVisualContent(productId: string) {
+    navigation.navigate('AdminProductVisualContent', { productId });
+  }
+
   function handleDeleteProduct(productId: string) {
     Alert.alert(
       'Remover produto?',
@@ -217,6 +221,8 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
             subtitle={item.shortDescription}
             imageUrl={item.imageUrl}
             imageFallbackLabel="Produto"
+            extraActionLabel="Conteúdo visual"
+            onExtraAction={() => handleOpenVisualContent(item.id)}
             onEdit={() => handleEditProduct(item.id)}
             onDelete={() => handleDeleteProduct(item.id)}
             isDeleting={deletingId === item.id}

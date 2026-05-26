@@ -4,15 +4,16 @@ import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   BackButton,
   EmptyStateCard,
-  NutritionGrid,
   PrimaryButton,
-  ProductDetailHero,
-  ProductInfoSection,
+  ProductGuideSection,
+  ProductHeroGallery,
+  ProductQuickFactsCard,
   SafeScreen,
   ScreenContainer,
   SectionTitle,
   SurfaceCard,
 } from '../../components';
+import { getProductCategoryLabel } from '../../features/products/mappers/product.mapper';
 import { useProductById } from '../../features/products/hooks/useProductById';
 import { useTheme } from '../../hooks/useTheme';
 import { AppStackParamList } from '../../types/navigation';
@@ -38,14 +39,43 @@ export function ProductDetailScreen({
     retry();
   }
 
+  const chooseSection =
+    product?.guideSections.find(section => section.kind === 'choose') ?? null;
+  const observeSection =
+    product?.guideSections.find(section => section.kind === 'observe') ?? null;
+  const storeSection =
+    product?.guideSections.find(section => section.kind === 'store') ?? null;
+  const useSection =
+    product?.guideSections.find(section => section.kind === 'use') ?? null;
+
   if (isLoading) {
     return (
       <SafeScreen edges={['top', 'left', 'right', 'bottom']}>
         <ScreenContainer scrollable>
           <S.Content>
-            <S.HeaderRow>
-              <BackButton onPress={handleGoBack} />
-            </S.HeaderRow>
+            <S.HeroStage>
+              <ProductHeroGallery
+                product={{
+                  id: 'loading',
+                  name: 'Produto',
+                  slug: 'produto',
+                  category: 'FRUIT',
+                  shortDescription: 'Preparando as orientações.',
+                  imageUrl: null,
+                  description: null,
+                  benefits: [],
+                  howToChoose: [],
+                  howToStore: [],
+                  usageTips: [],
+                  nutrients: [],
+                  mainImages: [],
+                  guideSections: [],
+                }}
+              />
+              <S.FloatingBackButton>
+                <BackButton onPress={handleGoBack} />
+              </S.FloatingBackButton>
+            </S.HeroStage>
 
             <SurfaceCard>
               <S.StatusContent>
@@ -67,10 +97,6 @@ export function ProductDetailScreen({
       <SafeScreen edges={['top', 'left', 'right', 'bottom']}>
         <ScreenContainer scrollable>
           <S.Content>
-            <S.HeaderRow>
-              <BackButton onPress={handleGoBack} />
-            </S.HeaderRow>
-
             <EmptyStateCard
               title={isNotFound ? 'Esse produto não está disponível.' : 'Não foi possível carregar este produto.'}
               description={isNotFound ? 'Volte e escolha outro item.' : 'Tente novamente em instantes.'}
@@ -91,67 +117,40 @@ export function ProductDetailScreen({
     <SafeScreen edges={['top', 'left', 'right', 'bottom']}>
       <ScreenContainer scrollable>
         <S.Content>
-          <S.HeaderRow>
-            <BackButton onPress={handleGoBack} />
-          </S.HeaderRow>
+          <S.HeroStage>
+            <ProductHeroGallery product={product} />
+            <S.FloatingBackButton>
+              <BackButton onPress={handleGoBack} />
+            </S.FloatingBackButton>
+          </S.HeroStage>
 
-          <ProductDetailHero product={product} />
+          <S.SummaryCard>
+            <S.SummaryContent>
+              <S.CategoryTag $category={product.category}>
+                <S.CategoryText>
+                  {getProductCategoryLabel(product.category)}
+                </S.CategoryText>
+              </S.CategoryTag>
+              <S.ProductName>{product.name}</S.ProductName>
+              <S.ProductSummary>{product.shortDescription}</S.ProductSummary>
+              {product.description ? (
+                <S.ProductDescription>{product.description}</S.ProductDescription>
+              ) : null}
+            </S.SummaryContent>
+          </S.SummaryCard>
 
-          {product.description ? (
-            <SurfaceCard>
-              <SectionTitle title="Sobre o alimento" subtitle={product.description} />
-            </SurfaceCard>
-          ) : null}
+          {chooseSection ? <ProductGuideSection section={chooseSection} /> : null}
 
-          {product.benefits?.length ? (
-            <SurfaceCard>
-              <SectionTitle
-                title="No dia a dia"
-                subtitle="Formas simples de incluir esse item na rotina."
-              />
-              <S.BenefitsRow>
-                {product.benefits.map(benefit => (
-                  <S.BenefitChip key={benefit}>
-                    <S.BenefitText>{benefit}</S.BenefitText>
-                  </S.BenefitChip>
-                ))}
-              </S.BenefitsRow>
-            </SurfaceCard>
-          ) : null}
+          {observeSection ? <ProductGuideSection section={observeSection} /> : null}
 
-          {product.nutrients?.length ? (
-            <SurfaceCard>
-              <SectionTitle
-                title="Resumo rápido"
-                subtitle="Informações gerais para consulta rápida."
-              />
-              <NutritionGrid nutrients={product.nutrients} />
-            </SurfaceCard>
-          ) : null}
+          {storeSection ? <ProductGuideSection section={storeSection} /> : null}
 
-          {product.howToChoose?.length ? (
-            <ProductInfoSection
-              title="Como escolher"
-              subtitle="Veja o que vale observar na hora da compra."
-              items={product.howToChoose}
-            />
-          ) : null}
+          {useSection ? <ProductGuideSection section={useSection} /> : null}
 
-          {product.howToStore?.length ? (
-            <ProductInfoSection
-              title="Como conservar"
-              subtitle="Cuidados simples para manter a qualidade."
-              items={product.howToStore}
-            />
-          ) : null}
-
-          {product.usageTips?.length ? (
-            <ProductInfoSection
-              title="Como usar"
-              subtitle="Ideias práticas para usar esse alimento no dia a dia."
-              items={product.usageTips}
-            />
-          ) : null}
+          <ProductQuickFactsCard
+            nutrients={product.nutrients}
+            highlights={product.benefits}
+          />
         </S.Content>
       </ScreenContainer>
     </SafeScreen>

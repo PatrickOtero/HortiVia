@@ -8,6 +8,7 @@ import { AdminArticlesScreen } from '../features/admin/screens/AdminArticlesScre
 import { AdminHomeScreen } from '../features/admin/screens/AdminHomeScreen';
 import { AdminProductFormScreen } from '../features/admin/screens/AdminProductFormScreen';
 import { AdminProductsScreen } from '../features/admin/screens/AdminProductsScreen';
+import { AdminProductVisualContentScreen } from '../features/admin/screens/AdminProductVisualContentScreen';
 import { useTheme } from '../hooks/useTheme';
 import { ArticleDetailScreen } from '../screens/ArticleDetail';
 import { EditProfileScreen } from '../screens/EditProfile';
@@ -83,6 +84,11 @@ export function AppNavigator() {
       <Stack.Screen
         name="AdminProductForm"
         component={AdminProductFormScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="AdminProductVisualContent"
+        component={AdminProductVisualContentScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen
