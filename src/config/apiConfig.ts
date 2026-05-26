@@ -24,6 +24,7 @@ export const API_ENDPOINTS = {
     list: '/products',
     detail: (productId: string) => `/products/${productId}`,
     image: (productId: string) => `/products/${productId}/image`,
+    favorite: (productId: string) => `/products/${productId}/favorite`,
     images: (productId: string) => `/products/${productId}/images`,
     imagesUpload: (productId: string) => `/products/${productId}/images/upload`,
     imageDetail: (productId: string, imageId: string) =>
@@ -41,6 +42,9 @@ export const API_ENDPOINTS = {
     list: '/articles',
     detail: (articleId: string) => `/articles/${articleId}`,
     image: (articleId: string) => `/articles/${articleId}/image`,
+  },
+  favorites: {
+    products: '/favorites/products',
   },
   profile: {
     get: '/profile',

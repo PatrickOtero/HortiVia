@@ -11,12 +11,14 @@ import {
   toProductPayload,
   toProductImagePayload,
   toPaginatedProductsResponse,
+  toFavoriteProductsResponse,
   toProductDetail,
   toSingleProductGuideSection,
 } from '../mappers/product.mapper';
 import type {
   CreateProductGuideSectionPayload,
   CreateProductImagePayload,
+  FavoriteProductsResponse,
   CreateProductPayload,
   ListProductsParams,
   PaginatedResponse,
@@ -94,6 +96,33 @@ export const productsService = {
 
   async deleteProduct(productId: string): Promise<void> {
     await apiClient.delete(API_ENDPOINTS.products.detail(productId));
+  },
+
+  async favoriteProduct(productId: string): Promise<{ message: string }> {
+    const response = await apiClient.post(
+      API_ENDPOINTS.products.favorite(productId),
+    );
+
+    return response.data;
+  },
+
+  async unfavoriteProduct(productId: string): Promise<{ message: string }> {
+    const response = await apiClient.delete(
+      API_ENDPOINTS.products.favorite(productId),
+    );
+
+    return response.data;
+  },
+
+  async listFavoriteProducts(params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<FavoriteProductsResponse> {
+    const response = await apiClient.get(API_ENDPOINTS.favorites.products, {
+      params,
+    });
+
+    return toFavoriteProductsResponse(response.data);
   },
 
   async createProductImage(

@@ -47,6 +47,13 @@ export const SummaryContent = styled.View`
   gap: ${({ theme }) => theme.spacing.sm}px;
 `;
 
+export const SummaryTopRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
 export const CategoryTag = styled.View<{ $category: ProductCategory }>`
   align-self: flex-start;
   padding-horizontal: ${({ theme }) => theme.spacing.sm}px;

@@ -3,6 +3,7 @@ import { BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/b
 import { BottomTabItem } from '../components/BottomTabItem';
 import { HomeScreen } from '../screens/Home';
 import { FeedScreen } from '../screens/Feed';
+import { FavoritesScreen } from '../screens/Favorites';
 import { SettingsScreen } from '../screens/Settings';
 import { AppTabParamList } from '../types/navigation';
 import * as S from './styles';
@@ -69,6 +70,11 @@ export function AppTabsNavigator() {
         name="Feed"
         component={FeedScreen}
         options={{ tabBarLabel: 'Leituras' }}
+      />
+      <Tab.Screen
+        name="Favorites"
+        component={FavoritesScreen}
+        options={{ tabBarLabel: 'Favoritos' }}
       />
       <Tab.Screen
         name="Settings"

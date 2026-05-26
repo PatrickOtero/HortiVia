@@ -13,40 +13,24 @@ const categoryShellStyles = {
   `,
 };
 
-const categoryTagStyles = {
-  FRUIT: css`
-    background-color: ${({ theme }) => theme.colors.primarySoft};
-    border-color: ${({ theme }) => theme.colors.border};
-  `,
-  VEGETABLE: css`
-    background-color: ${({ theme }) => theme.colors.backgroundAlt};
-    border-color: ${({ theme }) => theme.colors.border};
-  `,
-  LEGUME: css`
-    background-color: ${({ theme }) => theme.colors.surfaceMuted};
-    border-color: ${({ theme }) => theme.colors.border};
-  `,
-};
-
 export const Button = styled.TouchableOpacity`
-  flex-direction: row;
-  align-items: flex-start;
+  width: 220px;
   gap: ${({ theme }) => theme.spacing.md}px;
-  padding: ${({ theme }) => theme.spacing.lg}px;
+  padding: ${({ theme }) => theme.spacing.md}px;
   background-color: ${({ theme }) => theme.colors.surface};
   border-width: 1px;
   border-color: ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.lg}px;
   shadow-color: ${({ theme }) => theme.colors.shadow};
-  shadow-offset: 0px 8px;
+  shadow-offset: 0px 6px;
   shadow-opacity: 1;
-  shadow-radius: 18px;
+  shadow-radius: 16px;
   elevation: ${({ theme }) => theme.elevation.card};
 `;
 
-export const LeadingMark = styled.View<{ $category: ProductCategory }>`
-  width: 52px;
-  height: 52px;
+export const ImageShell = styled.View<{ $category: ProductCategory }>`
+  width: 100%;
+  height: 120px;
   align-items: center;
   justify-content: center;
   overflow: hidden;
@@ -61,44 +45,31 @@ export const ProductImage = styled.Image.attrs({
   height: 100%;
 `;
 
-export const LeadingMarkText = styled.Text`
+export const ImageFallbackText = styled.Text`
   color: ${({ theme }) => theme.colors.primaryStrong};
-  font-size: ${({ theme }) => theme.typography.label.fontSize}px;
-  line-height: ${({ theme }) => theme.typography.label.lineHeight}px;
+  font-size: ${({ theme }) => theme.typography.headingLg.fontSize}px;
+  line-height: ${({ theme }) => theme.typography.headingLg.lineHeight}px;
   font-weight: ${({ theme }) => theme.typography.headingLg.fontWeight};
 `;
 
 export const Content = styled.View`
-  flex: 1;
   gap: ${({ theme }) => theme.spacing.xs}px;
 `;
 
 export const TopRow = styled.View`
   flex-direction: row;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.sm}px;
-`;
-
-export const TopRowActions = styled.View`
-  align-items: flex-end;
-  gap: ${({ theme }) => theme.spacing.sm}px;
-`;
-
-export const ProductName = styled.Text`
-  flex: 1;
-  color: ${({ theme }) => theme.colors.text};
-  font-size: ${({ theme }) => theme.typography.headingSm.fontSize}px;
-  line-height: ${({ theme }) => theme.typography.headingSm.lineHeight}px;
-  font-weight: ${({ theme }) => theme.typography.headingSm.fontWeight};
 `;
 
 export const CategoryTag = styled.View<{ $category: ProductCategory }>`
   padding-horizontal: ${({ theme }) => theme.spacing.sm}px;
   padding-vertical: ${({ theme }) => theme.spacing.xs}px;
   border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
   border-radius: ${({ theme }) => theme.radius.pill}px;
-  ${({ $category }) => categoryTagStyles[$category]}
+  ${({ $category }) => categoryShellStyles[$category]}
 `;
 
 export const CategoryText = styled.Text`
@@ -108,16 +79,15 @@ export const CategoryText = styled.Text`
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;
 
-export const HintText = styled.Text`
+export const ProductName = styled.Text`
+  color: ${({ theme }) => theme.colors.text};
+  font-size: ${({ theme }) => theme.typography.headingSm.fontSize}px;
+  line-height: ${({ theme }) => theme.typography.headingSm.lineHeight}px;
+  font-weight: ${({ theme }) => theme.typography.headingSm.fontWeight};
+`;
+
+export const ProductDescription = styled.Text`
   color: ${({ theme }) => theme.colors.textMuted};
   font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
   line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
-`;
-
-export const ActionText = styled.Text`
-  margin-top: ${({ theme }) => theme.spacing.xs}px;
-  color: ${({ theme }) => theme.colors.primaryStrong};
-  font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
-  line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
-  font-weight: ${({ theme }) => theme.typography.label.fontWeight};
 `;

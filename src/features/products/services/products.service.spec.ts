@@ -144,4 +144,72 @@ describe('productsService', () => {
       API_ENDPOINTS.products.guideSectionDetail('product-1', 'section-1'),
     );
   });
+
+  it('favoriteProduct calls the correct endpoint', async () => {
+    mockedApiClient.post.mockResolvedValue({
+      data: {
+        message: 'Produto adicionado aos favoritos.',
+      },
+    });
+
+    const result = await productsService.favoriteProduct('product-1');
+
+    expect(mockedApiClient.post).toHaveBeenCalledWith(
+      API_ENDPOINTS.products.favorite('product-1'),
+    );
+    expect(result.message).toBe('Produto adicionado aos favoritos.');
+  });
+
+  it('unfavoriteProduct calls the correct endpoint', async () => {
+    mockedApiClient.delete.mockResolvedValue({
+      data: {
+        message: 'Produto removido dos favoritos.',
+      },
+    });
+
+    const result = await productsService.unfavoriteProduct('product-1');
+
+    expect(mockedApiClient.delete).toHaveBeenCalledWith(
+      API_ENDPOINTS.products.favorite('product-1'),
+    );
+    expect(result.message).toBe('Produto removido dos favoritos.');
+  });
+
+  it('listFavoriteProducts calls the correct endpoint and maps the response', async () => {
+    mockedApiClient.get.mockResolvedValue({
+      data: {
+        items: [
+          {
+            id: 'product-1',
+            name: 'Abacate',
+            slug: 'abacate',
+            category: 'FRUIT',
+            shortDescription: 'Cremoso e nutritivo.',
+            imageUrl: 'https://cdn.hortivia.com/abacate.jpg',
+          },
+        ],
+        page: 1,
+        limit: 20,
+        total: 1,
+        totalPages: 1,
+      },
+    });
+
+    const result = await productsService.listFavoriteProducts({
+      page: 1,
+      limit: 20,
+    });
+
+    expect(mockedApiClient.get).toHaveBeenCalledWith(
+      API_ENDPOINTS.favorites.products,
+      {
+        params: {
+          page: 1,
+          limit: 20,
+        },
+      },
+    );
+    expect(result.data[0]?.isFavorite).toBe(true);
+    expect(result.meta.total).toBe(1);
+  });
 });

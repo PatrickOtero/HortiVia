@@ -1,9 +1,10 @@
 import React from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   BackButton,
   EmptyStateCard,
+  FavoriteButton,
   PrimaryButton,
   ProductGuideSection,
   ProductHeroGallery,
@@ -15,11 +16,16 @@ import {
 } from '../../components';
 import { getProductCategoryLabel } from '../../features/products/mappers/product.mapper';
 import { useProductById } from '../../features/products/hooks/useProductById';
+import { addRecentProduct } from '../../features/products/storage/recentProducts.storage';
+import { useToggleProductFavorite } from '../../features/products/hooks/useToggleProductFavorite';
 import { useTheme } from '../../hooks/useTheme';
 import { AppStackParamList } from '../../types/navigation';
 import * as S from './styles';
 
-type ProductDetailScreenProps = NativeStackScreenProps<AppStackParamList, 'ProductDetail'>;
+type ProductDetailScreenProps = NativeStackScreenProps<
+  AppStackParamList,
+  'ProductDetail'
+>;
 
 export function ProductDetailScreen({
   navigation,
@@ -29,6 +35,16 @@ export function ProductDetailScreen({
   const productId = route.params.productId;
   const { product, isLoading, isNotFound, retry } = useProductById({
     productId,
+  });
+  const { isFavorite, isSubmitting, toggleFavorite } = useToggleProductFavorite({
+    productId,
+    initialIsFavorite: product?.isFavorite ?? false,
+    onError: message => {
+      Alert.alert('Favoritos', message);
+    },
+    onRequireAuth: () => {
+      Alert.alert('Favoritos', 'Entre para salvar produtos nos favoritos.');
+    },
   });
 
   function handleGoBack() {
@@ -47,6 +63,14 @@ export function ProductDetailScreen({
     product?.guideSections.find(section => section.kind === 'store') ?? null;
   const useSection =
     product?.guideSections.find(section => section.kind === 'use') ?? null;
+
+  React.useEffect(() => {
+    if (!product) {
+      return;
+    }
+
+    addRecentProduct(product).catch(() => undefined);
+  }, [product]);
 
   if (isLoading) {
     return (
@@ -98,8 +122,14 @@ export function ProductDetailScreen({
         <ScreenContainer scrollable>
           <S.Content>
             <EmptyStateCard
-              title={isNotFound ? 'Esse produto não está disponível.' : 'Não foi possível carregar este produto.'}
-              description={isNotFound ? 'Volte e escolha outro item.' : 'Tente novamente em instantes.'}
+              title={
+                isNotFound
+                  ? 'Esse produto não está disponível.'
+                  : 'Não foi possível carregar este produto.'
+              }
+              description={
+                isNotFound ? 'Volte e escolha outro item.' : 'Tente novamente em instantes.'
+              }
             >
               {isNotFound ? (
                 <PrimaryButton onPress={handleGoBack}>Voltar</PrimaryButton>
@@ -126,11 +156,20 @@ export function ProductDetailScreen({
 
           <S.SummaryCard>
             <S.SummaryContent>
-              <S.CategoryTag $category={product.category}>
-                <S.CategoryText>
-                  {getProductCategoryLabel(product.category)}
-                </S.CategoryText>
-              </S.CategoryTag>
+              <S.SummaryTopRow>
+                <S.CategoryTag $category={product.category}>
+                  <S.CategoryText>
+                    {getProductCategoryLabel(product.category)}
+                  </S.CategoryText>
+                </S.CategoryTag>
+                <FavoriteButton
+                  isFavorite={isFavorite}
+                  isLoading={isSubmitting}
+                  onPress={toggleFavorite}
+                  size="md"
+                  label="Salvar"
+                />
+              </S.SummaryTopRow>
               <S.ProductName>{product.name}</S.ProductName>
               <S.ProductSummary>{product.shortDescription}</S.ProductSummary>
               {product.description ? (
@@ -140,11 +179,8 @@ export function ProductDetailScreen({
           </S.SummaryCard>
 
           {chooseSection ? <ProductGuideSection section={chooseSection} /> : null}
-
           {observeSection ? <ProductGuideSection section={observeSection} /> : null}
-
           {storeSection ? <ProductGuideSection section={storeSection} /> : null}
-
           {useSection ? <ProductGuideSection section={useSection} /> : null}
 
           <ProductQuickFactsCard

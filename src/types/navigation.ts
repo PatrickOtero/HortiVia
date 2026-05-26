@@ -31,6 +31,7 @@ export type AuthStackParamList = {
 export type AppTabParamList = {
   Home: undefined;
   Feed: undefined;
+  Favorites: undefined;
   Settings: undefined;
 };
 

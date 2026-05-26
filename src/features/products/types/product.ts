@@ -72,6 +72,7 @@ export type ProductListItem = {
   category: ProductCategory;
   shortDescription: string;
   imageUrl: string | null;
+  isFavorite?: boolean;
 };
 
 export type ProductDetail = ProductListItem & {
@@ -139,6 +140,16 @@ export type PaginationMeta = {
 export type PaginatedResponse<T> = {
   data: T[];
   meta: PaginationMeta;
+};
+
+export type FavoriteProduct = ProductListItem & {
+  isFavorite: true;
+};
+
+export type FavoriteProductsResponse = PaginatedResponse<FavoriteProduct>;
+
+export type RecentProduct = ProductListItem & {
+  viewedAt: string;
 };
 
 export type ListProductsParams = {

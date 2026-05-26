@@ -7,6 +7,8 @@ import type {
   ProductCategory,
   ProductCategoryOption,
   ProductDetail,
+  FavoriteProduct,
+  FavoriteProductsResponse,
   ProductGuideImage,
   ProductGuideSection,
   ProductGuideSectionKind,
@@ -25,6 +27,7 @@ type ApiProductListItem = {
   category: ProductCategory;
   shortDescription: string;
   imageUrl?: string | null;
+  isFavorite?: boolean;
 };
 
 type ApiProductDetail = ApiProductListItem & {
@@ -43,6 +46,14 @@ type ApiProductDetail = ApiProductListItem & {
 type ApiPaginatedResponse<T> = {
   data: T[];
   meta: PaginationMeta;
+};
+
+type ApiFavoriteProductsResponse = {
+  items: ApiProductListItem[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 };
 
 export const PRODUCT_CATEGORY_OPTIONS: ProductCategoryOption[] = [
@@ -426,6 +437,7 @@ export function toProductListItem(product: ApiProductListItem): ProductListItem 
     category: product.category,
     shortDescription: product.shortDescription,
     imageUrl: product.imageUrl ?? null,
+    isFavorite: product.isFavorite ?? false,
   };
 }
 
@@ -489,6 +501,23 @@ export function toPaginatedProductsResponse(
   return {
     data: response.data.map(toProductListItem),
     meta: response.meta,
+  };
+}
+
+export function toFavoriteProductsResponse(
+  response: ApiFavoriteProductsResponse,
+): FavoriteProductsResponse {
+  return {
+    data: response.items.map(item => ({
+      ...toProductListItem(item),
+      isFavorite: true,
+    })) as FavoriteProduct[],
+    meta: {
+      page: response.page,
+      limit: response.limit,
+      total: response.total,
+      totalPages: response.totalPages,
+    },
   };
 }
 

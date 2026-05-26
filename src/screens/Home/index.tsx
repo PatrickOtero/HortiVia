@@ -1,21 +1,27 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { ActivityIndicator, FlatList } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { CompositeScreenProps } from '@react-navigation/native';
+import { CompositeScreenProps, useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
+  ArticleCard,
   Avatar,
   EmptyStateCard,
   FilterChip,
   PageHeader,
   PrimaryButton,
   ProductCard,
+  RecentProductCard,
   SafeScreen,
   SearchInput,
   SectionTitle,
   SurfaceCard,
+  TextButton,
 } from '../../components';
 import { APP_NAME } from '../../config/brand';
+import { useArticles } from '../../features/articles/hooks/useArticles';
+import { useFavoriteProducts } from '../../features/products/hooks/useFavoriteProducts';
+import { useRecentProducts } from '../../features/products/hooks/useRecentProducts';
 import { useProducts } from '../../features/products/hooks/useProducts';
 import type { ProductCategoryFilter } from '../../features/products/types/product';
 import { useTheme } from '../../hooks/useTheme';
@@ -49,16 +55,73 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     activeCategory,
     searchQuery,
   });
+  const {
+    products: favoriteProducts,
+    isLoading: isLoadingFavorites,
+    isError: isFavoriteProductsError,
+    isEmpty: isFavoriteProductsEmpty,
+    errorMessage: favoriteProductsErrorMessage,
+    refresh: refreshFavorites,
+    removeProduct: removeFavoriteProduct,
+  } = useFavoriteProducts();
+  const {
+    recentProducts,
+    isLoading: isLoadingRecentProducts,
+    errorMessage: recentProductsErrorMessage,
+    refreshRecentProducts,
+    clearRecentProducts,
+  } = useRecentProducts();
+  const {
+    articles,
+    isLoading: isLoadingArticles,
+    isError: isArticlesError,
+    isEmpty: isArticlesEmpty,
+    retry: retryArticles,
+  } = useArticles({
+    activeCategory: 'ALL',
+  });
+
+  useFocusEffect(
+    React.useCallback(() => {
+      refreshFavorites();
+      refreshRecentProducts();
+    }, [refreshFavorites, refreshRecentProducts]),
+  );
+
+  const previewArticles = useMemo(() => articles.slice(0, 2), [articles]);
+  const totalProducts = meta.total;
+  const catalogSubtitle =
+    isLoading && products.length === 0
+      ? 'Preparando a lista para você.'
+      : totalProducts === 1
+        ? '1 item encontrado.'
+        : `${totalProducts} itens encontrados.`;
 
   function handleOpenProduct(productId: string) {
     navigation.navigate('ProductDetail', { productId });
   }
 
-  function handleRetry() {
+  function handleOpenArticle(articleId: string) {
+    navigation.navigate('ArticleDetail', { articleId });
+  }
+
+  function handleRetryProducts() {
     retry();
   }
 
-  function renderListEmptyState() {
+  async function handleClearRecentProducts() {
+    try {
+      await clearRecentProducts();
+    } catch {
+      // The hook already maps storage failures to a safe message.
+    }
+  }
+
+  function handleOpenFeed() {
+    navigation.navigate('Feed');
+  }
+
+  function renderCatalogEmptyState() {
     if (isLoading) {
       return (
         <SurfaceCard>
@@ -79,7 +142,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           title="Não foi possível carregar os produtos."
           description="Tente novamente em instantes."
         >
-          <PrimaryButton onPress={handleRetry}>Tentar novamente</PrimaryButton>
+          <PrimaryButton onPress={handleRetryProducts}>Tentar novamente</PrimaryButton>
         </EmptyStateCard>
       );
     }
@@ -96,12 +159,214 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     return null;
   }
 
-  const totalProducts = meta.total;
-  const productsSubtitle = isLoading && products.length === 0
-    ? 'Preparando a lista para você.'
-    : totalProducts === 1
-      ? '1 item encontrado.'
-      : `${totalProducts} itens encontrados.`;
+  function renderFavoritesSection() {
+    if (isLoadingFavorites && favoriteProducts.length === 0) {
+      return (
+        <S.SectionBlock>
+          <SectionTitle
+            title="Favoritos"
+            subtitle="Produtos salvos para consultar depois."
+          />
+          <SurfaceCard>
+            <S.StatusContent>
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <SectionTitle
+                title="Carregando favoritos"
+                subtitle="Aguarde um instante."
+              />
+            </S.StatusContent>
+          </SurfaceCard>
+        </S.SectionBlock>
+      );
+    }
+
+    if (isFavoriteProductsError && favoriteProducts.length === 0) {
+      return (
+        <S.SectionBlock>
+          <SectionTitle
+            title="Favoritos"
+            subtitle="Produtos salvos para consultar depois."
+          />
+          <SurfaceCard>
+            <S.SectionMessage>{favoriteProductsErrorMessage}</S.SectionMessage>
+          </SurfaceCard>
+        </S.SectionBlock>
+      );
+    }
+
+    if (isFavoriteProductsEmpty) {
+      return null;
+    }
+
+    return (
+      <S.SectionBlock>
+        <SectionTitle
+          title="Favoritos"
+          subtitle="Produtos salvos para consultar depois."
+        />
+        <S.HorizontalScroll
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingRight: theme.spacing.sm,
+          }}
+        >
+          {favoriteProducts.map(product => (
+            <S.HorizontalCardShell key={product.id}>
+              <RecentProductCard
+                product={{
+                  ...product,
+                  viewedAt: new Date().toISOString(),
+                }}
+                onPress={() => handleOpenProduct(product.id)}
+                onFavoriteChange={(productId, isFavorite) => {
+                  if (!isFavorite) {
+                    removeFavoriteProduct(productId);
+                  }
+                }}
+              />
+            </S.HorizontalCardShell>
+          ))}
+        </S.HorizontalScroll>
+      </S.SectionBlock>
+    );
+  }
+
+  function renderRecentProductsSection() {
+    if (isLoadingRecentProducts && recentProducts.length === 0) {
+      return (
+        <S.SectionBlock>
+          <SectionTitle
+            title="Vistos recentemente"
+            subtitle="Continue de onde parou."
+          />
+          <SurfaceCard>
+            <S.StatusContent>
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <SectionTitle
+                title="Carregando produtos recentes"
+                subtitle="Aguarde um instante."
+              />
+            </S.StatusContent>
+          </SurfaceCard>
+        </S.SectionBlock>
+      );
+    }
+
+    if (recentProductsErrorMessage) {
+      return (
+        <S.SectionBlock>
+          <SectionTitle
+            title="Vistos recentemente"
+            subtitle="Continue de onde parou."
+          />
+          <SurfaceCard>
+            <S.SectionMessage>{recentProductsErrorMessage}</S.SectionMessage>
+          </SurfaceCard>
+        </S.SectionBlock>
+      );
+    }
+
+    if (recentProducts.length === 0) {
+      return null;
+    }
+
+    return (
+      <S.SectionBlock>
+        <S.SectionHeaderContent>
+          <SectionTitle
+            title="Vistos recentemente"
+            subtitle="Continue de onde parou."
+          />
+          <S.SectionHeaderActionRow>
+            <TextButton onPress={handleClearRecentProducts}>
+              Limpar histórico
+            </TextButton>
+          </S.SectionHeaderActionRow>
+        </S.SectionHeaderContent>
+        <S.HorizontalScroll
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            paddingRight: theme.spacing.sm,
+          }}
+        >
+          {recentProducts.map(product => (
+            <S.HorizontalCardShell key={product.id}>
+              <RecentProductCard
+                product={product}
+                onPress={() => handleOpenProduct(product.id)}
+              />
+            </S.HorizontalCardShell>
+          ))}
+        </S.HorizontalScroll>
+      </S.SectionBlock>
+    );
+  }
+
+  function renderArticlesPreviewSection() {
+    if (isLoadingArticles && previewArticles.length === 0) {
+      return (
+        <S.FooterBlock>
+          <SectionTitle
+            title="Conteúdos educativos"
+            subtitle="Aguarde enquanto preparamos algumas leituras."
+          />
+          <SurfaceCard>
+            <S.StatusContent>
+              <ActivityIndicator size="small" color={theme.colors.primary} />
+              <SectionTitle
+                title="Carregando conteúdos"
+                subtitle="Aguarde um instante."
+              />
+            </S.StatusContent>
+          </SurfaceCard>
+        </S.FooterBlock>
+      );
+    }
+
+    if (isArticlesError && previewArticles.length === 0) {
+      return (
+        <S.FooterBlock>
+          <SectionTitle
+            title="Conteúdos educativos"
+            subtitle="Sugestões rápidas para o seu dia a dia."
+          />
+          <SurfaceCard>
+            <S.FooterContent>
+              <S.SectionMessage>Não foi possível carregar os conteúdos.</S.SectionMessage>
+              <TextButton onPress={retryArticles}>Tentar novamente</TextButton>
+            </S.FooterContent>
+          </SurfaceCard>
+        </S.FooterBlock>
+      );
+    }
+
+    if (isArticlesEmpty || previewArticles.length === 0) {
+      return null;
+    }
+
+    return (
+      <S.FooterBlock>
+        <S.FooterHeaderRow>
+          <SectionTitle
+            title="Conteúdos educativos"
+            subtitle="Sugestões rápidas para o seu dia a dia."
+          />
+          <TextButton onPress={handleOpenFeed}>Ver todos</TextButton>
+        </S.FooterHeaderRow>
+        <S.ArticlePreviewStack>
+          {previewArticles.map(article => (
+            <ArticleCard
+              key={article.id}
+              article={article}
+              onPress={() => handleOpenArticle(article.id)}
+            />
+          ))}
+        </S.ArticlePreviewStack>
+      </S.FooterBlock>
+    );
+  }
 
   return (
     <SafeScreen edges={['top', 'left', 'right']}>
@@ -124,20 +389,22 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           <S.HeaderContent>
             <S.HeaderRow>
               <PageHeader
-                title="Explore frutas, verduras e legumes"
-                subtitle="Encontre orientações rápidas para escolher, conservar e aproveitar melhor."
+                title={APP_NAME}
+                subtitle="Escolha, conserve e aproveite melhor seus alimentos."
                 rightSlot={<Avatar label={APP_NAME} />}
               />
             </S.HeaderRow>
 
-            <SearchInput
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              placeholder="Buscar por nome do alimento"
-              autoCapitalize="none"
-              autoCorrect={false}
-              returnKeyType="search"
-            />
+            <S.SectionBlock>
+              <SearchInput
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Buscar por nome do alimento"
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+              />
+            </S.SectionBlock>
 
             <S.SectionBlock>
               <SectionTitle
@@ -156,12 +423,16 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
               </S.ChipRow>
             </S.SectionBlock>
 
+            {renderFavoritesSection()}
+            {renderRecentProductsSection()}
+
             <S.SectionBlock>
-              <SectionTitle title="Produtos" subtitle={productsSubtitle} />
+              <SectionTitle title="Guia de produtos" subtitle={catalogSubtitle} />
             </S.SectionBlock>
           </S.HeaderContent>
         }
-        ListEmptyComponent={renderListEmptyState()}
+        ListFooterComponent={renderArticlesPreviewSection()}
+        ListEmptyComponent={renderCatalogEmptyState()}
       />
     </SafeScreen>
   );
