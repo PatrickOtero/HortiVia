@@ -13,6 +13,7 @@ import { useTheme } from '../hooks/useTheme';
 import { ArticleDetailScreen } from '../screens/ArticleDetail';
 import { EditProfileScreen } from '../screens/EditProfile';
 import { ProductDetailScreen } from '../screens/ProductDetail';
+import { SavedArticlesScreen } from '../screens/SavedArticles';
 import { AppStackParamList } from '../types/navigation';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
@@ -64,6 +65,11 @@ export function AppNavigator() {
       <Stack.Screen
         name="ArticleDetail"
         component={ArticleDetailScreen}
+        options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="SavedArticles"
+        component={SavedArticlesScreen}
         options={{ headerShown: false }}
       />
       <Stack.Screen

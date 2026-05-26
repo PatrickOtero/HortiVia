@@ -1,17 +1,20 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator } from 'react-native';
+import { ActivityIndicator, Alert, type GestureResponderEvent } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   Avatar,
   BackButton,
+  CompactProductCard,
   EmptyStateCard,
   PrimaryButton,
   SafeScreen,
+  SavedArticleButton,
   ScreenContainer,
   SectionTitle,
   SurfaceCard,
 } from '../../components';
 import { getArticleCategoryLabel } from '../../features/articles/mappers/article.mapper';
+import { useToggleArticleSaved } from '../../features/articles/hooks/useToggleArticleSaved';
 import { useArticleById } from '../../features/articles/hooks/useArticleById';
 import type { ArticleDetail } from '../../features/articles/types/article';
 import { useTheme } from '../../hooks/useTheme';
@@ -89,6 +92,34 @@ export function ArticleDetailScreen({
     : undefined;
   const publishedDate = formatPublishedDate(article?.publishedAt);
   const readingLabel = getReadingLabel(article?.readingTimeMinutes);
+  const relatedProducts = article?.relatedProducts ?? [];
+  const {
+    isSaved,
+    isSubmitting,
+    toggleSaved,
+  } = useToggleArticleSaved({
+    article:
+      article ?? {
+        id: articleId ?? '',
+        title: '',
+        slug: '',
+        summary: '',
+        category: 'TIPS',
+        imageUrl: null,
+        tags: [],
+        author: {
+          id: '',
+          name: '',
+          avatarUrl: null,
+        },
+      },
+    onError: message => {
+      Alert.alert('Leituras salvas', message);
+    },
+    onRequireAuth: () => {
+      Alert.alert('Leituras salvas', 'Entre para salvar leituras.');
+    },
+  });
   const contentParagraphs = useMemo(() => {
     if (!article) {
       return [];
@@ -104,6 +135,15 @@ export function ArticleDetailScreen({
 
   function handleRetry() {
     retry();
+  }
+
+  function handleOpenRelatedProduct(productId: string) {
+    navigation.navigate('ProductDetail', { productId });
+  }
+
+  function handleToggleSaved(event: GestureResponderEvent) {
+    event.stopPropagation?.();
+    toggleSaved().catch(() => undefined);
   }
 
   if (isLoading) {
@@ -183,13 +223,22 @@ export function ArticleDetailScreen({
                 <S.CategoryPillText>{categoryLabel}</S.CategoryPillText>
               </S.CategoryPill>
 
-              {!shouldShowImage ? (
-                <S.HeroFallbackBadge>
-                  <S.HeroFallbackBadgeText>
-                    {getFallbackBadge(article)}
-                  </S.HeroFallbackBadgeText>
-                </S.HeroFallbackBadge>
-              ) : null}
+              <S.MetaTopRight>
+                <SavedArticleButton
+                  isSaved={isSaved}
+                  isLoading={isSubmitting}
+                  onPress={handleToggleSaved}
+                  size="md"
+                  showLabel
+                />
+                {!shouldShowImage ? (
+                  <S.HeroFallbackBadge>
+                    <S.HeroFallbackBadgeText>
+                      {getFallbackBadge(article)}
+                    </S.HeroFallbackBadgeText>
+                  </S.HeroFallbackBadge>
+                ) : null}
+              </S.MetaTopRight>
             </S.MetaTopRow>
 
             <S.HeroCopy>
@@ -250,6 +299,33 @@ export function ArticleDetailScreen({
                   ))}
                 </S.TagsRow>
               </S.ContentCard>
+            </SurfaceCard>
+          ) : null}
+
+          {relatedProducts.length > 0 ? (
+            <SurfaceCard>
+              <S.RelatedSectionCard>
+                <SectionTitle
+                  title="Produtos relacionados"
+                  subtitle="Alimentos citados ou conectados a este conteúdo."
+                />
+                <S.RelatedScroll
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{
+                    paddingRight: theme.layout.screenPadding,
+                  }}
+                >
+                  {relatedProducts.map(product => (
+                    <S.RelatedCardShell key={product.id}>
+                      <CompactProductCard
+                        product={product}
+                        onPress={() => handleOpenRelatedProduct(product.id)}
+                      />
+                    </S.RelatedCardShell>
+                  ))}
+                </S.RelatedScroll>
+              </S.RelatedSectionCard>
             </SurfaceCard>
           ) : null}
         </S.Content>

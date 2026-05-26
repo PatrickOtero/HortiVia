@@ -42,9 +42,13 @@ export const API_ENDPOINTS = {
     list: '/articles',
     detail: (articleId: string) => `/articles/${articleId}`,
     image: (articleId: string) => `/articles/${articleId}/image`,
+    save: (articleId: string) => `/articles/${articleId}/save`,
   },
   favorites: {
     products: '/favorites/products',
+  },
+  saved: {
+    articles: '/saved/articles',
   },
   profile: {
     get: '/profile',

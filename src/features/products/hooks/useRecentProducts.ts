@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { toApiError } from '../../../services/api/apiError';
 import {
   clearRecentProducts,
@@ -10,41 +10,80 @@ import type { RecentProduct } from '../types/product';
 export function useRecentProducts() {
   const [recentProducts, setRecentProducts] = useState<RecentProduct[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const recentProductsRef = useRef<RecentProduct[]>([]);
+  const requestIdRef = useRef(0);
 
-  const refreshRecentProducts = useCallback(async () => {
-    setErrorMessage(null);
-    setIsLoading(true);
+  useEffect(() => {
+    recentProductsRef.current = recentProducts;
+  }, [recentProducts]);
 
-    try {
-      const nextProducts = await getRecentProducts();
-      setRecentProducts(nextProducts);
-    } catch (error) {
-      toApiError(error);
-      setRecentProducts([]);
-      setErrorMessage('Não foi possível carregar os produtos recentes.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+  const refreshRecentProducts = useCallback(
+    async (preserveCurrentItems = true) => {
+      const requestId = requestIdRef.current + 1;
+      requestIdRef.current = requestId;
+      const hasCurrentItems =
+        preserveCurrentItems && recentProductsRef.current.length > 0;
+
+      setErrorMessage(null);
+
+      if (hasCurrentItems) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+
+      try {
+        const nextProducts = await getRecentProducts();
+
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setRecentProducts(nextProducts);
+      } catch (error) {
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        toApiError(error);
+
+        if (!hasCurrentItems) {
+          setRecentProducts([]);
+        }
+
+        setErrorMessage('Não foi possível carregar os produtos recentes.');
+      } finally {
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [],
+  );
 
   useEffect(() => {
     refreshRecentProducts();
   }, [refreshRecentProducts]);
 
-  async function handleClearRecentProducts() {
+  const handleClearRecentProducts = useCallback(async () => {
     await clearRecentProducts();
     setRecentProducts([]);
-  }
+  }, []);
 
-  async function handleRemoveRecentProduct(productId: string) {
+  const handleRemoveRecentProduct = useCallback(async (productId: string) => {
     const nextProducts = await removeRecentProduct(productId);
     setRecentProducts(nextProducts);
-  }
+  }, []);
 
   return {
     recentProducts,
     isLoading,
+    isRefreshing,
     errorMessage,
     refreshRecentProducts,
     clearRecentProducts: handleClearRecentProducts,

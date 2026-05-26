@@ -6,6 +6,7 @@ import {
   toArticlePayload,
   toArticleDetail,
   toPaginatedArticlesResponse,
+  toSavedArticlesResponse,
 } from '../mappers/article.mapper';
 import type {
   ArticleDetail,
@@ -13,6 +14,7 @@ import type {
   CreateArticlePayload,
   ListArticlesParams,
   PaginatedResponse,
+  SavedArticlesResponse,
   UpdateArticlePayload,
 } from '../types/article';
 
@@ -82,5 +84,28 @@ export const articlesService = {
 
   async deleteArticle(articleId: string): Promise<void> {
     await apiClient.delete(API_ENDPOINTS.articles.detail(articleId));
+  },
+
+  async saveArticle(articleId: string): Promise<{ message: string }> {
+    const response = await apiClient.post(API_ENDPOINTS.articles.save(articleId));
+
+    return response.data;
+  },
+
+  async unsaveArticle(articleId: string): Promise<{ message: string }> {
+    const response = await apiClient.delete(API_ENDPOINTS.articles.save(articleId));
+
+    return response.data;
+  },
+
+  async listSavedArticles(params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<SavedArticlesResponse> {
+    const response = await apiClient.get(API_ENDPOINTS.saved.articles, {
+      params,
+    });
+
+    return toSavedArticlesResponse(response.data);
   },
 };

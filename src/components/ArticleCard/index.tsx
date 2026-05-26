@@ -1,12 +1,19 @@
 import React, { useEffect, useState } from 'react';
+import { Alert, type GestureResponderEvent } from 'react-native';
 import { Avatar } from '../Avatar';
+import { SavedArticleButton } from '../SavedArticleButton';
 import { getArticleCategoryLabel } from '../../features/articles/mappers/article.mapper';
+import { useToggleArticleSaved } from '../../features/articles/hooks/useToggleArticleSaved';
 import type { ArticleListItem } from '../../features/articles/types/article';
 import * as S from './styles';
 
 type ArticleCardProps = {
   article: ArticleListItem;
   onPress?: () => void;
+  showSaveButton?: boolean;
+  isSaved?: boolean;
+  isSavedLoading?: boolean;
+  onToggleSaved?: () => void;
 };
 
 function formatPublishedDate(dateValue?: string) {
@@ -46,8 +53,28 @@ function getReadingLabel(readingTimeMinutes?: number) {
   return `${readingTimeMinutes} min`;
 }
 
-export function ArticleCard({ article, onPress }: ArticleCardProps) {
+export function ArticleCard({
+  article,
+  onPress,
+  showSaveButton = false,
+  isSaved,
+  isSavedLoading,
+  onToggleSaved,
+}: ArticleCardProps) {
   const [hasImageError, setHasImageError] = useState(false);
+  const {
+    isSaved: internalIsSaved,
+    isSubmitting: internalIsSubmitting,
+    toggleSaved,
+  } = useToggleArticleSaved({
+    article,
+    onError: message => {
+      Alert.alert('Leituras salvas', message);
+    },
+    onRequireAuth: () => {
+      Alert.alert('Leituras salvas', 'Entre para salvar leituras.');
+    },
+  });
 
   useEffect(() => {
     setHasImageError(false);
@@ -57,9 +84,27 @@ export function ArticleCard({ article, onPress }: ArticleCardProps) {
   const publishedDate = formatPublishedDate(article.publishedAt);
   const readingLabel = getReadingLabel(article.readingTimeMinutes);
   const shouldShowImage = Boolean(article.imageUrl) && !hasImageError;
+  const resolvedIsSaved = isSaved ?? internalIsSaved;
+  const resolvedIsSavedLoading = isSavedLoading ?? internalIsSubmitting;
+
+  function handleSavePress(event: GestureResponderEvent) {
+    event.stopPropagation?.();
+
+    if (onToggleSaved) {
+      onToggleSaved();
+      return;
+    }
+
+    toggleSaved();
+  }
 
   return (
-    <S.CardButton onPress={onPress} disabled={!onPress} activeOpacity={0.92}>
+    <S.CardButton
+      testID="article-card"
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={0.92}
+    >
       <S.VisualArea $category={article.category}>
         {shouldShowImage ? (
           <>
@@ -70,9 +115,22 @@ export function ArticleCard({ article, onPress }: ArticleCardProps) {
             <S.VisualOverlay />
           </>
         ) : null}
-        <S.CategoryPill>
-          <S.CategoryPillText>{categoryLabel}</S.CategoryPillText>
-        </S.CategoryPill>
+        <S.VisualTopRow>
+          <S.CategoryPill>
+            <S.CategoryPillText>{categoryLabel}</S.CategoryPillText>
+          </S.CategoryPill>
+          {showSaveButton ? (
+            <S.SaveSlot>
+              <SavedArticleButton
+                isSaved={resolvedIsSaved}
+                isLoading={resolvedIsSavedLoading}
+                onPress={handleSavePress}
+                size="sm"
+                showLabel
+              />
+            </S.SaveSlot>
+          ) : null}
+        </S.VisualTopRow>
         <S.VisualTitle>{article.title}</S.VisualTitle>
       </S.VisualArea>
 

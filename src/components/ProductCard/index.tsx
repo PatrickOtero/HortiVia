@@ -10,6 +10,9 @@ type ProductCardProps = {
   product: ProductListItem;
   onPress: () => void;
   onFavoriteChange?: (productId: string, isFavorite: boolean) => void;
+  isFavorite?: boolean;
+  isFavoriteLoading?: boolean;
+  onToggleFavorite?: () => void;
 };
 
 function getProductInitials(name: string) {
@@ -24,9 +27,16 @@ export function ProductCard({
   product,
   onPress,
   onFavoriteChange,
+  isFavorite,
+  isFavoriteLoading,
+  onToggleFavorite,
 }: ProductCardProps) {
   const [hasImageError, setHasImageError] = useState(false);
-  const { isFavorite, isSubmitting, toggleFavorite } = useToggleProductFavorite({
+  const {
+    isFavorite: internalIsFavorite,
+    isSubmitting: internalIsSubmitting,
+    toggleFavorite,
+  } = useToggleProductFavorite({
     productId: product.id,
     initialIsFavorite: product.isFavorite ?? false,
     onSuccess: nextIsFavorite => onFavoriteChange?.(product.id, nextIsFavorite),
@@ -43,42 +53,56 @@ export function ProductCard({
   }, [product.imageUrl]);
 
   const shouldShowImage = Boolean(product.imageUrl) && !hasImageError;
+  const resolvedIsFavorite = isFavorite ?? internalIsFavorite;
+  const resolvedIsFavoriteLoading = isFavoriteLoading ?? internalIsSubmitting;
 
   function handleFavoritePress(event: GestureResponderEvent) {
     event.stopPropagation?.();
+
+    if (onToggleFavorite) {
+      onToggleFavorite();
+      return;
+    }
+
     toggleFavorite();
   }
 
   return (
-    <S.Button onPress={onPress} activeOpacity={0.9}>
-      <S.LeadingMark $category={product.category}>
+    <S.Button testID="product-card" onPress={onPress} activeOpacity={0.92}>
+      <S.ImageShell $category={product.category}>
         {shouldShowImage ? (
           <S.ProductImage
             source={{ uri: product.imageUrl ?? undefined }}
             onError={() => setHasImageError(true)}
           />
         ) : (
-          <S.LeadingMarkText>{getProductInitials(product.name)}</S.LeadingMarkText>
+          <S.ImageFallbackText>{getProductInitials(product.name)}</S.ImageFallbackText>
         )}
-      </S.LeadingMark>
+      </S.ImageShell>
 
       <S.Content>
-        <S.TopRow>
-          <S.ProductName numberOfLines={2}>{product.name}</S.ProductName>
-          <S.TopRowActions>
+        <S.HeaderRow>
+          <S.TextColumn>
+            <S.ProductName numberOfLines={1} ellipsizeMode="tail">
+              {product.name}
+            </S.ProductName>
             <S.CategoryTag $category={product.category}>
               <S.CategoryText>{getProductCategoryLabel(product.category)}</S.CategoryText>
             </S.CategoryTag>
+          </S.TextColumn>
+          <S.FavoriteSlot>
             <FavoriteButton
-              isFavorite={isFavorite}
-              isLoading={isSubmitting}
+              isFavorite={resolvedIsFavorite}
+              isLoading={resolvedIsFavoriteLoading}
               onPress={handleFavoritePress}
               size="sm"
             />
-          </S.TopRowActions>
-        </S.TopRow>
-        <S.HintText>{product.shortDescription}</S.HintText>
-        <S.ActionText>Ver detalhes</S.ActionText>
+          </S.FavoriteSlot>
+        </S.HeaderRow>
+
+        <S.Description numberOfLines={2} ellipsizeMode="tail">
+          {product.shortDescription}
+        </S.Description>
       </S.Content>
     </S.Button>
   );

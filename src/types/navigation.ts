@@ -43,6 +43,7 @@ export type AppStackParamList = {
   ArticleDetail: {
     articleId: string;
   };
+  SavedArticles: undefined;
   EditProfile: undefined;
   AdminHome: undefined;
   AdminProducts: undefined;

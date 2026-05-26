@@ -13,7 +13,13 @@ type FavoriteButtonProps = {
   onPress: (event: GestureResponderEvent) => void;
   size?: 'sm' | 'md' | 'lg';
   label?: string;
+  activeLabel?: string;
+  inactiveLabel?: string;
+  activeIcon?: string;
+  inactiveIcon?: string;
   disabled?: boolean;
+  accessibilityLabel?: string;
+  accessibilityHint?: string;
 };
 
 export function FavoriteButton({
@@ -22,13 +28,20 @@ export function FavoriteButton({
   onPress,
   size = 'md',
   label,
+  activeLabel,
+  inactiveLabel,
+  activeIcon = '\u2665',
+  inactiveIcon = '\u2661',
   disabled = false,
+  accessibilityLabel,
+  accessibilityHint = 'Salva ou remove o produto dos favoritos.',
 }: FavoriteButtonProps) {
   const { theme } = useTheme();
   const scale = useRef(new Animated.Value(1)).current;
   const isFirstRenderRef = useRef(true);
-  const icon = isFavorite ? '\u2665' : '\u2661';
+  const icon = isFavorite ? activeIcon : inactiveIcon;
   const isDisabled = disabled || isLoading;
+  const resolvedLabel = label ?? (isFavorite ? activeLabel : inactiveLabel);
 
   useEffect(() => {
     if (isFirstRenderRef.current) {
@@ -65,16 +78,18 @@ export function FavoriteButton({
       disabled={isDisabled}
       $active={isFavorite}
       $size={size}
-      $withLabel={Boolean(label)}
+      $withLabel={Boolean(resolvedLabel)}
       accessibilityRole="button"
-      accessibilityLabel={label ?? (isFavorite ? 'Favorito' : 'Salvar')}
-      accessibilityHint="Salva ou remove o produto dos favoritos."
+      accessibilityLabel={
+        accessibilityLabel ?? resolvedLabel ?? (isFavorite ? 'Favorito' : 'Salvar')
+      }
+      accessibilityHint={accessibilityHint}
       accessibilityState={{
         selected: isFavorite,
         busy: isLoading,
         disabled: isDisabled,
       }}
-    >
+      >
       <S.IconSlot>
         <Animated.View style={{ transform: [{ scale }] }}>
           {isLoading ? (
@@ -84,7 +99,7 @@ export function FavoriteButton({
           )}
         </Animated.View>
       </S.IconSlot>
-      {label ? <S.Label $active={isFavorite}>{label}</S.Label> : null}
+      {resolvedLabel ? <S.Label $active={isFavorite}>{resolvedLabel}</S.Label> : null}
     </S.Button>
   );
 }

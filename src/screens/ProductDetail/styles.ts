@@ -97,3 +97,15 @@ export const StatusContent = styled.View`
   gap: ${({ theme }) => theme.spacing.md}px;
   padding-vertical: ${({ theme }) => theme.spacing.lg}px;
 `;
+
+export const RelatedSectionCard = styled.View`
+  gap: ${({ theme }) => theme.spacing.sm}px;
+`;
+
+export const RelatedScroll = styled.ScrollView`
+  margin-right: ${({ theme }) => -theme.layout.screenPadding}px;
+`;
+
+export const RelatedCardShell = styled.View`
+  margin-right: ${({ theme }) => theme.spacing.sm}px;
+`;

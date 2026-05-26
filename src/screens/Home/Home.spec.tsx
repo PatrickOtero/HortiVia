@@ -14,6 +14,7 @@ import { useArticles } from '../../features/articles/hooks/useArticles';
 import { useFavoriteProducts } from '../../features/products/hooks/useFavoriteProducts';
 import { useRecentProducts } from '../../features/products/hooks/useRecentProducts';
 import { useProducts } from '../../features/products/hooks/useProducts';
+import { productsService } from '../../features/products/services/products.service';
 import { HomeScreen } from './index';
 
 jest.mock('@react-navigation/native', () => ({
@@ -32,6 +33,13 @@ jest.mock('../../features/products/hooks/useRecentProducts', () => ({
   useRecentProducts: jest.fn(),
 }));
 
+jest.mock('../../features/products/services/products.service', () => ({
+  productsService: {
+    favoriteProduct: jest.fn(),
+    unfavoriteProduct: jest.fn(),
+  },
+}));
+
 jest.mock('../../features/articles/hooks/useArticles', () => ({
   useArticles: jest.fn(),
 }));
@@ -46,6 +54,7 @@ const mockedUseProducts = useProducts as jest.Mock;
 const mockedUseFavoriteProducts = useFavoriteProducts as jest.Mock;
 const mockedUseRecentProducts = useRecentProducts as jest.Mock;
 const mockedUseArticles = useArticles as jest.Mock;
+const mockedProductsService = productsService as jest.Mocked<typeof productsService>;
 
 describe('HomeScreen', () => {
   const navigate = jest.fn();
@@ -105,6 +114,7 @@ describe('HomeScreen', () => {
       retry: jest.fn(),
       refresh: jest.fn(),
       removeProduct: jest.fn(),
+      upsertProduct: jest.fn(),
     });
     mockedUseRecentProducts.mockReturnValue({
       recentProducts: [],
@@ -186,6 +196,7 @@ describe('HomeScreen', () => {
       retry: jest.fn(),
       refresh: jest.fn(),
       removeProduct: jest.fn(),
+      upsertProduct: jest.fn(),
     });
 
     let renderer: ReactTestRenderer.ReactTestRenderer;
@@ -348,5 +359,206 @@ describe('HomeScreen', () => {
     expect(navigate).toHaveBeenCalledWith('ProductDetail', {
       productId: 'product-1',
     });
+  });
+
+  it('renders main list products as favorite when the id exists in favorites', async () => {
+    mockedUseFavoriteProducts.mockReturnValue({
+      products: [
+        {
+          id: 'product-1',
+          name: 'Abacate',
+          slug: 'abacate',
+          category: 'FRUIT',
+          shortDescription: 'Cremoso e nutritivo.',
+          imageUrl: null,
+          isFavorite: true,
+        },
+      ],
+      isLoading: false,
+      isRefreshing: false,
+      isError: false,
+      isEmpty: false,
+      errorMessage: null,
+      meta: {
+        page: 1,
+        limit: 20,
+        total: 1,
+        totalPages: 1,
+      },
+      retry: jest.fn(),
+      refresh: jest.fn(),
+      removeProduct: jest.fn(),
+      upsertProduct: jest.fn(),
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+
+    await ReactTestRenderer.act(async () => {
+      renderer = renderHome();
+    });
+
+    const productCards = renderer!.root.findAllByType(ProductCard);
+
+    expect(productCards[0]?.props.isFavorite).toBe(true);
+  });
+
+  it('derives recent product favorite state from the favorite ids', async () => {
+    mockedUseFavoriteProducts.mockReturnValue({
+      products: [
+        {
+          id: 'product-2',
+          name: 'Manga',
+          slug: 'manga',
+          category: 'FRUIT',
+          shortDescription: 'Doce e aromÃ¡tica.',
+          imageUrl: null,
+          isFavorite: true,
+        },
+      ],
+      isLoading: false,
+      isRefreshing: false,
+      isError: false,
+      isEmpty: false,
+      errorMessage: null,
+      meta: {
+        page: 1,
+        limit: 20,
+        total: 1,
+        totalPages: 1,
+      },
+      retry: jest.fn(),
+      refresh: jest.fn(),
+      removeProduct: jest.fn(),
+      upsertProduct: jest.fn(),
+    });
+    mockedUseRecentProducts.mockReturnValue({
+      recentProducts: [
+        {
+          id: 'product-2',
+          name: 'Manga',
+          slug: 'manga',
+          category: 'FRUIT',
+          shortDescription: 'Doce e aromÃ¡tica.',
+          imageUrl: null,
+          isFavorite: false,
+          viewedAt: '2026-05-25T10:00:00.000Z',
+        },
+      ],
+      isLoading: false,
+      errorMessage: null,
+      refreshRecentProducts: jest.fn(),
+      clearRecentProducts: jest.fn(),
+      removeRecentProduct: jest.fn(),
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+
+    await ReactTestRenderer.act(async () => {
+      renderer = renderHome();
+    });
+
+    const recentCards = renderer!.root.findAllByType(RecentProductCard);
+    const recentMangaCard = recentCards.find(
+      card => card.props.product.id === 'product-2',
+    );
+
+    expect(recentMangaCard?.props.isFavorite).toBe(true);
+  });
+
+  it('adds a product to favorites preview when favorited from the main list', async () => {
+    const upsertProduct = jest.fn();
+
+    mockedUseFavoriteProducts.mockReturnValue({
+      products: [],
+      isLoading: false,
+      isRefreshing: false,
+      isError: false,
+      isEmpty: true,
+      errorMessage: null,
+      meta: {
+        page: 1,
+        limit: 20,
+        total: 0,
+        totalPages: 0,
+      },
+      retry: jest.fn(),
+      refresh: jest.fn(),
+      removeProduct: jest.fn(),
+      upsertProduct,
+    });
+    mockedProductsService.favoriteProduct.mockResolvedValue({
+      message: 'Produto adicionado aos favoritos.',
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+
+    await ReactTestRenderer.act(async () => {
+      renderer = renderHome();
+    });
+
+    const productCard = renderer!.root.findByType(ProductCard);
+
+    await ReactTestRenderer.act(async () => {
+      await productCard.props.onToggleFavorite();
+    });
+
+    expect(upsertProduct).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: 'product-1',
+        isFavorite: true,
+      }),
+    );
+    expect(mockedProductsService.favoriteProduct).toHaveBeenCalledWith('product-1');
+  });
+
+  it('removes a product from favorites preview when unfavorited from the main list', async () => {
+    const removeProduct = jest.fn();
+
+    mockedUseFavoriteProducts.mockReturnValue({
+      products: [
+        {
+          id: 'product-1',
+          name: 'Abacate',
+          slug: 'abacate',
+          category: 'FRUIT',
+          shortDescription: 'Cremoso e nutritivo.',
+          imageUrl: null,
+          isFavorite: true,
+        },
+      ],
+      isLoading: false,
+      isRefreshing: false,
+      isError: false,
+      isEmpty: false,
+      errorMessage: null,
+      meta: {
+        page: 1,
+        limit: 20,
+        total: 1,
+        totalPages: 1,
+      },
+      retry: jest.fn(),
+      refresh: jest.fn(),
+      removeProduct,
+      upsertProduct: jest.fn(),
+    });
+    mockedProductsService.unfavoriteProduct.mockResolvedValue({
+      message: 'Produto removido dos favoritos.',
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+
+    await ReactTestRenderer.act(async () => {
+      renderer = renderHome();
+    });
+
+    const productCard = renderer!.root.findAllByType(ProductCard)[0];
+
+    await ReactTestRenderer.act(async () => {
+      await productCard.props.onToggleFavorite();
+    });
+
+    expect(removeProduct).toHaveBeenCalledWith('product-1');
+    expect(mockedProductsService.unfavoriteProduct).toHaveBeenCalledWith('product-1');
   });
 });

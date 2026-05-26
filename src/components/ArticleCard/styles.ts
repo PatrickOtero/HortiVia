@@ -40,6 +40,13 @@ export const VisualArea = styled.View<{ $category: ArticleCategory }>`
   ${({ $category }) => visualStyles[$category]}
 `;
 
+export const VisualTopRow = styled.View`
+  flex-direction: row;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+`;
+
 export const VisualImage = styled.Image.attrs({
   resizeMode: 'cover',
 })`
@@ -83,6 +90,11 @@ export const VisualTitle = styled.Text`
   font-size: ${({ theme }) => theme.typography.headingSm.fontSize}px;
   line-height: ${({ theme }) => theme.typography.headingSm.lineHeight}px;
   font-weight: ${({ theme }) => theme.typography.headingSm.fontWeight};
+`;
+
+export const SaveSlot = styled.View`
+  align-items: flex-end;
+  justify-content: flex-start;
 `;
 
 export const Content = styled.View`

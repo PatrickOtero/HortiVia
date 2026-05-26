@@ -1,10 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useAuth } from '../../auth/hooks/useAuth';
 import { toApiError } from '../../../services/api/apiError';
 import { PRODUCTS_PAGE_LIMIT, productsService } from '../services/products.service';
-import type {
-  FavoriteProduct,
-  PaginationMeta,
-} from '../types/product';
+import type { FavoriteProduct, PaginationMeta, ProductListItem } from '../types/product';
 
 const INITIAL_META: PaginationMeta = {
   page: 1,
@@ -14,6 +12,7 @@ const INITIAL_META: PaginationMeta = {
 };
 
 export function useFavoriteProducts() {
+  const { isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [products, setProducts] = useState<FavoriteProduct[]>([]);
   const [meta, setMeta] = useState<PaginationMeta>(INITIAL_META);
   const [isLoading, setIsLoading] = useState(true);
@@ -26,74 +25,145 @@ export function useFavoriteProducts() {
     productsRef.current = products;
   }, [products]);
 
-  const loadFavorites = useCallback(async (preserveCurrentItems = true) => {
-    const requestId = requestIdRef.current + 1;
-    requestIdRef.current = requestId;
-    const hasCurrentItems = preserveCurrentItems && productsRef.current.length > 0;
-
-    setErrorMessage(null);
-
-    if (hasCurrentItems) {
-      setIsRefreshing(true);
-    } else {
-      setIsLoading(true);
-    }
-
-    try {
-      const response = await productsService.listFavoriteProducts({
-        page: 1,
-        limit: PRODUCTS_PAGE_LIMIT,
-      });
-
-      if (requestId !== requestIdRef.current) {
+  const loadFavorites = useCallback(
+    async (preserveCurrentItems = true) => {
+      if (isAuthLoading) {
         return;
       }
 
-      setProducts(response.data);
-      setMeta(response.meta);
-    } catch (error) {
-      if (requestId !== requestIdRef.current) {
-        return;
-      }
-
-      toApiError(error);
-      setErrorMessage('Não foi possível carregar seus favoritos.');
-
-      if (!hasCurrentItems) {
+      if (!isAuthenticated) {
         setProducts([]);
         setMeta(INITIAL_META);
-      }
-    } finally {
-      if (requestId !== requestIdRef.current) {
+        setErrorMessage(null);
+        setIsLoading(false);
+        setIsRefreshing(false);
         return;
       }
 
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, []);
+      const requestId = requestIdRef.current + 1;
+      requestIdRef.current = requestId;
+      const hasCurrentItems =
+        preserveCurrentItems && productsRef.current.length > 0;
+
+      setErrorMessage(null);
+
+      if (hasCurrentItems) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
+
+      try {
+        const response = await productsService.listFavoriteProducts({
+          page: 1,
+          limit: PRODUCTS_PAGE_LIMIT,
+        });
+
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setProducts(response.data);
+        setMeta(response.meta);
+      } catch (error) {
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        toApiError(error);
+        setErrorMessage('Não foi possível carregar seus favoritos.');
+
+        if (!hasCurrentItems) {
+          setProducts([]);
+          setMeta(INITIAL_META);
+        }
+      } finally {
+        if (requestId !== requestIdRef.current) {
+          return;
+        }
+
+        setIsLoading(false);
+        setIsRefreshing(false);
+      }
+    },
+    [isAuthenticated, isAuthLoading],
+  );
 
   useEffect(() => {
+    if (isAuthLoading) {
+      return;
+    }
+
     loadFavorites();
+  }, [isAuthLoading, loadFavorites]);
+
+  const retry = useCallback(() => {
+    loadFavorites(false);
   }, [loadFavorites]);
 
-  function retry() {
-    loadFavorites(false);
-  }
-
-  function refresh() {
+  const refresh = useCallback(() => {
     loadFavorites(true);
-  }
+  }, [loadFavorites]);
 
-  function removeProduct(productId: string) {
+  const removeProduct = useCallback((productId: string) => {
     setProducts(currentProducts =>
       currentProducts.filter(product => product.id !== productId),
     );
-    setMeta(currentMeta => ({
-      ...currentMeta,
-      total: Math.max(currentMeta.total - 1, 0),
-    }));
-  }
+    setMeta(currentMeta => {
+      const hasProduct = productsRef.current.some(product => product.id === productId);
+
+      if (!hasProduct) {
+        return currentMeta;
+      }
+
+      return {
+        ...currentMeta,
+        total: Math.max(currentMeta.total - 1, 0),
+      };
+    });
+  }, []);
+
+  const upsertProduct = useCallback((product: ProductListItem) => {
+    const nextFavoriteProduct: FavoriteProduct = {
+      ...product,
+      isFavorite: true,
+    };
+
+    setProducts(currentProducts => {
+      const currentIndex = currentProducts.findIndex(
+        currentProduct => currentProduct.id === product.id,
+      );
+
+      if (currentIndex === 0) {
+        return [nextFavoriteProduct, ...currentProducts.slice(1)];
+      }
+
+      if (currentIndex > 0) {
+        const filteredProducts = currentProducts.filter(
+          currentProduct => currentProduct.id !== product.id,
+        );
+
+        return [nextFavoriteProduct, ...filteredProducts];
+      }
+
+      return [nextFavoriteProduct, ...currentProducts];
+    });
+
+    setMeta(currentMeta => {
+      const hasProduct = productsRef.current.some(
+        currentProduct => currentProduct.id === product.id,
+      );
+
+      if (hasProduct) {
+        return currentMeta;
+      }
+
+      return {
+        ...currentMeta,
+        total: currentMeta.total + 1,
+      };
+    });
+  }, []);
 
   return {
     products,
@@ -106,5 +176,6 @@ export function useFavoriteProducts() {
     retry,
     refresh,
     removeProduct,
+    upsertProduct,
   };
 }

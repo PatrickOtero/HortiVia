@@ -1,3 +1,5 @@
+import type { ArticleCategory } from '../../articles/types/article';
+
 export type ProductCategory = 'FRUIT' | 'VEGETABLE' | 'LEGUME';
 
 export type ProductCategoryFilter = 'ALL' | ProductCategory;
@@ -75,6 +77,16 @@ export type ProductListItem = {
   isFavorite?: boolean;
 };
 
+export type RelatedArticle = {
+  id: string;
+  title: string;
+  slug: string;
+  summary: string;
+  category: ArticleCategory;
+  imageUrl: string | null;
+  publishedAt?: string;
+};
+
 export type ProductDetail = ProductListItem & {
   description?: string | null;
   benefits: string[];
@@ -84,6 +96,7 @@ export type ProductDetail = ProductListItem & {
   nutrients: ProductNutrient[];
   mainImages: ProductGuideImage[];
   guideSections: ProductGuideSection[];
+  relatedArticles?: RelatedArticle[];
   createdAt?: string;
   updatedAt?: string;
 };

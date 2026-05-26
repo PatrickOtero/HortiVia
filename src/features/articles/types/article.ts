@@ -1,3 +1,5 @@
+import type { ProductCategory } from '../../products/types/product';
+
 export type ArticleCategory =
   | 'TIPS'
   | 'STORAGE'
@@ -18,6 +20,15 @@ export type ArticleAuthor = {
   avatarUrl: string | null;
 };
 
+export type RelatedProduct = {
+  id: string;
+  name: string;
+  slug: string;
+  category: ProductCategory;
+  shortDescription: string;
+  imageUrl: string | null;
+};
+
 export type ArticleListItem = {
   id: string;
   title: string;
@@ -29,10 +40,12 @@ export type ArticleListItem = {
   publishedAt?: string;
   readingTimeMinutes?: number;
   author: ArticleAuthor;
+  isSaved?: boolean;
 };
 
 export type ArticleDetail = ArticleListItem & {
   content: string;
+  relatedProducts?: RelatedProduct[];
   createdAt?: string;
   updatedAt?: string;
 };
@@ -58,6 +71,15 @@ export type PaginationMeta = {
 
 export type PaginatedResponse<T> = {
   data: T[];
+  meta: PaginationMeta;
+};
+
+export type SavedArticle = ArticleListItem & {
+  isSaved: true;
+};
+
+export type SavedArticlesResponse = {
+  data: SavedArticle[];
   meta: PaginationMeta;
 };
 

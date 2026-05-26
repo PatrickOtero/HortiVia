@@ -1,4 +1,5 @@
 import React from 'react';
+import { SavedArticlesProvider } from '../features/articles/context/SavedArticlesContext';
 import { AuthProvider } from '../features/auth/context/AuthContext';
 import { useAuth } from '../features/auth/hooks/useAuth';
 import { ThemeProvider } from '../contexts/ThemeContext';
@@ -16,7 +17,9 @@ export function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppNavigation />
+        <SavedArticlesProvider>
+          <AppNavigation />
+        </SavedArticlesProvider>
       </AuthProvider>
     </ThemeProvider>
   );

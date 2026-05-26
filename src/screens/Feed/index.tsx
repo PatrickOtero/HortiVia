@@ -111,6 +111,7 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
         renderItem={({ item }) => (
           <ArticleCard
             article={item}
+            showSaveButton
             onPress={canOpenArticle ? () => handleOpenArticle(item.id) : undefined}
           />
         )}

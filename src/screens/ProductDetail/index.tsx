@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert } from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   BackButton,
+  CompactArticleCard,
   EmptyStateCard,
   FavoriteButton,
   PrimaryButton,
@@ -55,6 +56,10 @@ export function ProductDetailScreen({
     retry();
   }
 
+  function handleOpenRelatedArticle(articleId: string) {
+    navigation.navigate('ArticleDetail', { articleId });
+  }
+
   const chooseSection =
     product?.guideSections.find(section => section.kind === 'choose') ?? null;
   const observeSection =
@@ -63,6 +68,7 @@ export function ProductDetailScreen({
     product?.guideSections.find(section => section.kind === 'store') ?? null;
   const useSection =
     product?.guideSections.find(section => section.kind === 'use') ?? null;
+  const relatedArticles = product?.relatedArticles ?? [];
 
   React.useEffect(() => {
     if (!product) {
@@ -94,6 +100,7 @@ export function ProductDetailScreen({
                   nutrients: [],
                   mainImages: [],
                   guideSections: [],
+                  relatedArticles: [],
                 }}
               />
               <S.FloatingBackButton>
@@ -187,6 +194,33 @@ export function ProductDetailScreen({
             nutrients={product.nutrients}
             highlights={product.benefits}
           />
+
+          {relatedArticles.length > 0 ? (
+            <SurfaceCard>
+              <S.RelatedSectionCard>
+                <SectionTitle
+                  title="Leituras relacionadas"
+                  subtitle="Conteúdos que ajudam a entender melhor este alimento."
+                />
+                <S.RelatedScroll
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{
+                    paddingRight: theme.layout.screenPadding,
+                  }}
+                >
+                  {relatedArticles.map(article => (
+                    <S.RelatedCardShell key={article.id}>
+                      <CompactArticleCard
+                        article={article}
+                        onPress={() => handleOpenRelatedArticle(article.id)}
+                      />
+                    </S.RelatedCardShell>
+                  ))}
+                </S.RelatedScroll>
+              </S.RelatedSectionCard>
+            </SurfaceCard>
+          ) : null}
         </S.Content>
       </ScreenContainer>
     </SafeScreen>

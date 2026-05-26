@@ -16,8 +16,9 @@ describe('ProductCard', () => {
     jest.clearAllMocks();
   });
 
-  it('renders the favorite button with active state and toggles safely', async () => {
+  it('renders name, category and favorite button with active state', async () => {
     const toggleFavorite = jest.fn();
+    const onPress = jest.fn();
 
     mockedUseToggleProductFavorite.mockReturnValue({
       isFavorite: true,
@@ -40,15 +41,20 @@ describe('ProductCard', () => {
               imageUrl: null,
               isFavorite: true,
             }}
-            onPress={jest.fn()}
+            onPress={onPress}
           />
         </ThemeProvider>,
       );
     });
 
     const favoriteButton = renderer!.root.findByType(FavoriteButton);
+    const cardButton = renderer!.root.findByProps({ testID: 'product-card' });
+    const tree = JSON.stringify(renderer!.toJSON());
 
     expect(favoriteButton.props.isFavorite).toBe(true);
+    expect(tree).toContain('Abacate');
+    expect(tree).toContain('Frutas');
+    expect(tree).not.toContain('Ver detalhes');
 
     const stopPropagation = jest.fn();
 
@@ -60,5 +66,46 @@ describe('ProductCard', () => {
 
     expect(stopPropagation).toHaveBeenCalledTimes(1);
     expect(toggleFavorite).toHaveBeenCalledTimes(1);
+    expect(onPress).not.toHaveBeenCalled();
+
+    await ReactTestRenderer.act(async () => {
+      cardButton.props.onPress();
+    });
+
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+
+  it('prefers the explicit favorite state over stale product data', async () => {
+    mockedUseToggleProductFavorite.mockReturnValue({
+      isFavorite: false,
+      isSubmitting: false,
+      toggleFavorite: jest.fn(),
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <ThemeProvider>
+          <ProductCard
+            product={{
+              id: 'product-2',
+              name: 'Banana',
+              slug: 'banana',
+              category: 'FRUIT',
+              shortDescription: 'Doce e prÃ¡tica.',
+              imageUrl: null,
+              isFavorite: false,
+            }}
+            isFavorite
+            onPress={jest.fn()}
+          />
+        </ThemeProvider>,
+      );
+    });
+
+    const favoriteButton = renderer!.root.findByType(FavoriteButton);
+
+    expect(favoriteButton.props.isFavorite).toBe(true);
   });
 });

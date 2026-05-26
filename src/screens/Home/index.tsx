@@ -1,5 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList } from 'react-native';
+import React, { useCallback, useMemo, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps, useFocusEffect } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -20,9 +20,11 @@ import {
 } from '../../components';
 import { APP_NAME } from '../../config/brand';
 import { useArticles } from '../../features/articles/hooks/useArticles';
+import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useFavoriteProducts } from '../../features/products/hooks/useFavoriteProducts';
 import { useRecentProducts } from '../../features/products/hooks/useRecentProducts';
 import { useProducts } from '../../features/products/hooks/useProducts';
+import { productsService } from '../../features/products/services/products.service';
 import type { ProductCategoryFilter } from '../../features/products/types/product';
 import { useTheme } from '../../hooks/useTheme';
 import { AppStackParamList, AppTabParamList } from '../../types/navigation';
@@ -39,8 +41,11 @@ function ListItemSeparator() {
 
 export function HomeScreen({ navigation }: HomeScreenProps) {
   const { theme } = useTheme();
+  const { isAuthenticated } = useAuth();
+  const hasFocusedOnceRef = React.useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState<ProductCategoryFilter>('ALL');
+  const [favoriteLoadingIds, setFavoriteLoadingIds] = useState<string[]>([]);
   const {
     categories,
     products,
@@ -63,6 +68,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     errorMessage: favoriteProductsErrorMessage,
     refresh: refreshFavorites,
     removeProduct: removeFavoriteProduct,
+    upsertProduct: upsertFavoriteProduct,
   } = useFavoriteProducts();
   const {
     recentProducts,
@@ -83,12 +89,26 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
 
   useFocusEffect(
     React.useCallback(() => {
+      if (!hasFocusedOnceRef.current) {
+        hasFocusedOnceRef.current = true;
+        return undefined;
+      }
+
       refreshFavorites();
       refreshRecentProducts();
+      return undefined;
     }, [refreshFavorites, refreshRecentProducts]),
   );
 
   const previewArticles = useMemo(() => articles.slice(0, 2), [articles]);
+  const favoriteProductIds = useMemo(
+    () => new Set(favoriteProducts.map(product => product.id)),
+    [favoriteProducts],
+  );
+  const favoriteLoadingIdSet = useMemo(
+    () => new Set(favoriteLoadingIds),
+    [favoriteLoadingIds],
+  );
   const totalProducts = meta.total;
   const catalogSubtitle =
     isLoading && products.length === 0
@@ -104,6 +124,84 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
   function handleOpenArticle(articleId: string) {
     navigation.navigate('ArticleDetail', { articleId });
   }
+
+  const resolveIsFavorite = useCallback(
+    (product: { id: string; isFavorite?: boolean }) =>
+      favoriteProductIds.has(product.id) || product.isFavorite === true,
+    [favoriteProductIds],
+  );
+
+  const setFavoriteProductLoading = useCallback(
+    (productId: string, nextIsLoading: boolean) => {
+      setFavoriteLoadingIds(currentIds => {
+        const nextIds = new Set(currentIds);
+
+        if (nextIsLoading) {
+          nextIds.add(productId);
+        } else {
+          nextIds.delete(productId);
+        }
+
+        return Array.from(nextIds);
+      });
+    },
+    [],
+  );
+
+  const handleToggleFavorite = useCallback(
+    async (product: (typeof products)[number]) => {
+      if (favoriteLoadingIdSet.has(product.id)) {
+        return;
+      }
+
+      if (!isAuthenticated) {
+        Alert.alert('Favoritos', 'Entre para salvar produtos nos favoritos.');
+        return;
+      }
+
+      const nextIsFavorite = !resolveIsFavorite(product);
+
+      setFavoriteProductLoading(product.id, true);
+
+      if (nextIsFavorite) {
+        upsertFavoriteProduct({
+          ...product,
+          isFavorite: true,
+        });
+      } else {
+        removeFavoriteProduct(product.id);
+      }
+
+      try {
+        if (nextIsFavorite) {
+          await productsService.favoriteProduct(product.id);
+        } else {
+          await productsService.unfavoriteProduct(product.id);
+        }
+      } catch {
+        if (nextIsFavorite) {
+          removeFavoriteProduct(product.id);
+        } else {
+          upsertFavoriteProduct({
+            ...product,
+            isFavorite: true,
+          });
+        }
+
+        Alert.alert('Favoritos', 'Não foi possível atualizar os favoritos.');
+      } finally {
+        setFavoriteProductLoading(product.id, false);
+      }
+    },
+    [
+      favoriteLoadingIdSet,
+      isAuthenticated,
+      removeFavoriteProduct,
+      resolveIsFavorite,
+      setFavoriteProductLoading,
+      upsertFavoriteProduct,
+    ],
+  );
 
   function handleRetryProducts() {
     retry();
@@ -218,12 +316,10 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                   ...product,
                   viewedAt: new Date().toISOString(),
                 }}
+                isFavorite
+                isFavoriteLoading={favoriteLoadingIdSet.has(product.id)}
+                onToggleFavorite={() => handleToggleFavorite(product)}
                 onPress={() => handleOpenProduct(product.id)}
-                onFavoriteChange={(productId, isFavorite) => {
-                  if (!isFavorite) {
-                    removeFavoriteProduct(productId);
-                  }
-                }}
               />
             </S.HorizontalCardShell>
           ))}
@@ -295,6 +391,9 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             <S.HorizontalCardShell key={product.id}>
               <RecentProductCard
                 product={product}
+                isFavorite={resolveIsFavorite(product)}
+                isFavoriteLoading={favoriteLoadingIdSet.has(product.id)}
+                onToggleFavorite={() => handleToggleFavorite(product)}
                 onPress={() => handleOpenProduct(product.id)}
               />
             </S.HorizontalCardShell>
@@ -374,7 +473,13 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         data={products}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
-          <ProductCard product={item} onPress={() => handleOpenProduct(item.id)} />
+          <ProductCard
+            product={item}
+            isFavorite={resolveIsFavorite(item)}
+            isFavoriteLoading={favoriteLoadingIdSet.has(item.id)}
+            onToggleFavorite={() => handleToggleFavorite(item)}
+            onPress={() => handleOpenProduct(item.id)}
+          />
         )}
         refreshing={isRefreshing}
         onRefresh={refresh}

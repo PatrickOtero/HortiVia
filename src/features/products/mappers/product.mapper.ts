@@ -16,6 +16,7 @@ import type {
   ProductImageKind,
   ProductListItem,
   ProductNutrient,
+  RelatedArticle,
   UpdateProductGuideSectionPayload,
   UpdateProductImagePayload,
 } from '../types/product';
@@ -39,6 +40,7 @@ type ApiProductDetail = ApiProductListItem & {
   nutrients?: unknown;
   mainImages?: unknown;
   guideSections?: unknown;
+  relatedArticles?: unknown;
   createdAt?: string;
   updatedAt?: string;
 };
@@ -104,7 +106,7 @@ function normalizeNutrients(value: unknown): ProductNutrient[] {
   }
 
   return value
-    .map(item => {
+    .map((item): ProductNutrient | null => {
       if (!item || typeof item !== 'object') {
         return null;
       }
@@ -348,6 +350,52 @@ function normalizeGuideSections(value: unknown) {
     .filter((item): item is ProductGuideSection => item !== null);
 }
 
+function normalizeRelatedArticles(value: unknown): RelatedArticle[] {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+
+  return value
+    .map(item => {
+      if (!item || typeof item !== 'object') {
+        return null;
+      }
+
+      const article = item as {
+        id?: unknown;
+        title?: unknown;
+        slug?: unknown;
+        summary?: unknown;
+        category?: unknown;
+        imageUrl?: unknown;
+        publishedAt?: unknown;
+      };
+
+      if (
+        typeof article.id !== 'string' ||
+        typeof article.title !== 'string' ||
+        typeof article.slug !== 'string' ||
+        typeof article.summary !== 'string' ||
+        typeof article.category !== 'string'
+      ) {
+        return null;
+      }
+
+      return {
+        id: article.id,
+        title: article.title,
+        slug: article.slug,
+        summary: article.summary,
+        category: article.category as RelatedArticle['category'],
+        imageUrl: normalizeOptionalTextValue(article.imageUrl),
+        ...(typeof article.publishedAt === 'string'
+          ? { publishedAt: article.publishedAt }
+          : {}),
+      };
+    })
+    .filter((item): item is RelatedArticle => item !== null);
+}
+
 export function toSingleProductGuideSection(
   value: unknown,
 ): ProductGuideSection | null {
@@ -490,6 +538,7 @@ export function toProductDetail(product: ApiProductDetail): ProductDetail {
     nutrients,
     mainImages: resolvedMainImages,
     guideSections,
+    relatedArticles: normalizeRelatedArticles(product.relatedArticles),
     createdAt: product.createdAt,
     updatedAt: product.updatedAt,
   };

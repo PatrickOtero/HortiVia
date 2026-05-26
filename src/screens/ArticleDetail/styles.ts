@@ -70,9 +70,15 @@ export const HeroOverlay = styled.View`
 
 export const MetaTopRow = styled.View`
   flex-direction: row;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: ${({ theme }) => theme.spacing.md}px;
+`;
+
+export const MetaTopRight = styled.View`
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: ${({ theme }) => theme.spacing.sm}px;
 `;
 
 export const CategoryPill = styled.View`
@@ -208,4 +214,16 @@ export const TagText = styled.Text`
   font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
   line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+`;
+
+export const RelatedSectionCard = styled.View`
+  gap: ${({ theme }) => theme.spacing.sm}px;
+`;
+
+export const RelatedScroll = styled.ScrollView`
+  margin-right: ${({ theme }) => -theme.layout.screenPadding}px;
+`;
+
+export const RelatedCardShell = styled.View`
+  margin-right: ${({ theme }) => theme.spacing.sm}px;
 `;

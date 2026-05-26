@@ -10,6 +10,9 @@ type RecentProductCardProps = {
   product: RecentProduct;
   onPress: () => void;
   onFavoriteChange?: (productId: string, isFavorite: boolean) => void;
+  isFavorite?: boolean;
+  isFavoriteLoading?: boolean;
+  onToggleFavorite?: () => void;
 };
 
 function getProductInitials(name: string) {
@@ -24,9 +27,16 @@ export function RecentProductCard({
   product,
   onPress,
   onFavoriteChange,
+  isFavorite,
+  isFavoriteLoading,
+  onToggleFavorite,
 }: RecentProductCardProps) {
   const [hasImageError, setHasImageError] = useState(false);
-  const { isFavorite, isSubmitting, toggleFavorite } = useToggleProductFavorite({
+  const {
+    isFavorite: internalIsFavorite,
+    isSubmitting: internalIsSubmitting,
+    toggleFavorite,
+  } = useToggleProductFavorite({
     productId: product.id,
     initialIsFavorite: product.isFavorite ?? false,
     onSuccess: nextIsFavorite => onFavoriteChange?.(product.id, nextIsFavorite),
@@ -43,9 +53,17 @@ export function RecentProductCard({
   }, [product.imageUrl]);
 
   const shouldShowImage = Boolean(product.imageUrl) && !hasImageError;
+  const resolvedIsFavorite = isFavorite ?? internalIsFavorite;
+  const resolvedIsFavoriteLoading = isFavoriteLoading ?? internalIsSubmitting;
 
   function handleFavoritePress(event: GestureResponderEvent) {
     event.stopPropagation?.();
+
+    if (onToggleFavorite) {
+      onToggleFavorite();
+      return;
+    }
+
     toggleFavorite();
   }
 
@@ -68,8 +86,8 @@ export function RecentProductCard({
             <S.CategoryText>{getProductCategoryLabel(product.category)}</S.CategoryText>
           </S.CategoryTag>
           <FavoriteButton
-            isFavorite={isFavorite}
-            isLoading={isSubmitting}
+            isFavorite={resolvedIsFavorite}
+            isLoading={resolvedIsFavoriteLoading}
             onPress={handleFavoritePress}
             size="sm"
           />
