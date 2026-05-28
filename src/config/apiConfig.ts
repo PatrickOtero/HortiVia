@@ -1,4 +1,5 @@
-export const API_BASE_URL = 'https://p01--frutinavigator--h2j28jgg9qgs.code.run';
+export const API_BASE_URL =
+  'https://p01--frutinavigator--h2j28jgg9qgs.code.run';
 
 export const API_CONFIG = {
   baseURL: API_BASE_URL,
@@ -41,8 +42,17 @@ export const API_ENDPOINTS = {
   articles: {
     list: '/articles',
     detail: (articleId: string) => `/articles/${articleId}`,
+    adminDetail: (articleId: string) => `/articles/${articleId}/admin`,
     image: (articleId: string) => `/articles/${articleId}/image`,
+    blocks: (articleId: string) => `/articles/${articleId}/blocks`,
+    blockDetail: (articleId: string, blockId: string) =>
+      `/articles/${articleId}/blocks/${blockId}`,
+    blockImageUpload: (articleId: string, blockId: string) =>
+      `/articles/${articleId}/blocks/${blockId}/image-upload`,
+    blockImage: (articleId: string, blockId: string) =>
+      `/articles/${articleId}/blocks/${blockId}/image`,
     save: (articleId: string) => `/articles/${articleId}/save`,
+    reactions: (articleId: string) => `/articles/${articleId}/reactions`,
   },
   favorites: {
     products: '/favorites/products',

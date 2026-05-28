@@ -52,8 +52,8 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
       return;
     }
 
-    if (row.actionKey === 'savedArticles') {
-      navigation.navigate('SavedArticles');
+    if (row.actionKey === 'library') {
+      navigation.navigate('Library');
       return;
     }
 

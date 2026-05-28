@@ -5,6 +5,15 @@ export const HeaderContent = styled.View`
   padding-bottom: ${({ theme }) => theme.spacing.lg}px;
 `;
 
+export const IntroPanel = styled.View`
+  gap: ${({ theme }) => theme.spacing.sm}px;
+  padding: ${({ theme }) => theme.spacing.lg}px;
+  border-width: 1px;
+  border-color: ${({ theme }) => theme.colors.border};
+  border-radius: ${({ theme }) => theme.radius.xl}px;
+  background-color: ${({ theme }) => theme.colors.surfaceMuted};
+`;
+
 export const SectionBlock = styled.View`
   gap: ${({ theme }) => theme.spacing.md}px;
 `;

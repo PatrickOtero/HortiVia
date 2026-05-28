@@ -39,6 +39,9 @@ export function SavedArticlesScreen({
     errorMessage,
     refreshSavedArticles,
     retrySavedArticles,
+    isArticleSaved,
+    isArticleSaveLoading,
+    toggleSavedArticle,
   } = useSavedArticles();
 
   function handleGoBack() {
@@ -73,7 +76,7 @@ export function SavedArticlesScreen({
     if (isError) {
       return (
         <EmptyStateCard
-          title={errorMessage ?? 'Não foi possível carregar suas leituras salvas.'}
+          title={errorMessage ?? 'Nao foi possivel carregar suas leituras salvas.'}
           description="Tente novamente em instantes."
         >
           <PrimaryButton onPress={retrySavedArticles}>
@@ -87,7 +90,7 @@ export function SavedArticlesScreen({
       return (
         <EmptyStateCard
           title="Nenhuma leitura salva ainda."
-          description="Salve artigos para encontrar conteúdos úteis mais tarde."
+          description="Salve artigos para encontrar conteudos uteis mais tarde."
         >
           <PrimaryButton onPress={handleExploreArticles}>
             Explorar artigos
@@ -102,7 +105,7 @@ export function SavedArticlesScreen({
   const totalSavedArticles = meta.total;
   const subtitle =
     isLoading && articles.length === 0
-      ? 'Separando seus conteúdos salvos.'
+      ? 'Separando seus conteudos salvos.'
       : totalSavedArticles === 1
         ? '1 leitura salva.'
         : `${totalSavedArticles} leituras salvas.`;
@@ -116,6 +119,11 @@ export function SavedArticlesScreen({
           <ArticleCard
             article={item}
             showSaveButton
+            isSaved={isArticleSaved(item)}
+            isSavedLoading={isArticleSaveLoading(item.id)}
+            onToggleSaved={() => {
+              toggleSavedArticle(item).catch(() => undefined);
+            }}
             onPress={() => handleOpenArticle(item.id)}
           />
         )}
@@ -125,17 +133,19 @@ export function SavedArticlesScreen({
         contentContainerStyle={{
           paddingHorizontal: theme.layout.screenPadding,
           paddingTop: theme.spacing.lg,
-          paddingBottom: theme.layout.tabContentBottomPadding,
+          paddingBottom: theme.layout.tabContentBottomPadding + theme.spacing.md,
         }}
         ItemSeparatorComponent={ListItemSeparator}
         ListHeaderComponent={
           <S.HeaderContent>
             <BackButton onPress={handleGoBack} />
-            <PageHeader
-              eyebrow="Leituras salvas"
-              title="Conteúdos para revisitar"
-              subtitle={subtitle}
-            />
+            <S.IntroPanel>
+              <PageHeader
+                eyebrow="Leituras salvas"
+                title="Conteudos para revisitar"
+                subtitle={subtitle}
+              />
+            </S.IntroPanel>
           </S.HeaderContent>
         }
         ListEmptyComponent={renderListEmptyState()}

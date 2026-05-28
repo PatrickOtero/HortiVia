@@ -51,7 +51,7 @@ describe('SavedArticlesScreen', () => {
 
     expect(emptyStateCard.props.title).toBe('Nenhuma leitura salva ainda.');
     expect(emptyStateCard.props.description).toBe(
-      'Salve artigos para encontrar conteúdos úteis mais tarde.',
+      'Salve artigos para encontrar conteudos uteis mais tarde.',
     );
   });
 });

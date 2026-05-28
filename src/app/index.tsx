@@ -1,3 +1,4 @@
+import { ArticleReactionsProvider } from '../features/articles/context/ArticleReactionsContext';
 import React from 'react';
 import { SavedArticlesProvider } from '../features/articles/context/SavedArticlesContext';
 import { AuthProvider } from '../features/auth/context/AuthContext';
@@ -17,9 +18,11 @@ export function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <SavedArticlesProvider>
-          <AppNavigation />
-        </SavedArticlesProvider>
+        <ArticleReactionsProvider>
+          <SavedArticlesProvider>
+            <AppNavigation />
+          </SavedArticlesProvider>
+        </ArticleReactionsProvider>
       </AuthProvider>
     </ThemeProvider>
   );

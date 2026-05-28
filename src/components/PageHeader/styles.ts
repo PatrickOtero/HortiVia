@@ -8,6 +8,10 @@ export const Container = styled.View`
   gap: ${({ theme }) => theme.spacing.md}px;
 `;
 
+export const Copy = styled.View`
+  flex: 1;
+`;
+
 export const Eyebrow = styled.Text`
   margin-bottom: ${({ theme }) => theme.spacing.xs}px;
   color: ${({ theme }) => theme.colors.primaryStrong};
@@ -32,5 +36,6 @@ export const Subtitle = styled.Text`
 `;
 
 export const RightSlot = styled.View`
+  flex-shrink: 0;
   padding-top: ${({ theme }) => theme.spacing.xxs}px;
 `;

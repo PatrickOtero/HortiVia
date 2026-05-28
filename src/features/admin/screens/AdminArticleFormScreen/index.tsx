@@ -31,10 +31,12 @@ import { useTheme } from '../../../../hooks/useTheme';
 import { useAuth } from '../../../auth/hooks/useAuth';
 import { articlesService } from '../../../articles/services/articles.service';
 import type {
+  ArticleBlock,
   ArticleCategory,
   CreateArticlePayload,
 } from '../../../articles/types/article';
 import { AdminAccessDenied } from '../../components/AdminAccessDenied';
+import { ArticleBlockManager } from '../../components/ArticleBlockManager';
 import { AdminFormSection } from '../../components/AdminFormSection';
 import {
   ADMIN_LOAD_DATA_ERROR_MESSAGE,
@@ -110,6 +112,19 @@ function validateForm(values: ArticleFormValues): ArticleFormErrors {
   return errors;
 }
 
+function sortArticleBlocks(blocks: ArticleBlock[]) {
+  return [...blocks].sort((left, right) => {
+    const leftSortOrder = typeof left.sortOrder === 'number' ? left.sortOrder : 0;
+    const rightSortOrder = typeof right.sortOrder === 'number' ? right.sortOrder : 0;
+
+    if (leftSortOrder !== rightSortOrder) {
+      return leftSortOrder - rightSortOrder;
+    }
+
+    return left.id.localeCompare(right.id);
+  });
+}
+
 export function AdminArticleFormScreen({
   navigation,
   route,
@@ -126,6 +141,7 @@ export function AdminArticleFormScreen({
   const [isLoading, setIsLoading] = useState(isEditing);
   const [isSaving, setIsSaving] = useState(false);
   const [remoteImageUrl, setRemoteImageUrl] = useState<string | null>(null);
+  const [articleBlocks, setArticleBlocks] = useState<ArticleBlock[]>([]);
   const [selectedImageFile, setSelectedImageFile] = useState<ImageUploadFile | null>(
     null,
   );
@@ -141,6 +157,7 @@ export function AdminArticleFormScreen({
 
   useEffect(() => {
     if (!currentArticleId) {
+      setArticleBlocks([]);
       setIsLoading(false);
       return;
     }
@@ -153,7 +170,7 @@ export function AdminArticleFormScreen({
       setScreenError('');
 
       try {
-        const article = await articlesService.getArticleById(nextArticleId);
+        const article = await articlesService.getAdminArticleById(nextArticleId);
 
         if (!isMounted) {
           return;
@@ -169,6 +186,7 @@ export function AdminArticleFormScreen({
           isPublished: Boolean(article.publishedAt),
         });
         setRemoteImageUrl(article.imageUrl ?? null);
+        setArticleBlocks(sortArticleBlocks(article.blocks ?? []));
         setSelectedImageFile(null);
         setImageErrorMessage('');
         setImageSuccessMessage('');
@@ -376,7 +394,11 @@ export function AdminArticleFormScreen({
         : await articlesService.createArticle(payload);
 
       setCurrentArticleId(savedArticle.id);
+      navigation.setParams({
+        articleId: savedArticle.id,
+      });
       setRemoteImageUrl(savedArticle.imageUrl ?? null);
+      setArticleBlocks(sortArticleBlocks(savedArticle.blocks ?? []));
       setFormValues(current => ({
         ...current,
         imageUrl: savedArticle.imageUrl ?? '',
@@ -396,13 +418,11 @@ export function AdminArticleFormScreen({
 
       Alert.alert(
         wasEditing ? 'Artigo atualizado.' : 'Artigo salvo.',
-        selectedImageFile ? ARTICLE_IMAGE_SUCCESS_MESSAGE : undefined,
-        [
-          {
-            text: 'OK',
-            onPress: () => goBackFromAdmin(navigation),
-          },
-        ],
+        wasEditing
+          ? selectedImageFile
+            ? ARTICLE_IMAGE_SUCCESS_MESSAGE
+            : 'Continue editando os blocos e imagens do artigo nesta tela.'
+          : 'Agora voce ja pode criar blocos e enviar imagens sem sair desta tela.',
       );
     } catch (error) {
       if (isAdminAccessDeniedError(error)) {
@@ -414,6 +434,33 @@ export function AdminArticleFormScreen({
     } finally {
       setIsSaving(false);
     }
+  }
+
+  function handleUpdatedBlock(updatedBlock: ArticleBlock) {
+    setArticleBlocks(currentBlocks =>
+      sortArticleBlocks(
+        currentBlocks.map(block =>
+          block.id === updatedBlock.id
+            ? {
+                ...block,
+                ...updatedBlock,
+              }
+            : block,
+        ),
+      ),
+    );
+  }
+
+  function handleCreatedBlock(createdBlock: ArticleBlock) {
+    setArticleBlocks(currentBlocks =>
+      sortArticleBlocks([...currentBlocks, createdBlock]),
+    );
+  }
+
+  function handleDeletedBlock(blockId: string) {
+    setArticleBlocks(currentBlocks =>
+      currentBlocks.filter(block => block.id !== blockId),
+    );
   }
 
   if (isLoading) {
@@ -635,6 +682,30 @@ export function AdminArticleFormScreen({
                     numberOfLines={10}
                     textAlignVertical="top"
                   />
+                </AdminFormSection>
+
+                <AdminFormSection
+                  title="Blocos do artigo"
+                  description={
+                    currentArticleId
+                      ? 'Crie e organize os blocos que estruturam a leitura no app.'
+                      : 'Salve o artigo para adicionar blocos.'
+                  }
+                >
+                  {!currentArticleId ? (
+                    <EmptyStateCard
+                      title="Salve o artigo para adicionar blocos."
+                      description="Depois disso, voce podera criar, editar, ordenar e adicionar imagens dentro de cada bloco."
+                    />
+                  ) : (
+                    <ArticleBlockManager
+                      articleId={currentArticleId}
+                      blocks={articleBlocks}
+                      onCreateBlock={handleCreatedBlock}
+                      onUpdateBlock={handleUpdatedBlock}
+                      onDeleteBlock={handleDeletedBlock}
+                    />
+                  )}
                 </AdminFormSection>
 
                 {screenError ? <S.ErrorText>{screenError}</S.ErrorText> : null}

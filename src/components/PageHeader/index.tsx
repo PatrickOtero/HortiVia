@@ -1,5 +1,4 @@
 import React from 'react';
-import { View } from 'react-native';
 import * as S from './styles';
 
 type PageHeaderProps = {
@@ -12,11 +11,11 @@ type PageHeaderProps = {
 export function PageHeader({ eyebrow, title, subtitle, rightSlot }: PageHeaderProps) {
   return (
     <S.Container>
-      <View>
+      <S.Copy>
         {eyebrow ? <S.Eyebrow>{eyebrow}</S.Eyebrow> : null}
         <S.Title>{title}</S.Title>
         {subtitle ? <S.Subtitle>{subtitle}</S.Subtitle> : null}
-      </View>
+      </S.Copy>
       {rightSlot ? <S.RightSlot>{rightSlot}</S.RightSlot> : null}
     </S.Container>
   );

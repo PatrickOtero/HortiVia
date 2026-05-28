@@ -26,26 +26,10 @@ export const FooterContent = styled.View`
   gap: ${({ theme }) => theme.spacing.sm}px;
 `;
 
-export const SectionHeaderContent = styled.View`
-  gap: ${({ theme }) => theme.spacing.xs}px;
-`;
-
-export const SectionHeaderActionRow = styled.View`
-  align-items: flex-end;
-`;
-
 export const ChipRow = styled.View`
   flex-direction: row;
   flex-wrap: wrap;
   gap: ${({ theme }) => theme.spacing.sm}px;
-`;
-
-export const HorizontalScroll = styled.ScrollView`
-  margin-right: ${({ theme }) => -theme.layout.screenPadding}px;
-`;
-
-export const HorizontalCardShell = styled.View`
-  margin-right: ${({ theme }) => theme.spacing.md}px;
 `;
 
 export const ArticlePreviewStack = styled.View`

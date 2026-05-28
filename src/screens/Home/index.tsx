@@ -1,7 +1,7 @@
 import React, { useCallback, useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, FlatList } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
-import { CompositeScreenProps, useFocusEffect } from '@react-navigation/native';
+import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   ArticleCard,
@@ -11,7 +11,6 @@ import {
   PageHeader,
   PrimaryButton,
   ProductCard,
-  RecentProductCard,
   SafeScreen,
   SearchInput,
   SectionTitle,
@@ -21,11 +20,12 @@ import {
 import { APP_NAME } from '../../config/brand';
 import { useArticles } from '../../features/articles/hooks/useArticles';
 import { useAuth } from '../../features/auth/hooks/useAuth';
-import { useFavoriteProducts } from '../../features/products/hooks/useFavoriteProducts';
-import { useRecentProducts } from '../../features/products/hooks/useRecentProducts';
 import { useProducts } from '../../features/products/hooks/useProducts';
 import { productsService } from '../../features/products/services/products.service';
-import type { ProductCategoryFilter } from '../../features/products/types/product';
+import type {
+  ProductCategoryFilter,
+  ProductListItem,
+} from '../../features/products/types/product';
 import { useTheme } from '../../hooks/useTheme';
 import { AppStackParamList, AppTabParamList } from '../../types/navigation';
 import * as S from './styles';
@@ -42,10 +42,13 @@ function ListItemSeparator() {
 export function HomeScreen({ navigation }: HomeScreenProps) {
   const { theme } = useTheme();
   const { isAuthenticated } = useAuth();
-  const hasFocusedOnceRef = React.useRef(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeCategory, setActiveCategory] = useState<ProductCategoryFilter>('ALL');
+  const [activeCategory, setActiveCategory] =
+    useState<ProductCategoryFilter>('ALL');
   const [favoriteLoadingIds, setFavoriteLoadingIds] = useState<string[]>([]);
+  const [favoriteOverrides, setFavoriteOverrides] = useState<
+    Record<string, boolean>
+  >({});
   const {
     categories,
     products,
@@ -61,23 +64,6 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     searchQuery,
   });
   const {
-    products: favoriteProducts,
-    isLoading: isLoadingFavorites,
-    isError: isFavoriteProductsError,
-    isEmpty: isFavoriteProductsEmpty,
-    errorMessage: favoriteProductsErrorMessage,
-    refresh: refreshFavorites,
-    removeProduct: removeFavoriteProduct,
-    upsertProduct: upsertFavoriteProduct,
-  } = useFavoriteProducts();
-  const {
-    recentProducts,
-    isLoading: isLoadingRecentProducts,
-    errorMessage: recentProductsErrorMessage,
-    refreshRecentProducts,
-    clearRecentProducts,
-  } = useRecentProducts();
-  const {
     articles,
     isLoading: isLoadingArticles,
     isError: isArticlesError,
@@ -87,24 +73,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     activeCategory: 'ALL',
   });
 
-  useFocusEffect(
-    React.useCallback(() => {
-      if (!hasFocusedOnceRef.current) {
-        hasFocusedOnceRef.current = true;
-        return undefined;
-      }
-
-      refreshFavorites();
-      refreshRecentProducts();
-      return undefined;
-    }, [refreshFavorites, refreshRecentProducts]),
-  );
-
   const previewArticles = useMemo(() => articles.slice(0, 2), [articles]);
-  const favoriteProductIds = useMemo(
-    () => new Set(favoriteProducts.map(product => product.id)),
-    [favoriteProducts],
-  );
   const favoriteLoadingIdSet = useMemo(
     () => new Set(favoriteLoadingIds),
     [favoriteLoadingIds],
@@ -126,9 +95,9 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
   }
 
   const resolveIsFavorite = useCallback(
-    (product: { id: string; isFavorite?: boolean }) =>
-      favoriteProductIds.has(product.id) || product.isFavorite === true,
-    [favoriteProductIds],
+    (product: ProductListItem) =>
+      favoriteOverrides[product.id] ?? (product.isFavorite === true),
+    [favoriteOverrides],
   );
 
   const setFavoriteProductLoading = useCallback(
@@ -148,8 +117,18 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     [],
   );
 
+  const setFavoriteOverride = useCallback(
+    (productId: string, isFavorite: boolean) => {
+      setFavoriteOverrides(currentOverrides => ({
+        ...currentOverrides,
+        [productId]: isFavorite,
+      }));
+    },
+    [],
+  );
+
   const handleToggleFavorite = useCallback(
-    async (product: (typeof products)[number]) => {
+    async (product: ProductListItem) => {
       if (favoriteLoadingIdSet.has(product.id)) {
         return;
       }
@@ -159,18 +138,11 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         return;
       }
 
-      const nextIsFavorite = !resolveIsFavorite(product);
+      const previousIsFavorite = resolveIsFavorite(product);
+      const nextIsFavorite = !previousIsFavorite;
 
       setFavoriteProductLoading(product.id, true);
-
-      if (nextIsFavorite) {
-        upsertFavoriteProduct({
-          ...product,
-          isFavorite: true,
-        });
-      } else {
-        removeFavoriteProduct(product.id);
-      }
+      setFavoriteOverride(product.id, nextIsFavorite);
 
       try {
         if (nextIsFavorite) {
@@ -179,15 +151,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           await productsService.unfavoriteProduct(product.id);
         }
       } catch {
-        if (nextIsFavorite) {
-          removeFavoriteProduct(product.id);
-        } else {
-          upsertFavoriteProduct({
-            ...product,
-            isFavorite: true,
-          });
-        }
-
+        setFavoriteOverride(product.id, previousIsFavorite);
         Alert.alert('Favoritos', 'Não foi possível atualizar os favoritos.');
       } finally {
         setFavoriteProductLoading(product.id, false);
@@ -196,23 +160,14 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     [
       favoriteLoadingIdSet,
       isAuthenticated,
-      removeFavoriteProduct,
       resolveIsFavorite,
+      setFavoriteOverride,
       setFavoriteProductLoading,
-      upsertFavoriteProduct,
     ],
   );
 
   function handleRetryProducts() {
     retry();
-  }
-
-  async function handleClearRecentProducts() {
-    try {
-      await clearRecentProducts();
-    } catch {
-      // The hook already maps storage failures to a safe message.
-    }
   }
 
   function handleOpenFeed() {
@@ -257,152 +212,6 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     return null;
   }
 
-  function renderFavoritesSection() {
-    if (isLoadingFavorites && favoriteProducts.length === 0) {
-      return (
-        <S.SectionBlock>
-          <SectionTitle
-            title="Favoritos"
-            subtitle="Produtos salvos para consultar depois."
-          />
-          <SurfaceCard>
-            <S.StatusContent>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-              <SectionTitle
-                title="Carregando favoritos"
-                subtitle="Aguarde um instante."
-              />
-            </S.StatusContent>
-          </SurfaceCard>
-        </S.SectionBlock>
-      );
-    }
-
-    if (isFavoriteProductsError && favoriteProducts.length === 0) {
-      return (
-        <S.SectionBlock>
-          <SectionTitle
-            title="Favoritos"
-            subtitle="Produtos salvos para consultar depois."
-          />
-          <SurfaceCard>
-            <S.SectionMessage>{favoriteProductsErrorMessage}</S.SectionMessage>
-          </SurfaceCard>
-        </S.SectionBlock>
-      );
-    }
-
-    if (isFavoriteProductsEmpty) {
-      return null;
-    }
-
-    return (
-      <S.SectionBlock>
-        <SectionTitle
-          title="Favoritos"
-          subtitle="Produtos salvos para consultar depois."
-        />
-        <S.HorizontalScroll
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingRight: theme.spacing.sm,
-          }}
-        >
-          {favoriteProducts.map(product => (
-            <S.HorizontalCardShell key={product.id}>
-              <RecentProductCard
-                product={{
-                  ...product,
-                  viewedAt: new Date().toISOString(),
-                }}
-                isFavorite
-                isFavoriteLoading={favoriteLoadingIdSet.has(product.id)}
-                onToggleFavorite={() => handleToggleFavorite(product)}
-                onPress={() => handleOpenProduct(product.id)}
-              />
-            </S.HorizontalCardShell>
-          ))}
-        </S.HorizontalScroll>
-      </S.SectionBlock>
-    );
-  }
-
-  function renderRecentProductsSection() {
-    if (isLoadingRecentProducts && recentProducts.length === 0) {
-      return (
-        <S.SectionBlock>
-          <SectionTitle
-            title="Vistos recentemente"
-            subtitle="Continue de onde parou."
-          />
-          <SurfaceCard>
-            <S.StatusContent>
-              <ActivityIndicator size="small" color={theme.colors.primary} />
-              <SectionTitle
-                title="Carregando produtos recentes"
-                subtitle="Aguarde um instante."
-              />
-            </S.StatusContent>
-          </SurfaceCard>
-        </S.SectionBlock>
-      );
-    }
-
-    if (recentProductsErrorMessage) {
-      return (
-        <S.SectionBlock>
-          <SectionTitle
-            title="Vistos recentemente"
-            subtitle="Continue de onde parou."
-          />
-          <SurfaceCard>
-            <S.SectionMessage>{recentProductsErrorMessage}</S.SectionMessage>
-          </SurfaceCard>
-        </S.SectionBlock>
-      );
-    }
-
-    if (recentProducts.length === 0) {
-      return null;
-    }
-
-    return (
-      <S.SectionBlock>
-        <S.SectionHeaderContent>
-          <SectionTitle
-            title="Vistos recentemente"
-            subtitle="Continue de onde parou."
-          />
-          <S.SectionHeaderActionRow>
-            <TextButton onPress={handleClearRecentProducts}>
-              Limpar histórico
-            </TextButton>
-          </S.SectionHeaderActionRow>
-        </S.SectionHeaderContent>
-        <S.HorizontalScroll
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{
-            paddingRight: theme.spacing.sm,
-          }}
-        >
-          {recentProducts.map(product => (
-            <S.HorizontalCardShell key={product.id}>
-              <RecentProductCard
-                product={product}
-                isFavorite={resolveIsFavorite(product)}
-                isFavoriteLoading={favoriteLoadingIdSet.has(product.id)}
-                onToggleFavorite={() => handleToggleFavorite(product)}
-                onPress={() => handleOpenProduct(product.id)}
-              />
-            </S.HorizontalCardShell>
-          ))}
-        </S.HorizontalScroll>
-      </S.SectionBlock>
-    );
-  }
-
   function renderArticlesPreviewSection() {
     if (isLoadingArticles && previewArticles.length === 0) {
       return (
@@ -433,7 +242,9 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
           />
           <SurfaceCard>
             <S.FooterContent>
-              <S.SectionMessage>Não foi possível carregar os conteúdos.</S.SectionMessage>
+              <S.SectionMessage>
+                Não foi possível carregar os conteúdos.
+              </S.SectionMessage>
               <TextButton onPress={retryArticles}>Tentar novamente</TextButton>
             </S.FooterContent>
           </SurfaceCard>
@@ -527,9 +338,6 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
                 ))}
               </S.ChipRow>
             </S.SectionBlock>
-
-            {renderFavoritesSection()}
-            {renderRecentProductsSection()}
 
             <S.SectionBlock>
               <SectionTitle title="Guia de produtos" subtitle={catalogSubtitle} />

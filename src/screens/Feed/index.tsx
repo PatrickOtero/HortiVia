@@ -14,6 +14,7 @@ import {
   SurfaceCard,
 } from '../../components';
 import { useArticles } from '../../features/articles/hooks/useArticles';
+import { useSavedArticles } from '../../features/articles/hooks/useSavedArticles';
 import type { ArticleCategoryFilter } from '../../features/articles/types/article';
 import { useTheme } from '../../hooks/useTheme';
 import { AppStackParamList, AppTabParamList } from '../../types/navigation';
@@ -45,6 +46,11 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
   } = useArticles({
     activeCategory,
   });
+  const {
+    isArticleSaved,
+    isArticleSaveLoading,
+    toggleSavedArticle,
+  } = useSavedArticles();
 
   function handleOpenArticle(articleId: string) {
     if (!canOpenArticle || articleId.length === 0) {
@@ -112,6 +118,11 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
           <ArticleCard
             article={item}
             showSaveButton
+            isSaved={isArticleSaved(item)}
+            isSavedLoading={isArticleSaveLoading(item.id)}
+            onToggleSaved={() => {
+              toggleSavedArticle(item).catch(() => undefined);
+            }}
             onPress={canOpenArticle ? () => handleOpenArticle(item.id) : undefined}
           />
         )}
@@ -121,16 +132,18 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
         contentContainerStyle={{
           paddingHorizontal: theme.layout.screenPadding,
           paddingTop: theme.spacing.lg,
-          paddingBottom: theme.layout.tabContentBottomPadding,
+          paddingBottom: theme.layout.tabContentBottomPadding + theme.spacing.md,
         }}
         ItemSeparatorComponent={ListItemSeparator}
         ListHeaderComponent={
           <S.HeaderContent>
-            <PageHeader
-              eyebrow="Leituras"
-              title="Artigos e dicas"
-              subtitle="Aprenda formas simples de escolher, conservar e aproveitar melhor os alimentos."
-            />
+            <S.IntroPanel>
+              <PageHeader
+                eyebrow="Leituras"
+                title="Artigos e dicas"
+                subtitle="Aprenda formas simples de escolher, conservar e aproveitar melhor os alimentos."
+              />
+            </S.IntroPanel>
 
             <S.SectionBlock>
               <SectionTitle

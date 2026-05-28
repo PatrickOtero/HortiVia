@@ -20,6 +20,56 @@ export type ArticleAuthor = {
   avatarUrl: string | null;
 };
 
+export type ArticleBlockKind =
+  | 'PARAGRAPH'
+  | 'HEADING'
+  | 'IMAGE'
+  | 'TIP'
+  | 'WARNING'
+  | 'CHECKLIST'
+  | 'STEPS'
+  | 'QUOTE'
+  | 'PRODUCT_REFERENCE'
+  | 'SECTION'
+  | 'OTHER';
+
+export type ArticleBlock = {
+  id: string;
+  articleId?: string;
+  kind: ArticleBlockKind;
+  title?: string;
+  body?: string;
+  imageUrl?: string;
+  imageAlt?: string;
+  imageCaption?: string;
+  items?: unknown;
+  sortOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+export type UpdateArticleBlockImagePayload = {
+  imageUrl: string;
+  imageAlt?: string;
+  imageCaption?: string;
+};
+
+export type CreateArticleBlockPayload = {
+  kind: ArticleBlockKind;
+  title?: string;
+  body?: string;
+  items?: string[];
+  sortOrder?: number;
+};
+
+export type UpdateArticleBlockPayload = Partial<CreateArticleBlockPayload>;
+
+export type ArticleBlockImageUploadResponse = {
+  uploadUrl: string;
+  imageUrl: string;
+  key?: string;
+};
+
 export type RelatedProduct = {
   id: string;
   name: string;
@@ -36,15 +86,22 @@ export type ArticleListItem = {
   summary: string;
   category: ArticleCategory;
   imageUrl: string | null;
+  subtitle?: string;
+  coverImageUrl?: string | null;
+  coverImageAlt?: string;
   tags: string[];
   publishedAt?: string;
   readingTimeMinutes?: number;
+  featured?: boolean;
   author: ArticleAuthor;
   isSaved?: boolean;
+  reactionsCount?: number;
+  isReacted?: boolean;
 };
 
 export type ArticleDetail = ArticleListItem & {
   content: string;
+  blocks: ArticleBlock[];
   relatedProducts?: RelatedProduct[];
   createdAt?: string;
   updatedAt?: string;
@@ -55,8 +112,13 @@ export type CreateArticlePayload = {
   summary: string;
   content: string;
   category: ArticleCategory;
+  subtitle?: string;
   imageUrl?: string | null;
+  coverImageUrl?: string | null;
+  coverImageAlt?: string;
   tags?: string[];
+  readingTimeMinutes?: number;
+  featured?: boolean;
   isPublished?: boolean;
 };
 
@@ -76,6 +138,12 @@ export type PaginatedResponse<T> = {
 
 export type SavedArticle = ArticleListItem & {
   isSaved: true;
+};
+
+export type ArticleReactionResult = {
+  message?: string;
+  isReacted: boolean;
+  reactionsCount: number;
 };
 
 export type SavedArticlesResponse = {

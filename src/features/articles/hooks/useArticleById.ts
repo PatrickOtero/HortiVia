@@ -51,7 +51,7 @@ export function useArticleById({ articleId }: UseArticleByIdOptions) {
       setErrorMessage(
         missingArticle
           ? 'Artigo não encontrado.'
-          : 'Não foi possível carregar este artigo.',
+          : 'Não foi possível carregar o artigo.',
       );
     } finally {
       if (requestId !== requestIdRef.current) {

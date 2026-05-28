@@ -102,7 +102,10 @@ export function createTheme(colors: Theme['colors']): Theme {
     layout: {
       ...baseLayout,
       tabContentBottomPadding:
-        baseLayout.bottomTabHeight + baseLayout.bottomTabInset + spacing.xl,
+        baseLayout.bottomTabHeight +
+        baseLayout.bottomTabInset +
+        spacing.xxl +
+        spacing.sm,
     },
   };
 }

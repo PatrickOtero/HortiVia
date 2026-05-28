@@ -47,9 +47,9 @@ type SavedArticlesContextValue = {
   toggleSavedArticle: (article: SavedArticleCandidate) => Promise<boolean>;
 };
 
-const SavedArticlesContext = createContext<SavedArticlesContextValue | undefined>(
-  undefined,
-);
+const SavedArticlesContext = createContext<
+  SavedArticlesContextValue | undefined
+>(undefined);
 
 type SavedArticlesProviderProps = {
   children: ReactNode;
@@ -63,10 +63,16 @@ function toSavedArticle(article: SavedArticleCandidate): SavedArticle {
     summary: article.summary,
     category: article.category,
     imageUrl: article.imageUrl ?? null,
+    subtitle: article.subtitle,
+    coverImageUrl: article.coverImageUrl ?? null,
+    coverImageAlt: article.coverImageAlt,
     tags: Array.isArray(article.tags) ? article.tags : [],
     publishedAt: article.publishedAt,
     readingTimeMinutes: article.readingTimeMinutes,
+    featured: article.featured ?? false,
     author: article.author,
+    reactionsCount: article.reactionsCount ?? 0,
+    isReacted: article.isReacted ?? false,
     isSaved: true,
   };
 }
@@ -222,7 +228,9 @@ export function SavedArticlesProvider({
       currentArticles.filter(article => article.id !== articleId),
     );
     setMeta(currentMeta => {
-      const hasArticle = articlesRef.current.some(article => article.id === articleId);
+      const hasArticle = articlesRef.current.some(
+        article => article.id === articleId,
+      );
 
       if (!hasArticle) {
         return currentMeta;
@@ -352,7 +360,9 @@ export function useSavedArticles() {
   const context = useContext(SavedArticlesContext);
 
   if (!context) {
-    throw new Error('useSavedArticles must be used within SavedArticlesProvider');
+    throw new Error(
+      'useSavedArticles must be used within SavedArticlesProvider',
+    );
   }
 
   return context;

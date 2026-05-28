@@ -1,25 +1,24 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import { useFocusEffect } from '@react-navigation/native';
 import {
   ArticleCard,
+  CompactArticleCard,
   EmptyStateCard,
+  FilterChip,
   ProductCard,
   RecentProductCard,
+  SearchInput,
   SectionTitle,
 } from '../../components';
 import { ThemeProvider } from '../../contexts/ThemeContext';
-import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useArticles } from '../../features/articles/hooks/useArticles';
+import { useSavedArticles } from '../../features/articles/hooks/useSavedArticles';
+import { useAuth } from '../../features/auth/hooks/useAuth';
 import { useFavoriteProducts } from '../../features/products/hooks/useFavoriteProducts';
 import { useRecentProducts } from '../../features/products/hooks/useRecentProducts';
 import { useProducts } from '../../features/products/hooks/useProducts';
 import { productsService } from '../../features/products/services/products.service';
 import { HomeScreen } from './index';
-
-jest.mock('@react-navigation/native', () => ({
-  useFocusEffect: jest.fn(),
-}));
 
 jest.mock('../../features/products/hooks/useProducts', () => ({
   useProducts: jest.fn(),
@@ -44,26 +43,60 @@ jest.mock('../../features/articles/hooks/useArticles', () => ({
   useArticles: jest.fn(),
 }));
 
+jest.mock('../../features/articles/hooks/useSavedArticles', () => ({
+  useSavedArticles: jest.fn(),
+}));
+
 jest.mock('../../features/auth/hooks/useAuth', () => ({
   useAuth: jest.fn(),
 }));
 
-const mockedUseFocusEffect = useFocusEffect as jest.Mock;
 const mockedUseAuth = useAuth as jest.Mock;
 const mockedUseProducts = useProducts as jest.Mock;
 const mockedUseFavoriteProducts = useFavoriteProducts as jest.Mock;
 const mockedUseRecentProducts = useRecentProducts as jest.Mock;
 const mockedUseArticles = useArticles as jest.Mock;
+const mockedUseSavedArticles = useSavedArticles as jest.Mock;
 const mockedProductsService = productsService as jest.Mocked<typeof productsService>;
+
+function createDefaultProduct(overrides?: Record<string, unknown>) {
+  return {
+    id: 'product-1',
+    name: 'Abacate',
+    slug: 'abacate',
+    category: 'FRUIT',
+    shortDescription: 'Cremoso e nutritivo.',
+    imageUrl: null,
+    isFavorite: false,
+    ...overrides,
+  };
+}
+
+function createDefaultArticle(overrides?: Record<string, unknown>) {
+  return {
+    id: 'article-1',
+    title: 'Como conservar folhas',
+    slug: 'como-conservar-folhas',
+    summary: 'Dicas simples para manter folhas frescas por mais tempo.',
+    category: 'STORAGE',
+    imageUrl: null,
+    tags: [],
+    publishedAt: '2026-05-25T10:00:00.000Z',
+    readingTimeMinutes: 4,
+    author: {
+      id: 'author-1',
+      name: 'Equipe HortiVia',
+      avatarUrl: null,
+    },
+    ...overrides,
+  };
+}
 
 describe('HomeScreen', () => {
   const navigate = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockedUseFocusEffect.mockImplementation(callback => {
-      callback();
-    });
     mockedUseAuth.mockReturnValue({
       isAuthenticated: true,
     });
@@ -74,17 +107,7 @@ describe('HomeScreen', () => {
         { value: 'VEGETABLE', label: 'Verduras' },
         { value: 'LEGUME', label: 'Legumes' },
       ],
-      products: [
-        {
-          id: 'product-1',
-          name: 'Abacate',
-          slug: 'abacate',
-          category: 'FRUIT',
-          shortDescription: 'Cremoso e nutritivo.',
-          imageUrl: null,
-          isFavorite: false,
-        },
-      ],
+      products: [createDefaultProduct()],
       meta: {
         page: 1,
         limit: 20,
@@ -98,49 +121,32 @@ describe('HomeScreen', () => {
       retry: jest.fn(),
       refresh: jest.fn(),
     });
-    mockedUseFavoriteProducts.mockReturnValue({
-      products: [],
-      isLoading: false,
-      isRefreshing: false,
-      isError: false,
-      isEmpty: true,
-      errorMessage: null,
-      meta: {
-        page: 1,
-        limit: 20,
-        total: 0,
-        totalPages: 0,
-      },
-      retry: jest.fn(),
-      refresh: jest.fn(),
-      removeProduct: jest.fn(),
-      upsertProduct: jest.fn(),
-    });
-    mockedUseRecentProducts.mockReturnValue({
-      recentProducts: [],
-      isLoading: false,
-      errorMessage: null,
-      refreshRecentProducts: jest.fn(),
-      clearRecentProducts: jest.fn(),
-      removeRecentProduct: jest.fn(),
-    });
     mockedUseArticles.mockReturnValue({
-      articles: [],
+      articles: [createDefaultArticle()],
       categories: [],
       isLoading: false,
       isRefreshing: false,
       isError: false,
-      isEmpty: true,
+      isEmpty: false,
       errorMessage: null,
       canOpenArticle: true,
       meta: {
         page: 1,
         limit: 20,
-        total: 0,
-        totalPages: 0,
+        total: 1,
+        totalPages: 1,
       },
       retry: jest.fn(),
       refresh: jest.fn(),
+    });
+    mockedUseFavoriteProducts.mockReturnValue({
+      products: [],
+    });
+    mockedUseRecentProducts.mockReturnValue({
+      recentProducts: [],
+    });
+    mockedUseSavedArticles.mockReturnValue({
+      articles: [],
     });
   });
 
@@ -155,7 +161,7 @@ describe('HomeScreen', () => {
     );
   }
 
-  it('hides the favorites section when there are no favorite products', async () => {
+  it('does not render library sections on home', async () => {
     let renderer: ReactTestRenderer.ReactTestRenderer;
 
     await ReactTestRenderer.act(async () => {
@@ -167,88 +173,39 @@ describe('HomeScreen', () => {
       .map(sectionTitle => sectionTitle.props.title);
 
     expect(titleValues).not.toContain('Favoritos');
-  });
-
-  it('shows the favorites section when favorite products exist', async () => {
-    mockedUseFavoriteProducts.mockReturnValue({
-      products: [
-        {
-          id: 'product-9',
-          name: 'Manga',
-          slug: 'manga',
-          category: 'FRUIT',
-          shortDescription: 'Doce e aromática.',
-          imageUrl: null,
-          isFavorite: true,
-        },
-      ],
-      isLoading: false,
-      isRefreshing: false,
-      isError: false,
-      isEmpty: false,
-      errorMessage: null,
-      meta: {
-        page: 1,
-        limit: 20,
-        total: 1,
-        totalPages: 1,
-      },
-      retry: jest.fn(),
-      refresh: jest.fn(),
-      removeProduct: jest.fn(),
-      upsertProduct: jest.fn(),
-    });
-
-    let renderer: ReactTestRenderer.ReactTestRenderer;
-
-    await ReactTestRenderer.act(async () => {
-      renderer = renderHome();
-    });
-
-    const titleValues = renderer!.root
-      .findAllByType(SectionTitle)
-      .map(sectionTitle => sectionTitle.props.title);
-    const recentCards = renderer!.root.findAllByType(RecentProductCard);
-
-    expect(titleValues).toContain('Favoritos');
-    expect(recentCards).toHaveLength(1);
-  });
-
-  it('hides the recent products section when there are no recent items', async () => {
-    let renderer: ReactTestRenderer.ReactTestRenderer;
-
-    await ReactTestRenderer.act(async () => {
-      renderer = renderHome();
-    });
-
-    const titleValues = renderer!.root
-      .findAllByType(SectionTitle)
-      .map(sectionTitle => sectionTitle.props.title);
-
+    expect(titleValues).not.toContain('Produtos favoritos');
     expect(titleValues).not.toContain('Vistos recentemente');
+    expect(titleValues).not.toContain('Leituras salvas');
+    expect(renderer!.root.findAllByType(RecentProductCard)).toHaveLength(0);
+    expect(renderer!.root.findAllByType(CompactArticleCard)).toHaveLength(0);
   });
 
-  it('shows the recent products section when recent items exist', async () => {
-    mockedUseRecentProducts.mockReturnValue({
-      recentProducts: [
-        {
-          id: 'product-2',
-          name: 'Manga',
-          slug: 'manga',
-          category: 'FRUIT',
-          shortDescription: 'Doce e aromática.',
-          imageUrl: null,
-          isFavorite: false,
-          viewedAt: '2026-05-25T10:00:00.000Z',
-        },
-      ],
-      isLoading: false,
-      errorMessage: null,
-      refreshRecentProducts: jest.fn(),
-      clearRecentProducts: jest.fn(),
-      removeRecentProduct: jest.fn(),
+  it('does not render a library shortcut when the tab already exposes biblioteca', async () => {
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+
+    await ReactTestRenderer.act(async () => {
+      renderer = renderHome();
     });
 
+    const textNodes = renderer!.root
+      .findAll(node => typeof node.props.children === 'string')
+      .map(node => node.props.children);
+
+    expect(textNodes).not.toContain('Sua biblioteca');
+    expect(textNodes).not.toContain('Abrir biblioteca');
+  });
+
+  it('does not load library hooks on home', async () => {
+    await ReactTestRenderer.act(async () => {
+      renderHome();
+    });
+
+    expect(mockedUseFavoriteProducts).not.toHaveBeenCalled();
+    expect(mockedUseRecentProducts).not.toHaveBeenCalled();
+    expect(mockedUseSavedArticles).not.toHaveBeenCalled();
+  });
+
+  it('renders search, categories, product discovery and article discovery', async () => {
     let renderer: ReactTestRenderer.ReactTestRenderer;
 
     await ReactTestRenderer.act(async () => {
@@ -259,59 +216,13 @@ describe('HomeScreen', () => {
       .findAllByType(SectionTitle)
       .map(sectionTitle => sectionTitle.props.title);
 
-    expect(titleValues).toContain('Vistos recentemente');
-  });
-
-  it('shows article preview when articles are available', async () => {
-    mockedUseArticles.mockReturnValue({
-      articles: [
-        {
-          id: 'article-1',
-          title: 'Como conservar folhas',
-          slug: 'como-conservar-folhas',
-          summary: 'Dicas simples para manter folhas frescas por mais tempo.',
-          category: 'STORAGE',
-          imageUrl: null,
-          tags: [],
-          publishedAt: '2026-05-25T10:00:00.000Z',
-          readingTimeMinutes: 4,
-          author: {
-            id: 'author-1',
-            name: 'Equipe HortiVia',
-            avatarUrl: null,
-          },
-        },
-      ],
-      categories: [],
-      isLoading: false,
-      isRefreshing: false,
-      isError: false,
-      isEmpty: false,
-      errorMessage: null,
-      canOpenArticle: true,
-      meta: {
-        page: 1,
-        limit: 20,
-        total: 1,
-        totalPages: 1,
-      },
-      retry: jest.fn(),
-      refresh: jest.fn(),
-    });
-
-    let renderer: ReactTestRenderer.ReactTestRenderer;
-
-    await ReactTestRenderer.act(async () => {
-      renderer = renderHome();
-    });
-
-    const titleValues = renderer!.root
-      .findAllByType(SectionTitle)
-      .map(sectionTitle => sectionTitle.props.title);
-    const articleCards = renderer!.root.findAllByType(ArticleCard);
-
+    expect(renderer!.root.findAllByType(SearchInput)).toHaveLength(1);
+    expect(renderer!.root.findAllByType(FilterChip)).toHaveLength(4);
+    expect(renderer!.root.findAllByType(ProductCard)).toHaveLength(1);
+    expect(renderer!.root.findAllByType(ArticleCard)).toHaveLength(1);
+    expect(titleValues).toContain('Categorias');
+    expect(titleValues).toContain('Guia de produtos');
     expect(titleValues).toContain('Conteúdos educativos');
-    expect(articleCards).toHaveLength(1);
   });
 
   it('shows the empty search state when no products are found', async () => {
@@ -361,34 +272,40 @@ describe('HomeScreen', () => {
     });
   });
 
-  it('renders main list products as favorite when the id exists in favorites', async () => {
-    mockedUseFavoriteProducts.mockReturnValue({
-      products: [
-        {
-          id: 'product-1',
-          name: 'Abacate',
-          slug: 'abacate',
-          category: 'FRUIT',
-          shortDescription: 'Cremoso e nutritivo.',
-          imageUrl: null,
-          isFavorite: true,
-        },
-      ],
-      isLoading: false,
-      isRefreshing: false,
-      isError: false,
-      isEmpty: false,
-      errorMessage: null,
+  it('opens article detail when tapping an article preview', async () => {
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+
+    await ReactTestRenderer.act(async () => {
+      renderer = renderHome();
+    });
+
+    const articleCard = renderer!.root.findByType(ArticleCard);
+
+    await ReactTestRenderer.act(async () => {
+      articleCard.props.onPress();
+    });
+
+    expect(navigate).toHaveBeenCalledWith('ArticleDetail', {
+      articleId: 'article-1',
+    });
+  });
+
+  it('renders main list products as favorite when product data is already favorite', async () => {
+    mockedUseProducts.mockReturnValue({
+      categories: [{ value: 'ALL', label: 'Todos' }],
+      products: [createDefaultProduct({ isFavorite: true })],
       meta: {
         page: 1,
         limit: 20,
         total: 1,
         totalPages: 1,
       },
+      isLoading: false,
+      isRefreshing: false,
+      isError: false,
+      isEmpty: false,
       retry: jest.fn(),
       refresh: jest.fn(),
-      removeProduct: jest.fn(),
-      upsertProduct: jest.fn(),
     });
 
     let renderer: ReactTestRenderer.ReactTestRenderer;
@@ -397,95 +314,12 @@ describe('HomeScreen', () => {
       renderer = renderHome();
     });
 
-    const productCards = renderer!.root.findAllByType(ProductCard);
+    const productCard = renderer!.root.findByType(ProductCard);
 
-    expect(productCards[0]?.props.isFavorite).toBe(true);
+    expect(productCard.props.isFavorite).toBe(true);
   });
 
-  it('derives recent product favorite state from the favorite ids', async () => {
-    mockedUseFavoriteProducts.mockReturnValue({
-      products: [
-        {
-          id: 'product-2',
-          name: 'Manga',
-          slug: 'manga',
-          category: 'FRUIT',
-          shortDescription: 'Doce e aromÃ¡tica.',
-          imageUrl: null,
-          isFavorite: true,
-        },
-      ],
-      isLoading: false,
-      isRefreshing: false,
-      isError: false,
-      isEmpty: false,
-      errorMessage: null,
-      meta: {
-        page: 1,
-        limit: 20,
-        total: 1,
-        totalPages: 1,
-      },
-      retry: jest.fn(),
-      refresh: jest.fn(),
-      removeProduct: jest.fn(),
-      upsertProduct: jest.fn(),
-    });
-    mockedUseRecentProducts.mockReturnValue({
-      recentProducts: [
-        {
-          id: 'product-2',
-          name: 'Manga',
-          slug: 'manga',
-          category: 'FRUIT',
-          shortDescription: 'Doce e aromÃ¡tica.',
-          imageUrl: null,
-          isFavorite: false,
-          viewedAt: '2026-05-25T10:00:00.000Z',
-        },
-      ],
-      isLoading: false,
-      errorMessage: null,
-      refreshRecentProducts: jest.fn(),
-      clearRecentProducts: jest.fn(),
-      removeRecentProduct: jest.fn(),
-    });
-
-    let renderer: ReactTestRenderer.ReactTestRenderer;
-
-    await ReactTestRenderer.act(async () => {
-      renderer = renderHome();
-    });
-
-    const recentCards = renderer!.root.findAllByType(RecentProductCard);
-    const recentMangaCard = recentCards.find(
-      card => card.props.product.id === 'product-2',
-    );
-
-    expect(recentMangaCard?.props.isFavorite).toBe(true);
-  });
-
-  it('adds a product to favorites preview when favorited from the main list', async () => {
-    const upsertProduct = jest.fn();
-
-    mockedUseFavoriteProducts.mockReturnValue({
-      products: [],
-      isLoading: false,
-      isRefreshing: false,
-      isError: false,
-      isEmpty: true,
-      errorMessage: null,
-      meta: {
-        page: 1,
-        limit: 20,
-        total: 0,
-        totalPages: 0,
-      },
-      retry: jest.fn(),
-      refresh: jest.fn(),
-      removeProduct: jest.fn(),
-      upsertProduct,
-    });
+  it('toggles a product favorite from the main list', async () => {
     mockedProductsService.favoriteProduct.mockResolvedValue({
       message: 'Produto adicionado aos favoritos.',
     });
@@ -502,45 +336,26 @@ describe('HomeScreen', () => {
       await productCard.props.onToggleFavorite();
     });
 
-    expect(upsertProduct).toHaveBeenCalledWith(
-      expect.objectContaining({
-        id: 'product-1',
-        isFavorite: true,
-      }),
-    );
     expect(mockedProductsService.favoriteProduct).toHaveBeenCalledWith('product-1');
+    expect(renderer!.root.findByType(ProductCard).props.isFavorite).toBe(true);
   });
 
-  it('removes a product from favorites preview when unfavorited from the main list', async () => {
-    const removeProduct = jest.fn();
-
-    mockedUseFavoriteProducts.mockReturnValue({
-      products: [
-        {
-          id: 'product-1',
-          name: 'Abacate',
-          slug: 'abacate',
-          category: 'FRUIT',
-          shortDescription: 'Cremoso e nutritivo.',
-          imageUrl: null,
-          isFavorite: true,
-        },
-      ],
-      isLoading: false,
-      isRefreshing: false,
-      isError: false,
-      isEmpty: false,
-      errorMessage: null,
+  it('removes favorite state from the main list when unfavoriting a product', async () => {
+    mockedUseProducts.mockReturnValue({
+      categories: [{ value: 'ALL', label: 'Todos' }],
+      products: [createDefaultProduct({ isFavorite: true })],
       meta: {
         page: 1,
         limit: 20,
         total: 1,
         totalPages: 1,
       },
+      isLoading: false,
+      isRefreshing: false,
+      isError: false,
+      isEmpty: false,
       retry: jest.fn(),
       refresh: jest.fn(),
-      removeProduct,
-      upsertProduct: jest.fn(),
     });
     mockedProductsService.unfavoriteProduct.mockResolvedValue({
       message: 'Produto removido dos favoritos.',
@@ -552,13 +367,15 @@ describe('HomeScreen', () => {
       renderer = renderHome();
     });
 
-    const productCard = renderer!.root.findAllByType(ProductCard)[0];
+    const productCard = renderer!.root.findByType(ProductCard);
 
     await ReactTestRenderer.act(async () => {
       await productCard.props.onToggleFavorite();
     });
 
-    expect(removeProduct).toHaveBeenCalledWith('product-1');
-    expect(mockedProductsService.unfavoriteProduct).toHaveBeenCalledWith('product-1');
+    expect(mockedProductsService.unfavoriteProduct).toHaveBeenCalledWith(
+      'product-1',
+    );
+    expect(renderer!.root.findByType(ProductCard).props.isFavorite).toBe(false);
   });
 });

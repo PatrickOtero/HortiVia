@@ -3,7 +3,7 @@ import { BottomTabBarProps, createBottomTabNavigator } from '@react-navigation/b
 import { BottomTabItem } from '../components/BottomTabItem';
 import { HomeScreen } from '../screens/Home';
 import { FeedScreen } from '../screens/Feed';
-import { FavoritesScreen } from '../screens/Favorites';
+import { LibraryScreen } from '../screens/Library';
 import { SettingsScreen } from '../screens/Settings';
 import { AppTabParamList } from '../types/navigation';
 import * as S from './styles';
@@ -72,9 +72,9 @@ export function AppTabsNavigator() {
         options={{ tabBarLabel: 'Leituras' }}
       />
       <Tab.Screen
-        name="Favorites"
-        component={FavoritesScreen}
-        options={{ tabBarLabel: 'Favoritos' }}
+        name="Library"
+        component={LibraryScreen}
+        options={{ tabBarLabel: 'Biblioteca' }}
       />
       <Tab.Screen
         name="Settings"

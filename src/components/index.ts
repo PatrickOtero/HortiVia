@@ -1,5 +1,7 @@
 export { Avatar } from './Avatar';
+export { ArticleBlockRenderer } from './ArticleBlockRenderer';
 export { ArticleCard } from './ArticleCard';
+export { ArticleReactionButton } from './ArticleReactionButton';
 export { BackButton } from './BackButton';
 export { BrandLockup } from './BrandLockup';
 export { BottomTabItem } from './BottomTabItem';

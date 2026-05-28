@@ -1,24 +1,34 @@
 import React, { useEffect, useState } from 'react';
+import type { GestureResponderEvent } from 'react-native';
+import { ArticleReactionButton } from '../ArticleReactionButton';
+import { SavedArticleButton } from '../SavedArticleButton';
 import { getArticleCategoryLabel } from '../../features/articles/mappers/article.mapper';
+import type { ArticleListItem } from '../../features/articles/types/article';
 import type { RelatedArticle } from '../../features/products/types/product';
 import * as S from './styles';
 
-type CompactArticleCardProps = {
-  article: RelatedArticle;
-  onPress: () => void;
+type CompactArticlePreview = Pick<
+  RelatedArticle | ArticleListItem,
+  'id' | 'title' | 'summary' | 'category' | 'imageUrl'
+> & {
+  reactionsCount?: number;
+  isReacted?: boolean;
 };
 
-function getArticleInitials(title: string) {
-  return title
-    .split(' ')
-    .slice(0, 2)
-    .map(part => part.charAt(0).toUpperCase())
-    .join('');
-}
+type CompactArticleCardProps = {
+  article: CompactArticlePreview;
+  onPress: () => void;
+  isSaved?: boolean;
+  isSavedLoading?: boolean;
+  onToggleSaved?: (event: GestureResponderEvent) => void;
+};
 
 export function CompactArticleCard({
   article,
   onPress,
+  isSaved,
+  isSavedLoading = false,
+  onToggleSaved,
 }: CompactArticleCardProps) {
   const [hasImageError, setHasImageError] = useState(false);
 
@@ -29,7 +39,7 @@ export function CompactArticleCard({
   const shouldShowImage = Boolean(article.imageUrl) && !hasImageError;
 
   return (
-    <S.Button onPress={onPress} activeOpacity={0.92}>
+    <S.Button onPress={onPress} activeOpacity={0.94}>
       <S.ImageShell>
         {shouldShowImage ? (
           <S.ArticleImage
@@ -37,24 +47,47 @@ export function CompactArticleCard({
             onError={() => setHasImageError(true)}
           />
         ) : (
-          <S.ImageFallbackText>
-            {getArticleInitials(article.title)}
-          </S.ImageFallbackText>
+          <S.ImageFallback>
+            <S.ImageFallbackBadge>
+              <S.ImageFallbackBadgeText>HortiVia</S.ImageFallbackBadgeText>
+            </S.ImageFallbackBadge>
+          </S.ImageFallback>
         )}
+
+        <S.MediaTopRow>
+          <S.CategoryTag>
+            <S.CategoryText>
+              {getArticleCategoryLabel(article.category)}
+            </S.CategoryText>
+          </S.CategoryTag>
+          {onToggleSaved ? (
+            <SavedArticleButton
+              isSaved={Boolean(isSaved)}
+              isLoading={isSavedLoading}
+              onPress={onToggleSaved}
+              size="sm"
+              showLabel={false}
+            />
+          ) : null}
+        </S.MediaTopRow>
       </S.ImageShell>
 
       <S.Content>
-        <S.CategoryTag>
-          <S.CategoryText>
-            {getArticleCategoryLabel(article.category)}
-          </S.CategoryText>
-        </S.CategoryTag>
         <S.Title numberOfLines={2} ellipsizeMode="tail">
           {article.title}
         </S.Title>
-        <S.Summary numberOfLines={3} ellipsizeMode="tail">
+        <S.Summary numberOfLines={2} ellipsizeMode="tail">
           {article.summary}
         </S.Summary>
+        {article.reactionsCount !== undefined ? (
+          <S.ReactionRow>
+            <ArticleReactionButton
+              isActive={article.isReacted === true}
+              count={article.reactionsCount}
+              size="sm"
+            />
+          </S.ReactionRow>
+        ) : null}
       </S.Content>
     </S.Button>
   );

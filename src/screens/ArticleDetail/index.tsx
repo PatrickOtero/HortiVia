@@ -1,7 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, type GestureResponderEvent } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  type GestureResponderEvent,
+} from 'react-native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
+  ArticleBlockRenderer,
+  ArticleReactionButton,
   Avatar,
   BackButton,
   CompactProductCard,
@@ -14,8 +20,10 @@ import {
   SurfaceCard,
 } from '../../components';
 import { getArticleCategoryLabel } from '../../features/articles/mappers/article.mapper';
-import { useToggleArticleSaved } from '../../features/articles/hooks/useToggleArticleSaved';
+import { useArticleReaction } from '../../features/articles/hooks/useArticleReaction';
 import { useArticleById } from '../../features/articles/hooks/useArticleById';
+import { useToggleArticleSaved } from '../../features/articles/hooks/useToggleArticleSaved';
+import { getArticleContentParagraphs } from '../../features/articles/utils/articleBlocks';
 import type { ArticleDetail } from '../../features/articles/types/article';
 import { useTheme } from '../../hooks/useTheme';
 import { AppStackParamList } from '../../types/navigation';
@@ -52,24 +60,22 @@ function getReadingLabel(readingTimeMinutes?: number) {
   return `${readingTimeMinutes} min de leitura`;
 }
 
-function getContentParagraphs(content: string, summary: string) {
-  const normalizedContent = content
-    .replace(/\r\n/g, '\n')
-    .split(/\n\s*\n/)
-    .map(paragraph => paragraph.trim())
-    .filter(Boolean);
-
-  if (normalizedContent.length > 0) {
-    return normalizedContent;
-  }
-
-  return summary ? [summary] : [];
-}
-
 function getFallbackBadge(article: ArticleDetail) {
   const source = article.title.trim() || article.author.name.trim() || 'H';
 
   return source.charAt(0).toUpperCase();
+}
+
+function getUsefulSummary(reactionsCount: number) {
+  if (reactionsCount <= 0) {
+    return 'Se este conteúdo ajudou, você pode marcar como útil.';
+  }
+
+  if (reactionsCount === 1) {
+    return '1 pessoa achou útil.';
+  }
+
+  return `${reactionsCount} pessoas acharam útil.`;
 }
 
 export function ArticleDetailScreen({
@@ -82,10 +88,11 @@ export function ArticleDetailScreen({
     articleId,
   });
   const [hasImageError, setHasImageError] = useState(false);
+  const coverImageUrl = article?.coverImageUrl ?? article?.imageUrl ?? null;
 
   useEffect(() => {
     setHasImageError(false);
-  }, [article?.imageUrl]);
+  }, [coverImageUrl]);
 
   const categoryLabel = article
     ? getArticleCategoryLabel(article.category)
@@ -93,26 +100,21 @@ export function ArticleDetailScreen({
   const publishedDate = formatPublishedDate(article?.publishedAt);
   const readingLabel = getReadingLabel(article?.readingTimeMinutes);
   const relatedProducts = article?.relatedProducts ?? [];
-  const {
-    isSaved,
-    isSubmitting,
-    toggleSaved,
-  } = useToggleArticleSaved({
-    article:
-      article ?? {
-        id: articleId ?? '',
-        title: '',
-        slug: '',
-        summary: '',
-        category: 'TIPS',
-        imageUrl: null,
-        tags: [],
-        author: {
-          id: '',
-          name: '',
-          avatarUrl: null,
-        },
+  const { isSaved, isSubmitting, toggleSaved } = useToggleArticleSaved({
+    article: article ?? {
+      id: articleId ?? '',
+      title: '',
+      slug: '',
+      summary: '',
+      category: 'TIPS',
+      imageUrl: null,
+      tags: [],
+      author: {
+        id: '',
+        name: '',
+        avatarUrl: null,
       },
+    },
     onError: message => {
       Alert.alert('Leituras salvas', message);
     },
@@ -120,14 +122,33 @@ export function ArticleDetailScreen({
       Alert.alert('Leituras salvas', 'Entre para salvar leituras.');
     },
   });
+  const {
+    isReacted,
+    reactionsCount,
+    isLoading: isReactionLoading,
+    toggleReaction,
+  } = useArticleReaction({
+    article: article ?? {
+      id: articleId ?? '',
+      isReacted: false,
+      reactionsCount: 0,
+    },
+    onError: message => {
+      Alert.alert('Útil', message);
+    },
+    onRequireAuth: () => {
+      Alert.alert('Útil', 'Entre para marcar artigos como úteis.');
+    },
+  });
   const contentParagraphs = useMemo(() => {
     if (!article) {
       return [];
     }
 
-    return getContentParagraphs(article.content, article.summary);
+    return getArticleContentParagraphs(article.content, article.summary);
   }, [article]);
-  const shouldShowImage = Boolean(article?.imageUrl) && !hasImageError;
+  const shouldShowImage = Boolean(coverImageUrl) && !hasImageError;
+  const hasBlocks = (article?.blocks?.length ?? 0) > 0;
 
   function handleGoBack() {
     navigation.goBack();
@@ -144,6 +165,10 @@ export function ArticleDetailScreen({
   function handleToggleSaved(event: GestureResponderEvent) {
     event.stopPropagation?.();
     toggleSaved().catch(() => undefined);
+  }
+
+  function handleToggleReaction() {
+    Promise.resolve(toggleReaction()).catch(() => undefined);
   }
 
   if (isLoading) {
@@ -182,15 +207,21 @@ export function ArticleDetailScreen({
             <EmptyStateCard
               title={
                 isNotFound
-                  ? 'Esta leitura não está disponível.'
-                  : 'Não foi possível carregar este artigo.'
+                  ? 'Esta leitura nao esta disponivel.'
+                  : 'Nao foi possivel carregar o artigo.'
               }
-              description={isNotFound ? 'Volte e escolha outra leitura.' : 'Tente novamente em instantes.'}
+              description={
+                isNotFound
+                  ? 'Volte e escolha outra leitura.'
+                  : 'Tente novamente em instantes.'
+              }
             >
               {isNotFound ? (
                 <PrimaryButton onPress={handleGoBack}>Voltar</PrimaryButton>
               ) : (
-                <PrimaryButton onPress={handleRetry}>Tentar novamente</PrimaryButton>
+                <PrimaryButton onPress={handleRetry}>
+                  Tentar novamente
+                </PrimaryButton>
               )}
             </EmptyStateCard>
           </S.Content>
@@ -207,23 +238,35 @@ export function ArticleDetailScreen({
             <BackButton onPress={handleGoBack} />
           </S.HeaderRow>
 
-          <S.HeroCard $category={article.category}>
-            {shouldShowImage ? (
-              <>
-                <S.HeroImage
-                  source={{ uri: article.imageUrl ?? undefined }}
-                  onError={() => setHasImageError(true)}
-                />
-                <S.HeroOverlay />
-              </>
-            ) : null}
+          {shouldShowImage ? (
+            <S.HeroMedia>
+              <S.HeroImage
+                source={{ uri: coverImageUrl ?? undefined }}
+                accessibilityLabel={
+                  article.coverImageAlt ?? article.title ?? 'Capa da leitura'
+                }
+                onError={() => setHasImageError(true)}
+              />
+            </S.HeroMedia>
+          ) : (
+            <S.HeroMedia>
+              <S.HeroFallback>
+                <S.HeroFallbackBadge>
+                  <S.HeroFallbackBadgeText>
+                    {getFallbackBadge(article)}
+                  </S.HeroFallbackBadgeText>
+                </S.HeroFallbackBadge>
+                <S.HeroFallbackText>Leitura HortiVia</S.HeroFallbackText>
+              </S.HeroFallback>
+            </S.HeroMedia>
+          )}
 
-            <S.MetaTopRow>
-              <S.CategoryPill>
-                <S.CategoryPillText>{categoryLabel}</S.CategoryPillText>
-              </S.CategoryPill>
-
-              <S.MetaTopRight>
+          <SurfaceCard>
+            <S.IntroCard>
+              <S.IntroTopRow>
+                <S.CategoryPill>
+                  <S.CategoryPillText>{categoryLabel}</S.CategoryPillText>
+                </S.CategoryPill>
                 <SavedArticleButton
                   isSaved={isSaved}
                   isLoading={isSubmitting}
@@ -231,62 +274,83 @@ export function ArticleDetailScreen({
                   size="md"
                   showLabel
                 />
-                {!shouldShowImage ? (
-                  <S.HeroFallbackBadge>
-                    <S.HeroFallbackBadgeText>
-                      {getFallbackBadge(article)}
-                    </S.HeroFallbackBadgeText>
-                  </S.HeroFallbackBadge>
-                ) : null}
-              </S.MetaTopRight>
-            </S.MetaTopRow>
+              </S.IntroTopRow>
 
-            <S.HeroCopy>
-              <S.HeroTitle>{article.title}</S.HeroTitle>
-              <S.HeroSummary>{article.summary}</S.HeroSummary>
-            </S.HeroCopy>
-          </S.HeroCard>
-
-          <SurfaceCard>
-            <S.MetaCard>
-              <S.AuthorRow>
-                <Avatar label={article.author.name} size={40} />
-                <S.AuthorCopy>
-                  <S.AuthorName>{article.author.name}</S.AuthorName>
-                    <S.AuthorLabel>Leitura</S.AuthorLabel>
-                </S.AuthorCopy>
-              </S.AuthorRow>
-
-              <S.MetaInfoWrap>
-                {publishedDate ? (
-                  <S.MetaInfoChip>
-                    <S.MetaInfoText>{publishedDate}</S.MetaInfoText>
-                  </S.MetaInfoChip>
+              <S.IntroCopy>
+                <S.Title>{article.title}</S.Title>
+                {article.subtitle ? (
+                  <S.Subtitle>{article.subtitle}</S.Subtitle>
                 ) : null}
-                {readingLabel ? (
-                  <S.MetaInfoChip>
-                    <S.MetaInfoText>{readingLabel}</S.MetaInfoText>
-                  </S.MetaInfoChip>
-                ) : null}
-              </S.MetaInfoWrap>
-            </S.MetaCard>
+                <S.Summary>{article.summary}</S.Summary>
+              </S.IntroCopy>
+
+              <S.UtilityRow>
+                <S.UtilityCopy>
+                  <S.UtilityTitle>Este artigo foi útil?</S.UtilityTitle>
+                  <S.UtilityDescription>
+                    {getUsefulSummary(reactionsCount)}
+                  </S.UtilityDescription>
+                </S.UtilityCopy>
+                <ArticleReactionButton
+                  testID="article-detail-reaction-button"
+                  isActive={isReacted}
+                  count={reactionsCount}
+                  isLoading={isReactionLoading}
+                  onPress={handleToggleReaction}
+                  size="md"
+                />
+              </S.UtilityRow>
+
+              <S.Divider />
+
+              <S.MetaRow>
+                <S.AuthorRow>
+                  <Avatar label={article.author.name} size={40} />
+                  <S.AuthorCopy>
+                    <S.AuthorName numberOfLines={1} ellipsizeMode="tail">
+                      {article.author.name}
+                    </S.AuthorName>
+                    <S.AuthorLabel numberOfLines={1} ellipsizeMode="tail">
+                      Leitura educativa
+                    </S.AuthorLabel>
+                  </S.AuthorCopy>
+                </S.AuthorRow>
+
+                <S.MetaInfoWrap>
+                  {publishedDate ? (
+                    <S.MetaInfoChip>
+                      <S.MetaInfoText>{publishedDate}</S.MetaInfoText>
+                    </S.MetaInfoChip>
+                  ) : null}
+                  {readingLabel ? (
+                    <S.MetaInfoChip>
+                      <S.MetaInfoText>{readingLabel}</S.MetaInfoText>
+                    </S.MetaInfoChip>
+                  ) : null}
+                </S.MetaInfoWrap>
+              </S.MetaRow>
+            </S.IntroCard>
           </SurfaceCard>
 
-          <SurfaceCard>
-            <S.ContentCard>
-              <SectionTitle
-                title="Texto completo"
-                subtitle="Dicas e orientações para o dia a dia."
-              />
-              {contentParagraphs.map(paragraph => (
-                <S.Paragraph key={paragraph}>{paragraph}</S.Paragraph>
-              ))}
-            </S.ContentCard>
-          </SurfaceCard>
+          <S.BodySection>
+            {hasBlocks ? (
+              <S.BlocksList>
+                {article.blocks.map(block => (
+                  <ArticleBlockRenderer key={block.id} block={block} />
+                ))}
+              </S.BlocksList>
+            ) : (
+              <S.BlocksList>
+                {contentParagraphs.map(paragraph => (
+                  <S.Paragraph key={paragraph}>{paragraph}</S.Paragraph>
+                ))}
+              </S.BlocksList>
+            )}
+          </S.BodySection>
 
           {article.tags.length ? (
             <SurfaceCard>
-              <S.ContentCard>
+              <S.TagsCard>
                 <SectionTitle
                   title="Temas relacionados"
                   subtitle="Assuntos desta leitura."
@@ -298,7 +362,7 @@ export function ArticleDetailScreen({
                     </S.TagChip>
                   ))}
                 </S.TagsRow>
-              </S.ContentCard>
+              </S.TagsCard>
             </SurfaceCard>
           ) : null}
 
@@ -307,7 +371,7 @@ export function ArticleDetailScreen({
               <S.RelatedSectionCard>
                 <SectionTitle
                   title="Produtos relacionados"
-                  subtitle="Alimentos citados ou conectados a este conteúdo."
+                  subtitle="Alimentos ligados a este conteudo."
                 />
                 <S.RelatedScroll
                   horizontal

@@ -20,11 +20,12 @@ export const settingsSections: SettingsSectionItem[] = [
         actionKey: 'preferences',
       },
       {
-        id: 'saved-articles',
-        label: 'Leituras salvas',
-        description: 'Acesse artigos que você quer ler de novo depois.',
+        id: 'library',
+        label: 'Biblioteca',
+        description:
+          'Acesse produtos favoritos, vistos recentemente e leituras salvas.',
         type: 'navigation',
-        actionKey: 'savedArticles',
+        actionKey: 'library',
       },
     ],
   },
