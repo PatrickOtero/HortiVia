@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import type { GestureResponderEvent } from 'react-native';
 import { ArticleReactionButton } from '../ArticleReactionButton';
 import { SavedArticleButton } from '../SavedArticleButton';
+import { useArticleReaction } from '../../features/articles/hooks/useArticleReaction';
 import { getArticleCategoryLabel } from '../../features/articles/mappers/article.mapper';
 import type { ArticleListItem } from '../../features/articles/types/article';
 import type { RelatedArticle } from '../../features/products/types/product';
@@ -31,6 +32,11 @@ export function CompactArticleCard({
   onToggleSaved,
 }: CompactArticleCardProps) {
   const [hasImageError, setHasImageError] = useState(false);
+  const { isReacted, reactionsCount } = useArticleReaction({
+    article,
+  });
+  const shouldShowReactionCount =
+    article.isReacted !== undefined || article.reactionsCount !== undefined;
 
   useEffect(() => {
     setHasImageError(false);
@@ -79,12 +85,13 @@ export function CompactArticleCard({
         <S.Summary numberOfLines={2} ellipsizeMode="tail">
           {article.summary}
         </S.Summary>
-        {article.reactionsCount !== undefined ? (
+        {shouldShowReactionCount ? (
           <S.ReactionRow>
             <ArticleReactionButton
-              isActive={article.isReacted === true}
-              count={article.reactionsCount}
+              isActive={isReacted}
+              count={reactionsCount}
               size="sm"
+              showLabel={false}
             />
           </S.ReactionRow>
         ) : null}

@@ -201,6 +201,7 @@ describe('ArticleCard', () => {
     const reactionButton = renderer!.root.findByType(ArticleReactionButton);
 
     expect(reactionButton.props.count).toBe(12);
+    expect(reactionButton.props.showLabel).toBe(false);
 
     const stopPropagation = jest.fn();
 

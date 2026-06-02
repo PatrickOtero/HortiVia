@@ -261,22 +261,32 @@ export const articlesService = {
     return response.data;
   },
 
-  async reactToArticle(articleId: string): Promise<ArticleReactionResult> {
+  async reactToArticle(
+    articleId: string,
+    fallbackReactionsCount?: number,
+  ): Promise<ArticleReactionResult> {
     const response = await apiClient.post(
       API_ENDPOINTS.articles.reactions(articleId),
     );
 
-    return toArticleReactionResult(response.data);
+    return toArticleReactionResult(response.data, {
+      isReacted: true,
+      reactionsCount: fallbackReactionsCount,
+    });
   },
 
   async removeArticleReaction(
     articleId: string,
+    fallbackReactionsCount?: number,
   ): Promise<ArticleReactionResult> {
     const response = await apiClient.delete(
       API_ENDPOINTS.articles.reactions(articleId),
     );
 
-    return toArticleReactionResult(response.data);
+    return toArticleReactionResult(response.data, {
+      isReacted: false,
+      reactionsCount: fallbackReactionsCount,
+    });
   },
 
   async listSavedArticles(params?: {

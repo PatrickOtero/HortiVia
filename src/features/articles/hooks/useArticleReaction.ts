@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useOptionalAuth } from '../../auth/context/AuthContext';
 import { useOptionalArticleReactions } from '../context/ArticleReactionsContext';
 import type {
@@ -18,6 +18,8 @@ type UseArticleReactionOptions = {
   onError?: (message: string) => void;
 };
 
+const REACTION_ERROR_MESSAGE = 'Não foi possível atualizar esta marcação.';
+
 export function useArticleReaction({
   article,
   onRequireAuth,
@@ -25,17 +27,43 @@ export function useArticleReaction({
 }: UseArticleReactionOptions) {
   const auth = useOptionalAuth();
   const articleReactions = useOptionalArticleReactions();
+  const syncArticleReactions = articleReactions?.syncArticleReactions;
+  const articleReactionCandidate = useMemo(
+    () => ({
+      id: article.id,
+      isReacted: article.isReacted,
+      reactionsCount: article.reactionsCount,
+    }),
+    [article.id, article.isReacted, article.reactionsCount],
+  );
 
   useEffect(() => {
-    articleReactions?.syncArticleReactions(article);
-  }, [article.id, article.isReacted, article.reactionsCount, articleReactions]);
+    syncArticleReactions?.({
+      id: article.id,
+      isReacted: article.isReacted,
+      reactionsCount: article.reactionsCount,
+    });
+  }, [
+    article.id,
+    article.isReacted,
+    article.reactionsCount,
+    syncArticleReactions,
+  ]);
 
-  const reactionState = articleReactions?.getArticleReactionState(article) ?? {
-    isReacted: article.isReacted === true,
-    reactionsCount: Math.max(article.reactionsCount ?? 0, 0),
-  };
+  const reactionState = useMemo(
+    () =>
+      articleReactions?.getArticleReactionState(articleReactionCandidate) ?? {
+        isReacted: articleReactionCandidate.isReacted === true,
+        reactionsCount: Math.max(
+          articleReactionCandidate.reactionsCount ?? 0,
+          0,
+        ),
+      },
+    [articleReactionCandidate, articleReactions],
+  );
   const isLoading =
-    articleReactions?.isArticleReactionLoading(article.id) ?? false;
+    articleReactions?.isArticleReactionLoading(articleReactionCandidate.id) ??
+    false;
 
   const toggleReaction = useCallback(async () => {
     if (isLoading) {
@@ -48,18 +76,20 @@ export function useArticleReaction({
     }
 
     if (!articleReactions) {
-      onError?.('Não foi possível atualizar esta marcação.');
+      onError?.(REACTION_ERROR_MESSAGE);
       return reactionState;
     }
 
     try {
-      return await articleReactions.toggleArticleReaction(article);
+      return await articleReactions.toggleArticleReaction(
+        articleReactionCandidate,
+      );
     } catch {
-      onError?.('Não foi possível atualizar esta marcação.');
+      onError?.(REACTION_ERROR_MESSAGE);
       return reactionState;
     }
   }, [
-    article,
+    articleReactionCandidate,
     articleReactions,
     auth?.isAuthenticated,
     isLoading,

@@ -191,6 +191,7 @@ export function ArticleCard({
               isLoading={isReactionLoading}
               onPress={handleReactionPress}
               size="sm"
+              showLabel={false}
             />
             {publishedDate ? (
               <S.MetaChip>

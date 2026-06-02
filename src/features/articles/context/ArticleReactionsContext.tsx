@@ -3,7 +3,6 @@ import React, {
   type ReactNode,
   useCallback,
   useContext,
-  useEffect,
   useMemo,
   useRef,
   useState,
@@ -89,29 +88,57 @@ export function ArticleReactionsProvider({
   const reactionStatesRef = useRef(reactionStates);
   const loadingIdsRef = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
-    reactionStatesRef.current = reactionStates;
-  }, [reactionStates]);
+  const commitReactionStates = useCallback(
+    (
+      update: (
+        currentStates: Record<string, ArticleReactionState>,
+      ) => Record<string, ArticleReactionState>,
+    ) => {
+      const nextStates = update(reactionStatesRef.current);
 
-  useEffect(() => {
-    loadingIdsRef.current = new Set(loadingIds);
-  }, [loadingIds]);
+      if (nextStates === reactionStatesRef.current) {
+        return reactionStatesRef.current;
+      }
+
+      reactionStatesRef.current = nextStates;
+      setReactionStates(nextStates);
+
+      return nextStates;
+    },
+    [],
+  );
+
+  const commitLoadingIds = useCallback(
+    (update: (currentIds: Set<string>) => Set<string>) => {
+      const nextIds = update(new Set(loadingIdsRef.current));
+
+      loadingIdsRef.current = nextIds;
+      setLoadingIds(Array.from(nextIds));
+
+      return nextIds;
+    },
+    [],
+  );
 
   const setArticleReactionLoading = useCallback(
     (articleId: string, nextIsLoading: boolean) => {
-      setLoadingIds(currentIds => {
-        const nextIds = new Set(currentIds);
+      commitLoadingIds(currentIds => {
+        const alreadyLoading = currentIds.has(articleId);
 
-        if (nextIsLoading) {
-          nextIds.add(articleId);
-        } else {
-          nextIds.delete(articleId);
+        if (nextIsLoading === alreadyLoading) {
+          return currentIds;
         }
 
-        return Array.from(nextIds);
+        if (nextIsLoading) {
+          currentIds.add(articleId);
+        } else {
+          currentIds.delete(articleId);
+        }
+
+        return currentIds;
       });
     },
-    [],
+    [commitLoadingIds],
   );
 
   const syncArticleReactions = useCallback(
@@ -132,7 +159,7 @@ export function ArticleReactionsProvider({
         return;
       }
 
-      setReactionStates(currentStates => {
+      commitReactionStates(currentStates => {
         let hasChanged = false;
         const nextStates = { ...currentStates };
 
@@ -162,7 +189,7 @@ export function ArticleReactionsProvider({
         return hasChanged ? nextStates : currentStates;
       });
     },
-    [],
+    [commitReactionStates],
   );
 
   const getArticleReactionState = useCallback(
@@ -197,28 +224,34 @@ export function ArticleReactionsProvider({
           };
 
       setArticleReactionLoading(article.id, true);
-      setReactionStates(currentStates => ({
+      commitReactionStates(currentStates => ({
         ...currentStates,
         [article.id]: nextState,
       }));
 
       try {
         const response = previousState.isReacted
-          ? await articlesService.removeArticleReaction(article.id)
-          : await articlesService.reactToArticle(article.id);
+          ? await articlesService.removeArticleReaction(
+              article.id,
+              nextState.reactionsCount,
+            )
+          : await articlesService.reactToArticle(
+              article.id,
+              nextState.reactionsCount,
+            );
         const resolvedState = {
           isReacted: response.isReacted,
           reactionsCount: normalizeReactionsCount(response.reactionsCount),
         };
 
-        setReactionStates(currentStates => ({
+        commitReactionStates(currentStates => ({
           ...currentStates,
           [article.id]: resolvedState,
         }));
 
         return resolvedState;
       } catch (error) {
-        setReactionStates(currentStates => ({
+        commitReactionStates(currentStates => ({
           ...currentStates,
           [article.id]: previousState,
         }));
@@ -228,7 +261,7 @@ export function ArticleReactionsProvider({
         setArticleReactionLoading(article.id, false);
       }
     },
-    [setArticleReactionLoading],
+    [commitReactionStates, setArticleReactionLoading],
   );
 
   const value = useMemo<ArticleReactionsContextValue>(

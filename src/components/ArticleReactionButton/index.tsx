@@ -38,14 +38,30 @@ export function ArticleReactionButton({
   const accessibilityLabel = isActive
     ? `Marcado como útil. ${getPeopleLabel(safeCount)}.`
     : `Marcar como útil. ${getPeopleLabel(safeCount)}.`;
-  const content = isLoading ? (
-    <S.LoadingShell>
-      <ActivityIndicator size="small" color={theme.colors.primaryStrong} />
-    </S.LoadingShell>
-  ) : (
+  const content = (
     <>
-      {showLabel ? <S.Label $active={isActive}>Útil ·</S.Label> : null}
-      <S.CountText $active={isActive}>{safeCount}</S.CountText>
+      <S.IconSlot $active={isActive} $size={size}>
+        {isLoading ? (
+          <ActivityIndicator
+            size="small"
+            color={isActive ? theme.colors.primaryStrong : theme.colors.textMuted}
+          />
+        ) : (
+          <S.IconGlyph $active={isActive} $size={size}>
+            {'\u2713'}
+          </S.IconGlyph>
+        )}
+      </S.IconSlot>
+      {showLabel ? <S.Label $active={isActive}>Útil</S.Label> : null}
+      <S.CountText
+        $active={isActive}
+        $size={size}
+        $showLabel={showLabel}
+        numberOfLines={1}
+        ellipsizeMode="clip"
+      >
+        {safeCount}
+      </S.CountText>
     </>
   );
 

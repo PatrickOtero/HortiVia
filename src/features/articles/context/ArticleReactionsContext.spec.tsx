@@ -95,6 +95,7 @@ describe('ArticleReactionsContext', () => {
 
     expect(mockedArticlesService.reactToArticle).toHaveBeenCalledWith(
       'article-2',
+      3,
     );
     expect(result).toEqual({
       isReacted: true,
@@ -168,6 +169,110 @@ describe('ArticleReactionsContext', () => {
     ).toEqual({
       isReacted: false,
       reactionsCount: 0,
+    });
+  });
+
+  it('ignores repeated taps while the same article is already loading', async () => {
+    let resolveReaction:
+      | ((value: { message: string; isReacted: boolean; reactionsCount: number }) => void)
+      | undefined;
+
+    mockedArticlesService.reactToArticle.mockImplementation(
+      () =>
+        new Promise(resolve => {
+          resolveReaction = resolve;
+        }),
+    );
+
+    await renderProvider();
+
+    let firstResult:
+      | {
+          isReacted: boolean;
+          reactionsCount: number;
+        }
+      | undefined;
+    let secondResult:
+      | {
+          isReacted: boolean;
+          reactionsCount: number;
+        }
+      | undefined;
+
+    await ReactTestRenderer.act(async () => {
+      const firstToggle = latestHook?.toggleArticleReaction({
+        id: 'article-5',
+        isReacted: false,
+        reactionsCount: 2,
+      });
+      const secondToggle = latestHook?.toggleArticleReaction({
+        id: 'article-5',
+        isReacted: false,
+        reactionsCount: 2,
+      });
+
+      secondResult = await secondToggle;
+
+      resolveReaction?.({
+        message: 'Marcado como útil.',
+        isReacted: true,
+        reactionsCount: 3,
+      });
+
+      firstResult = await firstToggle;
+    });
+
+    expect(mockedArticlesService.reactToArticle).toHaveBeenCalledTimes(1);
+    expect(firstResult).toEqual({
+      isReacted: true,
+      reactionsCount: 3,
+    });
+    expect(secondResult).toEqual({
+      isReacted: true,
+      reactionsCount: 3,
+    });
+    expect(
+      latestHook?.getArticleReactionState({
+        id: 'article-5',
+        isReacted: false,
+        reactionsCount: 0,
+      }),
+    ).toEqual({
+      isReacted: true,
+      reactionsCount: 3,
+    });
+  });
+
+  it('keeps the updated useful count when the backend response omits reactionsCount', async () => {
+    mockedArticlesService.reactToArticle.mockResolvedValueOnce({
+      message: 'Marcado como Ãºtil.',
+      isReacted: true,
+      reactionsCount: 1,
+    });
+
+    await renderProvider();
+
+    await ReactTestRenderer.act(async () => {
+      await latestHook?.toggleArticleReaction({
+        id: 'article-6',
+        isReacted: false,
+        reactionsCount: 0,
+      });
+    });
+
+    expect(mockedArticlesService.reactToArticle).toHaveBeenCalledWith(
+      'article-6',
+      1,
+    );
+    expect(
+      latestHook?.getArticleReactionState({
+        id: 'article-6',
+        isReacted: false,
+        reactionsCount: 0,
+      }),
+    ).toEqual({
+      isReacted: true,
+      reactionsCount: 1,
     });
   });
 });

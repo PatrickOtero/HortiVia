@@ -308,7 +308,13 @@ export function toSavedArticlesResponse(
   };
 }
 
-export function toArticleReactionResult(value: unknown): ArticleReactionResult {
+export function toArticleReactionResult(
+  value: unknown,
+  fallback?: {
+    isReacted?: boolean;
+    reactionsCount?: number;
+  },
+): ArticleReactionResult {
   const payload =
     value && typeof value === 'object'
       ? (value as {
@@ -322,8 +328,15 @@ export function toArticleReactionResult(value: unknown): ArticleReactionResult {
     ...(typeof payload?.message === 'string'
       ? { message: payload.message }
       : {}),
-    isReacted: payload?.isReacted === true,
-    reactionsCount: normalizeReactionsCount(payload?.reactionsCount),
+    isReacted:
+      typeof payload?.isReacted === 'boolean'
+        ? payload.isReacted
+        : fallback?.isReacted === true,
+    reactionsCount:
+      typeof payload?.reactionsCount === 'number' &&
+      Number.isFinite(payload.reactionsCount)
+        ? normalizeReactionsCount(payload.reactionsCount)
+        : normalizeReactionsCount(fallback?.reactionsCount),
   };
 }
 

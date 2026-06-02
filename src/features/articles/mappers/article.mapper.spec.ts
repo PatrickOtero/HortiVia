@@ -1,4 +1,4 @@
-import { toArticleDetail } from './article.mapper';
+import { toArticleDetail, toArticleReactionResult } from './article.mapper';
 
 describe('article.mapper', () => {
   it('orders article blocks by sortOrder', () => {
@@ -61,5 +61,24 @@ describe('article.mapper', () => {
     });
 
     expect(article.blocks).toEqual([]);
+  });
+
+  it('uses the fallback useful count when the reaction payload omits reactionsCount', () => {
+    const result = toArticleReactionResult(
+      {
+        message: 'Marcado como útil.',
+        isReacted: true,
+      },
+      {
+        isReacted: true,
+        reactionsCount: 1,
+      },
+    );
+
+    expect(result).toEqual({
+      message: 'Marcado como útil.',
+      isReacted: true,
+      reactionsCount: 1,
+    });
   });
 });

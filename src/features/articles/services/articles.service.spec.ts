@@ -70,7 +70,7 @@ describe('articlesService', () => {
       },
     });
 
-    const result = await articlesService.reactToArticle('article-1');
+    const result = await articlesService.reactToArticle('article-1', 12);
 
     expect(mockedApiClient.post).toHaveBeenCalledWith(
       API_ENDPOINTS.articles.reactions('article-1'),
@@ -91,7 +91,7 @@ describe('articlesService', () => {
       },
     });
 
-    const result = await articlesService.removeArticleReaction('article-1');
+    const result = await articlesService.removeArticleReaction('article-1', 11);
 
     expect(mockedApiClient.delete).toHaveBeenCalledWith(
       API_ENDPOINTS.articles.reactions('article-1'),
@@ -100,6 +100,40 @@ describe('articlesService', () => {
       message: 'Remover marcação.',
       isReacted: false,
       reactionsCount: 11,
+    });
+  });
+
+  it('keeps the optimistic useful count when the post response omits reactionsCount', async () => {
+    mockedApiClient.post.mockResolvedValue({
+      data: {
+        message: 'Marcado como Ãºtil.',
+        isReacted: true,
+      },
+    });
+
+    const result = await articlesService.reactToArticle('article-1', 1);
+
+    expect(result).toEqual({
+      message: 'Marcado como Ãºtil.',
+      isReacted: true,
+      reactionsCount: 1,
+    });
+  });
+
+  it('keeps the optimistic useful count when the delete response omits reactionsCount', async () => {
+    mockedApiClient.delete.mockResolvedValue({
+      data: {
+        message: 'Remover marcaÃ§Ã£o.',
+        isReacted: false,
+      },
+    });
+
+    const result = await articlesService.removeArticleReaction('article-1', 0);
+
+    expect(result).toEqual({
+      message: 'Remover marcaÃ§Ã£o.',
+      isReacted: false,
+      reactionsCount: 0,
     });
   });
 
