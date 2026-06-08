@@ -1,11 +1,18 @@
 export type {
+  ArticleComment,
+  ArticleCommentAuthor,
+  ArticleCommentStatus,
   ArticleAuthor,
   ArticleCategory,
   ArticleCategoryFilter,
   ArticleCategoryOption,
+  CreateArticleCommentInput,
   ArticleDetail,
   ArticleListItem,
   ListArticlesParams,
+  ModerateArticleCommentInput,
+  PaginatedArticleCommentsResponse,
   PaginatedResponse,
   PaginationMeta,
+  UpdateArticleCommentInput,
 } from '../features/articles/types/article';

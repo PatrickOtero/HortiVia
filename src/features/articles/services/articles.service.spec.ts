@@ -1,7 +1,10 @@
 import { API_ENDPOINTS } from '../../../config/apiConfig';
 import { apiClient } from '../../../services/api/apiClient';
 import { uploadFileUriToPresignedUrl } from '../../../services/api/presignedUpload';
-import { articlesService } from './articles.service';
+import {
+  ARTICLE_COMMENTS_PAGE_LIMIT,
+  articlesService,
+} from './articles.service';
 
 jest.mock('../../../services/api/apiClient', () => ({
   apiClient: {
@@ -41,6 +44,199 @@ describe('articlesService', () => {
     );
     expect(result).toEqual({
       message: 'Artigo salvo.',
+    });
+  });
+
+  it('lists article comments', async () => {
+    mockedApiClient.get.mockResolvedValue({
+      data: {
+        items: [
+          {
+            id: 'comment-1',
+            body: 'Muito bom.',
+            status: 'VISIBLE',
+            createdAt: '2026-06-02T10:00:00.000Z',
+            author: {
+              id: 'user-1',
+              name: 'Pessoa leitora',
+            },
+          },
+        ],
+        page: 1,
+        limit: 10,
+        total: 1,
+        totalPages: 1,
+      },
+    });
+
+    const result = await articlesService.listArticleComments('article-1', {
+      page: 1,
+      limit: 10,
+    });
+
+    expect(mockedApiClient.get).toHaveBeenCalledWith(
+      API_ENDPOINTS.articles.comments('article-1'),
+      {
+        params: {
+          page: 1,
+          limit: 10,
+        },
+      },
+    );
+    expect(result).toEqual({
+      items: [
+        {
+          id: 'comment-1',
+          body: 'Muito bom.',
+          status: 'VISIBLE',
+          createdAt: '2026-06-02T10:00:00.000Z',
+          author: {
+            id: 'user-1',
+            name: 'Pessoa leitora',
+          },
+        },
+      ],
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
+  });
+
+  it('uses the default comment pagination when params are omitted', async () => {
+    mockedApiClient.get.mockResolvedValue({
+      data: {
+        items: [],
+        page: 1,
+        limit: ARTICLE_COMMENTS_PAGE_LIMIT,
+        total: 0,
+        totalPages: 0,
+      },
+    });
+
+    await articlesService.listArticleComments('article-1');
+
+    expect(mockedApiClient.get).toHaveBeenCalledWith(
+      API_ENDPOINTS.articles.comments('article-1'),
+      {
+        params: {
+          page: 1,
+          limit: ARTICLE_COMMENTS_PAGE_LIMIT,
+        },
+      },
+    );
+  });
+
+  it('creates an article comment', async () => {
+    mockedApiClient.post.mockResolvedValue({
+      data: {
+        id: 'comment-1',
+        body: 'Comentario novo',
+        status: 'VISIBLE',
+        createdAt: '2026-06-02T10:00:00.000Z',
+        updatedAt: '2026-06-02T10:00:00.000Z',
+        author: {
+          id: 'user-1',
+          name: 'Pessoa leitora',
+        },
+      },
+    });
+
+    const result = await articlesService.createArticleComment(
+      'article-1',
+      '  Comentario novo  ',
+    );
+
+    expect(mockedApiClient.post).toHaveBeenCalledWith(
+      API_ENDPOINTS.articles.comments('article-1'),
+      {
+        body: 'Comentario novo',
+      },
+    );
+    expect(result).toMatchObject({
+      id: 'comment-1',
+      body: 'Comentario novo',
+      author: {
+        id: 'user-1',
+        name: 'Pessoa leitora',
+      },
+    });
+  });
+
+  it('updates an article comment', async () => {
+    mockedApiClient.patch.mockResolvedValue({
+      data: {
+        id: 'comment-1',
+        body: 'Comentario atualizado',
+        status: 'VISIBLE',
+        createdAt: '2026-06-02T10:00:00.000Z',
+        updatedAt: '2026-06-02T10:05:00.000Z',
+        author: {
+          id: 'user-1',
+          name: 'Pessoa leitora',
+        },
+      },
+    });
+
+    const result = await articlesService.updateArticleComment(
+      'article-1',
+      'comment-1',
+      '  Comentario atualizado  ',
+    );
+
+    expect(mockedApiClient.patch).toHaveBeenCalledWith(
+      API_ENDPOINTS.articles.commentDetail('article-1', 'comment-1'),
+      {
+        body: 'Comentario atualizado',
+      },
+    );
+    expect(result).toMatchObject({
+      id: 'comment-1',
+      body: 'Comentario atualizado',
+      updatedAt: '2026-06-02T10:05:00.000Z',
+    });
+  });
+
+  it('deletes an article comment', async () => {
+    mockedApiClient.delete.mockResolvedValue({ data: undefined });
+
+    await articlesService.deleteArticleComment('article-1', 'comment-1');
+
+    expect(mockedApiClient.delete).toHaveBeenCalledWith(
+      API_ENDPOINTS.articles.commentDetail('article-1', 'comment-1'),
+    );
+  });
+
+  it('moderates an article comment', async () => {
+    mockedApiClient.patch.mockResolvedValue({
+      data: {
+        id: 'comment-1',
+        body: 'Comentario moderado',
+        status: 'HIDDEN',
+        createdAt: '2026-06-02T10:00:00.000Z',
+        updatedAt: '2026-06-02T10:10:00.000Z',
+        author: {
+          id: 'user-2',
+          name: 'Outra pessoa',
+        },
+      },
+    });
+
+    const result = await articlesService.moderateArticleComment(
+      'article-1',
+      'comment-1',
+      'HIDDEN',
+    );
+
+    expect(mockedApiClient.patch).toHaveBeenCalledWith(
+      API_ENDPOINTS.articles.commentModeration('article-1', 'comment-1'),
+      {
+        status: 'HIDDEN',
+      },
+    );
+    expect(result).toMatchObject({
+      id: 'comment-1',
+      status: 'HIDDEN',
     });
   });
 

@@ -44,6 +44,11 @@ export const API_ENDPOINTS = {
     detail: (articleId: string) => `/articles/${articleId}`,
     adminDetail: (articleId: string) => `/articles/${articleId}/admin`,
     image: (articleId: string) => `/articles/${articleId}/image`,
+    comments: (articleId: string) => `/articles/${articleId}/comments`,
+    commentDetail: (articleId: string, commentId: string) =>
+      `/articles/${articleId}/comments/${commentId}`,
+    commentModeration: (articleId: string, commentId: string) =>
+      `/admin/articles/${articleId}/comments/${commentId}/moderation`,
     blocks: (articleId: string) => `/articles/${articleId}/blocks`,
     blockDetail: (articleId: string, blockId: string) =>
       `/articles/${articleId}/blocks/${blockId}`,

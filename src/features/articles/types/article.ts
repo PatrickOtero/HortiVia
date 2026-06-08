@@ -20,6 +20,42 @@ export type ArticleAuthor = {
   avatarUrl: string | null;
 };
 
+export type ArticleCommentStatus = 'VISIBLE' | 'HIDDEN' | 'DELETED';
+
+export type ArticleCommentAuthor = {
+  id: string;
+  name: string;
+};
+
+export type ArticleComment = {
+  id: string;
+  body: string;
+  status?: ArticleCommentStatus;
+  createdAt: string;
+  updatedAt?: string;
+  author: ArticleCommentAuthor;
+};
+
+export type PaginatedArticleCommentsResponse = {
+  items: ArticleComment[];
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+};
+
+export type CreateArticleCommentInput = {
+  body: string;
+};
+
+export type UpdateArticleCommentInput = {
+  body: string;
+};
+
+export type ModerateArticleCommentInput = {
+  status: Extract<ArticleCommentStatus, 'VISIBLE' | 'HIDDEN'>;
+};
+
 export type ArticleBlockKind =
   | 'PARAGRAPH'
   | 'HEADING'
@@ -97,6 +133,7 @@ export type ArticleListItem = {
   isSaved?: boolean;
   reactionsCount?: number;
   isReacted?: boolean;
+  commentsCount?: number;
 };
 
 export type ArticleDetail = ArticleListItem & {

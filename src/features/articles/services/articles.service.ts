@@ -5,30 +5,38 @@ import { buildSingleFileUploadFormData } from '../../../services/api/uploadFormD
 import { buildMultipartFormData } from '../../../services/api/uploadFormData';
 import type { ImageUploadFile } from '../../../utils/images/imagePicker';
 import {
+  toArticleComment,
   toArticleBlock,
   toArticlePayload,
   toArticleDetail,
   toArticleReactionResult,
+  toPaginatedArticleCommentsResponse,
   toPaginatedArticlesResponse,
   toSavedArticlesResponse,
 } from '../mappers/article.mapper';
 import type {
+  ArticleComment,
   ArticleBlock,
   ArticleBlockImageUploadResponse,
   ArticleDetail,
   ArticleListItem,
   ArticleReactionResult,
+  CreateArticleCommentInput,
+  ModerateArticleCommentInput,
   CreateArticleBlockPayload,
   CreateArticlePayload,
   ListArticlesParams,
+  PaginatedArticleCommentsResponse,
   PaginatedResponse,
   SavedArticlesResponse,
   UpdateArticleBlockPayload,
   UpdateArticleBlockImagePayload,
+  UpdateArticleCommentInput,
   UpdateArticlePayload,
 } from '../types/article';
 
 export const ARTICLES_PAGE_LIMIT = 20;
+export const ARTICLE_COMMENTS_PAGE_LIMIT = 10;
 
 export const articlesService = {
   async getArticles(
@@ -53,6 +61,73 @@ export const articlesService = {
     );
 
     return toArticleDetail(response.data);
+  },
+
+  async listArticleComments(
+    articleId: string,
+    params?: {
+      page?: number;
+      limit?: number;
+    },
+  ): Promise<PaginatedArticleCommentsResponse> {
+    const response = await apiClient.get(API_ENDPOINTS.articles.comments(articleId), {
+      params: {
+        page: params?.page ?? 1,
+        limit: params?.limit ?? ARTICLE_COMMENTS_PAGE_LIMIT,
+      },
+    });
+
+    return toPaginatedArticleCommentsResponse(response.data);
+  },
+
+  async createArticleComment(
+    articleId: string,
+    body: string,
+  ): Promise<ArticleComment> {
+    const payload: CreateArticleCommentInput = {
+      body: body.trim(),
+    };
+    const response = await apiClient.post(
+      API_ENDPOINTS.articles.comments(articleId),
+      payload,
+    );
+
+    return toArticleComment(response.data);
+  },
+
+  async updateArticleComment(
+    articleId: string,
+    commentId: string,
+    body: string,
+  ): Promise<ArticleComment> {
+    const payload: UpdateArticleCommentInput = {
+      body: body.trim(),
+    };
+    const response = await apiClient.patch(
+      API_ENDPOINTS.articles.commentDetail(articleId, commentId),
+      payload,
+    );
+
+    return toArticleComment(response.data);
+  },
+
+  async deleteArticleComment(articleId: string, commentId: string): Promise<void> {
+    await apiClient.delete(API_ENDPOINTS.articles.commentDetail(articleId, commentId));
+  },
+
+  async moderateArticleComment(
+    articleId: string,
+    commentId: string,
+    status: ModerateArticleCommentInput['status'],
+  ): Promise<ArticleComment> {
+    const response = await apiClient.patch(
+      API_ENDPOINTS.articles.commentModeration(articleId, commentId),
+      {
+        status,
+      },
+    );
+
+    return toArticleComment(response.data);
   },
 
   async getAdminArticleById(articleId: string): Promise<ArticleDetail> {

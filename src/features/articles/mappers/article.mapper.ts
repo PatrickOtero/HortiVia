@@ -1,4 +1,7 @@
 import type {
+  ArticleComment,
+  ArticleCommentAuthor,
+  ArticleCommentStatus,
   ArticleAuthor,
   ArticleBlock,
   ArticleBlockKind,
@@ -8,6 +11,7 @@ import type {
   CreateArticlePayload,
   ArticleDetail,
   ArticleListItem,
+  PaginatedArticleCommentsResponse,
   PaginatedResponse,
   PaginationMeta,
   RelatedProduct,
@@ -38,7 +42,17 @@ type ApiArticleListItem = {
   isSaved?: boolean;
   reactionsCount?: number;
   isReacted?: boolean;
+  commentsCount?: number;
   author: ApiArticleAuthor;
+};
+
+type ApiArticleComment = {
+  id?: unknown;
+  body?: unknown;
+  status?: unknown;
+  createdAt?: unknown;
+  updatedAt?: unknown;
+  author?: unknown;
 };
 
 type ApiArticleBlock = {
@@ -77,6 +91,14 @@ type ApiSavedArticlesResponse = {
   totalPages: number;
 };
 
+type ApiPaginatedArticleCommentsResponse = {
+  items?: unknown;
+  page?: unknown;
+  limit?: unknown;
+  total?: unknown;
+  totalPages?: unknown;
+};
+
 export const ARTICLE_CATEGORY_OPTIONS: ArticleCategoryOption[] = [
   { value: 'ALL', label: 'Todos' },
   { value: 'TIPS', label: 'Dicas' },
@@ -106,6 +128,12 @@ const ARTICLE_BLOCK_KINDS: ArticleBlockKind[] = [
   'PRODUCT_REFERENCE',
   'SECTION',
   'OTHER',
+];
+
+const ARTICLE_COMMENT_STATUSES: ArticleCommentStatus[] = [
+  'VISIBLE',
+  'HIDDEN',
+  'DELETED',
 ];
 
 function normalizeOptionalText(value: unknown) {
@@ -141,6 +169,22 @@ function normalizeReactionsCount(value: unknown) {
   }
 
   return Math.max(value, 0);
+}
+
+function normalizeCommentsCount(value: unknown) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return undefined;
+  }
+
+  return Math.max(value, 0);
+}
+
+function normalizePositiveInteger(value: unknown, fallback: number) {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return fallback;
+  }
+
+  return Math.max(Math.trunc(value), 0);
 }
 
 function normalizeBlocks(value: unknown): ArticleBlock[] {
@@ -195,6 +239,37 @@ function toArticleAuthor(author: ApiArticleAuthor): ArticleAuthor {
     name: author.name,
     avatarUrl: author.avatarUrl ?? null,
   };
+}
+
+function toArticleCommentAuthor(author: unknown): ArticleCommentAuthor | null {
+  if (!author || typeof author !== 'object') {
+    return null;
+  }
+
+  const candidate = author as {
+    id?: unknown;
+    name?: unknown;
+  };
+
+  if (typeof candidate.id !== 'string' || typeof candidate.name !== 'string') {
+    return null;
+  }
+
+  return {
+    id: candidate.id,
+    name: candidate.name,
+  };
+}
+
+function normalizeCommentStatus(value: unknown) {
+  if (
+    typeof value === 'string' &&
+    ARTICLE_COMMENT_STATUSES.includes(value as ArticleCommentStatus)
+  ) {
+    return value as ArticleCommentStatus;
+  }
+
+  return undefined;
 }
 
 function normalizeRelatedProducts(value: unknown): RelatedProduct[] {
@@ -268,6 +343,7 @@ export function toArticleListItem(
     isSaved: article.isSaved ?? false,
     reactionsCount: normalizeReactionsCount(article.reactionsCount),
     isReacted: article.isReacted ?? false,
+    commentsCount: normalizeCommentsCount(article.commentsCount),
   };
 }
 
@@ -337,6 +413,52 @@ export function toArticleReactionResult(
       Number.isFinite(payload.reactionsCount)
         ? normalizeReactionsCount(payload.reactionsCount)
         : normalizeReactionsCount(fallback?.reactionsCount),
+  };
+}
+
+export function toArticleComment(value: ApiArticleComment): ArticleComment {
+  const author = toArticleCommentAuthor(value.author);
+
+  return {
+    id: typeof value.id === 'string' ? value.id : '',
+    body: typeof value.body === 'string' ? value.body : '',
+    ...(normalizeCommentStatus(value.status)
+      ? { status: normalizeCommentStatus(value.status) }
+      : {}),
+    createdAt: typeof value.createdAt === 'string' ? value.createdAt : '',
+    ...(typeof value.updatedAt === 'string'
+      ? { updatedAt: value.updatedAt }
+      : {}),
+    author: author ?? {
+      id: '',
+      name: 'Pessoa leitora',
+    },
+  };
+}
+
+export function toPaginatedArticleCommentsResponse(
+  response: ApiPaginatedArticleCommentsResponse,
+): PaginatedArticleCommentsResponse {
+  const items = Array.isArray(response.items)
+    ? response.items
+        .filter((item): item is ApiArticleComment => Boolean(item))
+        .map(toArticleComment)
+        .filter(comment => comment.id.length > 0)
+    : [];
+
+  const page = normalizePositiveInteger(response.page, 1) || 1;
+  const limit = normalizePositiveInteger(response.limit, items.length || 10) || 10;
+  const total = normalizePositiveInteger(response.total, items.length);
+  const totalPages =
+    normalizePositiveInteger(response.totalPages, 0) ||
+    (total > 0 ? Math.ceil(total / Math.max(limit, 1)) : 0);
+
+  return {
+    items,
+    page,
+    limit,
+    total,
+    totalPages,
   };
 }
 
