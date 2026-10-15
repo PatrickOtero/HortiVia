@@ -94,6 +94,7 @@ function createDefaultArticle(overrides?: Record<string, unknown>) {
 
 describe('HomeScreen', () => {
   const navigate = jest.fn();
+  const renderers: ReactTestRenderer.ReactTestRenderer[] = [];
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -150,8 +151,14 @@ describe('HomeScreen', () => {
     });
   });
 
+  afterEach(async () => {
+    await ReactTestRenderer.act(async () => {
+      renderers.splice(0).forEach(renderer => renderer.unmount());
+    });
+  });
+
   function renderHome() {
-    return ReactTestRenderer.create(
+    const renderer = ReactTestRenderer.create(
       <ThemeProvider>
         <HomeScreen
           navigation={{ navigate } as never}
@@ -159,6 +166,9 @@ describe('HomeScreen', () => {
         />
       </ThemeProvider>,
     );
+
+    renderers.push(renderer);
+    return renderer;
   }
 
   it('does not render library sections on home', async () => {

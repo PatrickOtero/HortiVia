@@ -312,8 +312,6 @@ export function ArticleDetailScreen({
   }, [article]);
   const shouldShowImage = Boolean(coverImageUrl) && !hasImageError;
   const hasBlocks = (article?.blocks?.length ?? 0) > 0;
-  const shouldShowCount =
-    typeof article?.commentsCount === 'number' || hasLoadedComments;
   const commentsCount = hasLoadedComments
     ? totalComments
     : article?.commentsCount;
