@@ -475,6 +475,122 @@ describe('ArticleDetailScreen', () => {
     alertSpy.mockRestore();
   });
 
+  it.each(['USER', null])(
+    'does not show moderation controls for role %s',
+    async role => {
+      mockedUseOptionalAuth.mockReturnValue({
+        isAuthenticated: role !== null,
+        user: role ? { id: 'user-1', role } : null,
+      });
+      mockedArticlesService.listArticleComments.mockResolvedValue({
+        items: [createComment()],
+        page: 1,
+        limit: 10,
+        total: 1,
+        totalPages: 1,
+      });
+
+      const renderer = await renderAndWait();
+
+      expect(
+        findPressablesByTestId(renderer, 'comment-action-hide-comment-1'),
+      ).toHaveLength(0);
+      expect(mockedArticlesService.moderateArticleComment).not.toHaveBeenCalled();
+    },
+  );
+
+  it('hides a comment as admin only after moderation succeeds and updates the count', async () => {
+    mockedUseOptionalAuth.mockReturnValue({
+      isAuthenticated: true,
+      user: { id: 'admin-1', role: 'ADMIN' },
+    });
+    mockedArticlesService.listArticleComments.mockResolvedValue({
+      items: [
+        createComment({ body: 'Comentario a ocultar' }),
+        createComment({ id: 'comment-2', body: 'Comentario preservado' }),
+      ],
+      page: 1,
+      limit: 10,
+      total: 2,
+      totalPages: 1,
+    });
+    let resolveModeration!: (comment: ArticleComment) => void;
+    mockedArticlesService.moderateArticleComment.mockImplementationOnce(
+      () =>
+        new Promise(resolve => {
+          resolveModeration = resolve;
+        }),
+    );
+    const renderer = await renderAndWait();
+
+    await ReactTestRenderer.act(async () => {
+      renderer.root
+        .findByProps({ testID: 'comment-action-hide-comment-1' })
+        .props.onPress();
+    });
+
+    expect(mockedArticlesService.moderateArticleComment).toHaveBeenCalledTimes(1);
+    expect(mockedArticlesService.moderateArticleComment).toHaveBeenCalledWith(
+      'article-1',
+      'comment-1',
+      'HIDDEN',
+    );
+    expect(
+      renderer.root.findByProps({ testID: 'comment-action-hide-comment-1' }).props
+        .disabled,
+    ).toBe(true);
+    expect(getRenderedOutput(renderer)).toContain('Comentario a ocultar');
+    expect(
+      renderer.root.findAllByType(SectionTitle).map(section => section.props.title),
+    ).toContain('Comentarios · 2');
+
+    await ReactTestRenderer.act(async () => {
+      resolveModeration(createComment({ status: 'HIDDEN' }));
+    });
+
+    expect(getRenderedOutput(renderer)).not.toContain('Comentario a ocultar');
+    expect(getRenderedOutput(renderer)).toContain('Comentario preservado');
+    expect(
+      renderer.root.findAllByType(SectionTitle).map(section => section.props.title),
+    ).toContain('Comentarios · 1');
+  });
+
+  it('keeps the comment and count and shows an error when moderation fails', async () => {
+    mockedUseOptionalAuth.mockReturnValue({
+      isAuthenticated: true,
+      user: { id: 'admin-1', role: 'ADMIN' },
+    });
+    mockedArticlesService.listArticleComments.mockResolvedValue({
+      items: [createComment({ body: 'Comentario preservado' })],
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
+    mockedArticlesService.moderateArticleComment.mockRejectedValueOnce(
+      new Error('Moderation failed'),
+    );
+    const renderer = await renderAndWait();
+
+    await ReactTestRenderer.act(async () => {
+      await renderer.root
+        .findByProps({ testID: 'comment-action-hide-comment-1' })
+        .props.onPress();
+    });
+
+    expect(getRenderedOutput(renderer)).toContain('Comentario preservado');
+    expect(getRenderedOutput(renderer)).toContain(
+      'Nao foi possivel atualizar o comentario.',
+    );
+    expect(
+      renderer.root.findAllByType(SectionTitle).map(section => section.props.title),
+    ).toContain('Comentarios · 1');
+    expect(
+      renderer.root.findByProps({ testID: 'comment-action-hide-comment-1' }).props
+        .disabled,
+    ).toBe(false);
+  });
+
   it('appends comments when loading more', async () => {
     mockedArticlesService.listArticleComments
       .mockResolvedValueOnce({

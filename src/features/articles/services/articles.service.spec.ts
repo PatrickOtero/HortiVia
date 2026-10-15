@@ -207,38 +207,41 @@ describe('articlesService', () => {
     );
   });
 
-  it('moderates an article comment', async () => {
-    mockedApiClient.patch.mockResolvedValue({
-      data: {
-        id: 'comment-1',
-        body: 'Comentario moderado',
-        status: 'HIDDEN',
-        createdAt: '2026-06-02T10:00:00.000Z',
-        updatedAt: '2026-06-02T10:10:00.000Z',
-        author: {
-          id: 'user-2',
-          name: 'Outra pessoa',
+  it.each(['HIDDEN', 'VISIBLE'] as const)(
+    'patches the exact comment moderation URL with status %s',
+    async status => {
+      mockedApiClient.patch.mockResolvedValue({
+        data: {
+          id: 'comment-1',
+          body: 'Comentario moderado',
+          status,
+          createdAt: '2026-06-02T10:00:00.000Z',
+          updatedAt: '2026-06-02T10:10:00.000Z',
+          author: {
+            id: 'user-2',
+            name: 'Outra pessoa',
+          },
         },
-      },
-    });
+      });
 
-    const result = await articlesService.moderateArticleComment(
-      'article-1',
-      'comment-1',
-      'HIDDEN',
-    );
+      const result = await articlesService.moderateArticleComment(
+        'article-1',
+        'comment-1',
+        status,
+      );
 
-    expect(mockedApiClient.patch).toHaveBeenCalledWith(
-      API_ENDPOINTS.articles.commentModeration('article-1', 'comment-1'),
-      {
-        status: 'HIDDEN',
-      },
-    );
-    expect(result).toMatchObject({
-      id: 'comment-1',
-      status: 'HIDDEN',
-    });
-  });
+      expect(mockedApiClient.patch).toHaveBeenCalledWith(
+        '/articles/article-1/comments/comment-1/moderation',
+        {
+          status,
+        },
+      );
+      expect(result).toMatchObject({
+        id: 'comment-1',
+        status,
+      });
+    },
+  );
 
   it('calls the unsave endpoint', async () => {
     mockedApiClient.delete.mockResolvedValue({
