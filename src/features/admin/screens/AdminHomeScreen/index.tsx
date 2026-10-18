@@ -52,6 +52,11 @@ export function AdminHomeScreen({ navigation }: AdminHomeScreenProps) {
                 description="Atualize as leituras mostradas no feed."
                 onPress={() => navigation.navigate('AdminArticles')}
               />
+              <AdminMenuCard
+                title="Treinamentos"
+                description="Revise, publique e organize perguntas por produto."
+                onPress={() => navigation.navigate('AdminTrainingProducts')}
+              />
             </S.CardStack>
           </SurfaceCard>
         </S.Content>

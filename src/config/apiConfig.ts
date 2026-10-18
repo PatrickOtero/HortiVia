@@ -11,6 +11,14 @@ export const API_CONFIG = {
 } as const;
 
 export const API_ENDPOINTS = {
+  training: {
+    product: (productId: string) => `/training/products/${encodeURIComponent(productId)}`,
+    answer: (questionId: string) => `/training/questions/${encodeURIComponent(questionId)}/answers`,
+    progress: '/training/progress',
+    adminQuestions: (productId: string) => `/admin/training/products/${encodeURIComponent(productId)}/questions`,
+    adminQuestion: (productId: string, questionId: string) =>
+      `/admin/training/products/${encodeURIComponent(productId)}/questions/${encodeURIComponent(questionId)}`,
+  },
   auth: {
     login: '/auth/login',
     register: '/auth/register',

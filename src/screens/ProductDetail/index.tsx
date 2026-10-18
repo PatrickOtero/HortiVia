@@ -20,6 +20,7 @@ import { useProductById } from '../../features/products/hooks/useProductById';
 import { addRecentProduct } from '../../features/products/storage/recentProducts.storage';
 import { useToggleProductFavorite } from '../../features/products/hooks/useToggleProductFavorite';
 import { useTheme } from '../../hooks/useTheme';
+import { ProductTrainingCard } from '../../features/training/components/ProductTrainingCard';
 import { AppStackParamList } from '../../types/navigation';
 import * as S from './styles';
 
@@ -193,6 +194,11 @@ export function ProductDetailScreen({
           <ProductQuickFactsCard
             nutrients={product.nutrients}
             highlights={product.benefits}
+          />
+
+          <ProductTrainingCard
+            productId={product.id}
+            onStart={() => navigation.navigate('Training', { productId: product.id })}
           />
 
           {relatedArticles.length > 0 ? (

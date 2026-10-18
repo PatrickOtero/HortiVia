@@ -5,6 +5,7 @@ import {
   CompactArticleCard,
   RecentProductCard,
   SectionTitle,
+  TextButton,
 } from '../../components';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { useSavedArticles } from '../../features/articles/hooks/useSavedArticles';
@@ -167,6 +168,15 @@ describe('LibraryScreen', () => {
       </ThemeProvider>,
     );
   }
+
+  it('opens personal training progress from the existing library', async () => {
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await ReactTestRenderer.act(async () => { renderer = renderLibrary(); });
+    const action = renderer!.root.findAllByType(TextButton).find(button => button.props.children === 'Ver meu progresso');
+    expect(action).toBeDefined();
+    await ReactTestRenderer.act(async () => { action!.props.onPress(); });
+    expect(navigate).toHaveBeenCalledWith('TrainingProgress');
+  });
 
   it('renders the three sections and their empty states when the user has no saved content yet', async () => {
     let renderer: ReactTestRenderer.ReactTestRenderer;

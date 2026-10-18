@@ -55,6 +55,18 @@ jest.mock('../../screens/ProductDetail', () => ({
 jest.mock('../../screens/ArticleDetail', () => ({
   ArticleDetailScreen: jest.requireActual('./NavigationProbe').NavigationProbe,
 }));
+jest.mock('../../features/training/screens/TrainingScreen', () => ({
+  TrainingScreen: jest.requireActual('./NavigationProbe').NavigationProbe,
+}));
+jest.mock('../../features/training/screens/TrainingProgressScreen', () => ({
+  TrainingProgressScreen: jest.requireActual('./NavigationProbe').NavigationProbe,
+}));
+jest.mock('../../features/admin/screens/AdminTrainingProductsScreen', () => ({
+  AdminTrainingProductsScreen: jest.requireActual('./NavigationProbe').NavigationProbe,
+}));
+jest.mock('../../features/admin/screens/AdminTrainingQuestionsScreen', () => ({
+  AdminTrainingQuestionsScreen: jest.requireActual('./NavigationProbe').NavigationProbe,
+}));
 jest.mock('../../screens/SavedArticles', () => ({
   SavedArticlesScreen: jest.requireActual('./NavigationProbe').NavigationProbe,
 }));

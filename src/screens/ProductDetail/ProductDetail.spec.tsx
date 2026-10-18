@@ -1,11 +1,16 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import { CompactArticleCard, SectionTitle } from '../../components';
+import { CompactArticleCard, PrimaryButton, SectionTitle } from '../../components';
+import { trainingService } from '../../features/training/services/training.service';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { useToggleProductFavorite } from '../../features/products/hooks/useToggleProductFavorite';
 import { useProductById } from '../../features/products/hooks/useProductById';
 import { addRecentProduct } from '../../features/products/storage/recentProducts.storage';
 import { ProductDetailScreen } from './index';
+
+jest.mock('../../features/training/services/training.service', () => ({
+  trainingService: { getProduct: jest.fn().mockResolvedValue({ questions: [] }) },
+}));
 
 jest.mock('../../features/products/hooks/useProductById', () => ({
   useProductById: jest.fn(),
@@ -28,6 +33,7 @@ describe('ProductDetailScreen', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (trainingService.getProduct as jest.Mock).mockResolvedValue({ questions: [] });
     mockedUseToggleProductFavorite.mockReturnValue({
       isFavorite: false,
       isSubmitting: false,
@@ -73,6 +79,16 @@ describe('ProductDetailScreen', () => {
       </ThemeProvider>,
     );
   }
+
+  it('opens training for the displayed product when published questions exist', async () => {
+    (trainingService.getProduct as jest.Mock).mockResolvedValue({ questions: [{ id: 'q1' }] });
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await ReactTestRenderer.act(async () => { renderer = renderScreen(); });
+    const action = renderer!.root.findAllByType(PrimaryButton).find(button => button.props.children === 'Treinar conhecimento');
+    expect(action).toBeDefined();
+    await ReactTestRenderer.act(async () => { action!.props.onPress(); });
+    expect(navigate).toHaveBeenCalledWith('Training', { productId: 'product-1' });
+  });
 
   it('hides related articles when none are available', async () => {
     let renderer: ReactTestRenderer.ReactTestRenderer;
