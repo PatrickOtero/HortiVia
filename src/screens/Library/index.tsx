@@ -426,6 +426,14 @@ export function LibraryScreen({ navigation }: LibraryScreenProps) {
           {renderFavoriteProductsSection()}
           {renderRecentProductsSection()}
           {renderSavedArticlesSection()}
+          <SurfaceCard>
+            <S.SectionBlock>
+              <SectionTitle title="Meu aprendizado" subtitle="Acompanhe seus treinamentos por produto." />
+              <TextButton onPress={() => navigation.navigate('TrainingProgress')}>
+                Ver meu progresso
+              </TextButton>
+            </S.SectionBlock>
+          </SurfaceCard>
         </S.Content>
       </ScreenContainer>
     </SafeScreen>

@@ -37,6 +37,10 @@ export type AppTabParamList = {
 };
 
 export type AppStackParamList = {
+  Training: { productId: string };
+  TrainingProgress: undefined;
+  AdminTrainingProducts: undefined;
+  AdminTrainingQuestions: { productId: string };
   MainTabs: NavigatorScreenParams<AppTabParamList>;
   ProductDetail: {
     productId: string;

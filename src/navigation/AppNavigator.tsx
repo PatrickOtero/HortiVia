@@ -15,6 +15,10 @@ import { EditProfileScreen } from '../screens/EditProfile';
 import { ProductDetailScreen } from '../screens/ProductDetail';
 import { SavedArticlesScreen } from '../screens/SavedArticles';
 import { AppStackParamList } from '../types/navigation';
+import { TrainingScreen } from '../features/training/screens/TrainingScreen';
+import { TrainingProgressScreen } from '../features/training/screens/TrainingProgressScreen';
+import { AdminTrainingProductsScreen } from '../features/admin/screens/AdminTrainingProductsScreen';
+import { AdminTrainingQuestionsScreen } from '../features/admin/screens/AdminTrainingQuestionsScreen';
 
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
@@ -62,6 +66,10 @@ export function AppNavigator() {
         component={ProductDetailScreen}
         options={{ headerShown: false }}
       />
+      <Stack.Screen name="Training" component={TrainingScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="TrainingProgress" component={TrainingProgressScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="AdminTrainingProducts" component={AdminTrainingProductsScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="AdminTrainingQuestions" component={AdminTrainingQuestionsScreen} options={{ headerShown: false }} />
       <Stack.Screen
         name="ArticleDetail"
         component={ArticleDetailScreen}
