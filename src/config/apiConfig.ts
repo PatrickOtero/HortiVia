@@ -1,5 +1,48 @@
-export const API_BASE_URL =
+import { NativeModules } from 'react-native';
+
+const PRODUCTION_API_BASE_URL =
   'https://p01--frutinavigator--h2j28jgg9qgs.code.run';
+const DEVELOPMENT_API_BASE_URL = 'http://127.0.0.1:3001';
+const PRODUCTION_API_HOST = 'p01--frutinavigator--h2j28jgg9qgs.code.run';
+const HTTPS_API_URL_PATTERN =
+  /^https:\/\/([a-z0-9.-]+)(?::\d+)?(?:\/[^\s?#]*)?\/?$/i;
+
+type NativeApiConfiguration = {
+  apiBaseUrl?: string;
+  environment?: string;
+};
+
+function resolveRemoteApiUrl(baseUrl?: string) {
+  const match = baseUrl?.match(HTTPS_API_URL_PATTERN);
+  if (!baseUrl || !match) {
+    throw new Error('Remote development and homologation builds require a valid HTTPS API URL.');
+  }
+  if (match[1].toLowerCase() === PRODUCTION_API_HOST) {
+    throw new Error('Remote development and homologation builds cannot target production.');
+  }
+  return baseUrl;
+}
+
+export function resolveApiBaseUrl(
+  isDevelopment: boolean,
+  nativeConfiguration?: NativeApiConfiguration,
+) {
+  if (isDevelopment) {
+    if (nativeConfiguration?.environment === 'development-remote') {
+      return resolveRemoteApiUrl(nativeConfiguration.apiBaseUrl);
+    }
+    return DEVELOPMENT_API_BASE_URL;
+  }
+  if (nativeConfiguration?.environment === 'homolog') {
+    return resolveRemoteApiUrl(nativeConfiguration.apiBaseUrl);
+  }
+  return PRODUCTION_API_BASE_URL;
+}
+
+export const API_BASE_URL = resolveApiBaseUrl(
+  __DEV__,
+  NativeModules.HortiViaConfig as NativeApiConfiguration | undefined,
+);
 
 export const API_CONFIG = {
   baseURL: API_BASE_URL,
