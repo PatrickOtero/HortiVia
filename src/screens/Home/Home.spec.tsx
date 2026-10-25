@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
+import { FlatList } from 'react-native';
 import {
   ArticleCard,
   CompactArticleCard,
@@ -233,6 +234,49 @@ describe('HomeScreen', () => {
     expect(titleValues).toContain('Categorias');
     expect(titleValues).toContain('Guia de produtos');
     expect(titleValues).toContain('Conteúdos educativos');
+  });
+
+  it('starts product pagination from visible catalog rows while retaining the article preview footer', async () => {
+    const loadMore = jest.fn().mockResolvedValue(undefined);
+    mockedUseProducts.mockReturnValue({
+      categories: [{ value: 'ALL', label: 'Todos' }],
+      products: [
+        createDefaultProduct({ id: 'p1' }),
+        createDefaultProduct({ id: 'p2' }),
+        createDefaultProduct({ id: 'p3' }),
+      ],
+      meta: { page: 1, limit: 20, total: 6, totalPages: 2 },
+      isLoading: false,
+      isRefreshing: false,
+      isLoadingMore: false,
+      loadMoreError: null,
+      loadMore,
+      isError: false,
+      isEmpty: false,
+      retry: jest.fn(),
+      refresh: jest.fn(),
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await ReactTestRenderer.act(async () => {
+      renderer = renderHome();
+    });
+
+    const list = renderer!.root.findByType(FlatList);
+    expect(list.props.data).toHaveLength(3);
+    expect(renderer!.root.findAllByType(ArticleCard)).toHaveLength(1);
+
+    await ReactTestRenderer.act(async () => {
+      list.props.onViewableItemsChanged({
+        viewableItems: [
+          { index: 1, isViewable: true },
+          { index: 2, isViewable: true },
+        ],
+        changed: [],
+      });
+    });
+
+    expect(loadMore).toHaveBeenCalledTimes(1);
   });
 
   it('shows the empty search state when no products are found', async () => {

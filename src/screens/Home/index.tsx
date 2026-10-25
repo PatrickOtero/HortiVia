@@ -1,5 +1,5 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, ViewToken } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
@@ -55,6 +55,9 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     meta,
     isLoading,
     isRefreshing,
+    isLoadingMore,
+    loadMoreError,
+    loadMore,
     isError,
     isEmpty,
     retry,
@@ -74,6 +77,27 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
   });
 
   const previewArticles = useMemo(() => articles.slice(0, 2), [articles]);
+  const loadMoreProductsRef = useRef(loadMore);
+  const productCountRef = useRef(products.length);
+  loadMoreProductsRef.current = loadMore;
+  productCountRef.current = products.length;
+  const viewabilityConfig = useRef({ itemVisiblePercentThreshold: 50 }).current;
+  const onViewableItemsChanged = useRef(
+    ({ viewableItems }: { viewableItems: Array<ViewToken> }) => {
+      const lastProductIndex = productCountRef.current - 1;
+      if (
+        lastProductIndex >= 0 &&
+        viewableItems.some(
+          token =>
+            token.isViewable &&
+            token.index !== null &&
+            token.index >= lastProductIndex - 2,
+        )
+      ) {
+        loadMoreProductsRef.current().catch(() => undefined);
+      }
+    },
+  ).current;
   const favoriteLoadingIdSet = useMemo(
     () => new Set(favoriteLoadingIds),
     [favoriteLoadingIds],
@@ -278,6 +302,28 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     );
   }
 
+  function renderListFooter() {
+    return (
+      <>
+        {isLoadingMore ? (
+          <S.StatusContent>
+            <ActivityIndicator size="small" color={theme.colors.primary} />
+            <SectionTitle title="Carregando mais produtos" />
+          </S.StatusContent>
+        ) : null}
+        {loadMoreError ? (
+          <S.FooterContent>
+            <S.SectionMessage>{loadMoreError}</S.SectionMessage>
+            <TextButton onPress={() => loadMore().catch(() => undefined)}>
+              Tentar novamente
+            </TextButton>
+          </S.FooterContent>
+        ) : null}
+        {renderArticlesPreviewSection()}
+      </>
+    );
+  }
+
   return (
     <SafeScreen edges={['top', 'left', 'right']}>
       <FlatList
@@ -294,6 +340,8 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         )}
         refreshing={isRefreshing}
         onRefresh={refresh}
+        onViewableItemsChanged={onViewableItemsChanged}
+        viewabilityConfig={viewabilityConfig}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: theme.layout.screenPadding,
@@ -344,7 +392,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
             </S.SectionBlock>
           </S.HeaderContent>
         }
-        ListFooterComponent={renderArticlesPreviewSection()}
+        ListFooterComponent={renderListFooter()}
         ListEmptyComponent={renderCatalogEmptyState()}
       />
     </SafeScreen>

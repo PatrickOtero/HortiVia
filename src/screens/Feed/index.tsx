@@ -12,6 +12,7 @@ import {
   SafeScreen,
   SectionTitle,
   SurfaceCard,
+  TextButton,
 } from '../../components';
 import { useArticles } from '../../features/articles/hooks/useArticles';
 import { useSavedArticles } from '../../features/articles/hooks/useSavedArticles';
@@ -38,6 +39,9 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
     canOpenArticle,
     isLoading,
     isRefreshing,
+    isLoadingMore,
+    loadMoreError,
+    loadMore,
     isError,
     isEmpty,
     meta,
@@ -102,6 +106,30 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
     return null;
   }
 
+  function renderListFooter() {
+    if (isLoadingMore) {
+      return (
+        <S.StatusContent>
+          <ActivityIndicator size="small" color={theme.colors.primary} />
+          <SectionTitle title="Carregando mais artigos" />
+        </S.StatusContent>
+      );
+    }
+
+    if (loadMoreError) {
+      return (
+        <S.StatusContent>
+          <SectionTitle title={loadMoreError} />
+          <TextButton onPress={() => loadMore().catch(() => undefined)}>
+            Tentar novamente
+          </TextButton>
+        </S.StatusContent>
+      );
+    }
+
+    return null;
+  }
+
   const totalArticles = meta.total;
   const articlesSubtitle = isLoading && articles.length === 0
     ? 'Separando leituras para você.'
@@ -128,6 +156,8 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
         )}
         refreshing={isRefreshing}
         onRefresh={refresh}
+        onEndReached={() => loadMore().catch(() => undefined)}
+        onEndReachedThreshold={0.5}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingHorizontal: theme.layout.screenPadding,
@@ -171,6 +201,7 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
           </S.HeaderContent>
         }
         ListEmptyComponent={renderListEmptyState()}
+        ListFooterComponent={renderListFooter()}
       />
     </SafeScreen>
   );
