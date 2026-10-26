@@ -53,6 +53,7 @@ export function useArticles({ activeCategory }: UseArticlesOptions) {
   const requestIdRef = useRef(0);
   const firstPageRequestIdRef = useRef<number | null>(null);
   const nextPageRequestIdRef = useRef<number | null>(null);
+  const paginationFailedRef = useRef(false);
   const currentCategoryRef = useRef(activeCategory);
   currentCategoryRef.current = activeCategory;
 
@@ -60,6 +61,7 @@ export function useArticles({ activeCategory }: UseArticlesOptions) {
     requestIdRef.current += 1;
     firstPageRequestIdRef.current = null;
     nextPageRequestIdRef.current = null;
+    paginationFailedRef.current = false;
     articlesRef.current = [];
     metaRef.current = INITIAL_META;
     setArticles([]);
@@ -82,6 +84,7 @@ export function useArticles({ activeCategory }: UseArticlesOptions) {
     requestIdRef.current = requestId;
     firstPageRequestIdRef.current = requestId;
     nextPageRequestIdRef.current = null;
+    paginationFailedRef.current = false;
     const category = currentCategoryRef.current;
 
     setErrorMessage(null);
@@ -147,8 +150,9 @@ export function useArticles({ activeCategory }: UseArticlesOptions) {
     loadArticles().catch(() => undefined);
   }, [activeCategory, loadArticles]);
 
-  const loadMore = useCallback(async () => {
+  const loadMorePage = useCallback(async () => {
     if (
+      paginationFailedRef.current ||
       firstPageRequestIdRef.current !== null ||
       nextPageRequestIdRef.current !== null ||
       metaRef.current.page >= metaRef.current.totalPages
@@ -178,6 +182,7 @@ export function useArticles({ activeCategory }: UseArticlesOptions) {
       }
 
       const mergedArticles = mergeArticles(articlesRef.current, response.data);
+      paginationFailedRef.current = false;
       articlesRef.current = mergedArticles;
       metaRef.current = response.meta;
       setArticles(mergedArticles);
@@ -187,6 +192,7 @@ export function useArticles({ activeCategory }: UseArticlesOptions) {
         requestId === requestIdRef.current &&
         category === currentCategoryRef.current
       ) {
+        paginationFailedRef.current = true;
         setLoadMoreError('Não foi possível carregar mais artigos.');
       }
     } finally {
@@ -201,6 +207,22 @@ export function useArticles({ activeCategory }: UseArticlesOptions) {
       }
     }
   }, []);
+
+  const loadMore = useCallback(() => {
+    if (paginationFailedRef.current) {
+      return Promise.resolve();
+    }
+    return loadMorePage();
+  }, [loadMorePage]);
+
+  const retryLoadMore = useCallback(() => {
+    if (!paginationFailedRef.current) {
+      return Promise.resolve();
+    }
+    paginationFailedRef.current = false;
+    setLoadMoreError(null);
+    return loadMorePage();
+  }, [loadMorePage]);
 
   function retry() {
     loadArticles({ preserveCurrentItems: false }).catch(() => undefined);
@@ -224,7 +246,7 @@ export function useArticles({ activeCategory }: UseArticlesOptions) {
     errorMessage,
     canOpenArticle: true,
     loadMore,
-    retryLoadMore: loadMore,
+    retryLoadMore,
     retry,
     refresh,
   };

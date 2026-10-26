@@ -42,6 +42,7 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
     isLoadingMore,
     loadMoreError,
     loadMore,
+    retryLoadMore,
     isError,
     isEmpty,
     meta,
@@ -120,7 +121,7 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
       return (
         <S.StatusContent>
           <SectionTitle title={loadMoreError} />
-          <TextButton onPress={() => loadMore().catch(() => undefined)}>
+          <TextButton onPress={() => retryLoadMore().catch(() => undefined)}>
             Tentar novamente
           </TextButton>
         </S.StatusContent>

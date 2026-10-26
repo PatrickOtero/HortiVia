@@ -61,6 +61,7 @@ export function useProducts({
   const requestIdRef = useRef(0);
   const nextPageRequestIdRef = useRef<number | null>(null);
   const firstPageRequestIdRef = useRef<number | null>(null);
+  const paginationFailedRef = useRef(false);
   const currentFilterKey = `${activeCategory}:${searchQuery.trim()}`;
   const currentFilterKeyRef = useRef(currentFilterKey);
   currentFilterKeyRef.current = currentFilterKey;
@@ -80,6 +81,7 @@ export function useProducts({
     requestIdRef.current += 1;
     firstPageRequestIdRef.current = null;
     nextPageRequestIdRef.current = null;
+    paginationFailedRef.current = false;
     productsRef.current = [];
     metaRef.current = INITIAL_META;
     setProducts([]);
@@ -100,6 +102,7 @@ export function useProducts({
     requestIdRef.current = requestId;
     firstPageRequestIdRef.current = requestId;
     nextPageRequestIdRef.current = null;
+    paginationFailedRef.current = false;
     const filterKey = currentFilterKeyRef.current;
     const preserveCurrentItems = options?.preserveCurrentItems ?? true;
     const hasCurrentItems = preserveCurrentItems && productsRef.current.length > 0;
@@ -169,9 +172,10 @@ export function useProducts({
     }
   }, [isSearchPending, loadProducts]);
 
-  const loadMore = useCallback(async () => {
+  const loadMorePage = useCallback(async () => {
     if (
       isSearchPendingRef.current ||
+      paginationFailedRef.current ||
       firstPageRequestIdRef.current !== null ||
       nextPageRequestIdRef.current !== null ||
       metaRef.current.page >= metaRef.current.totalPages
@@ -202,6 +206,7 @@ export function useProducts({
       }
 
       const mergedProducts = mergeProducts(productsRef.current, response.data);
+      paginationFailedRef.current = false;
       productsRef.current = mergedProducts;
       metaRef.current = response.meta;
       setProducts(mergedProducts);
@@ -211,6 +216,7 @@ export function useProducts({
         requestId === requestIdRef.current &&
         filterKey === currentFilterKeyRef.current
       ) {
+        paginationFailedRef.current = true;
         setLoadMoreError('Não foi possível carregar mais produtos.');
       }
     } finally {
@@ -225,6 +231,22 @@ export function useProducts({
       }
     }
   }, [activeCategory, debouncedSearchQuery]);
+
+  const loadMore = useCallback(() => {
+    if (paginationFailedRef.current) {
+      return Promise.resolve();
+    }
+    return loadMorePage();
+  }, [loadMorePage]);
+
+  const retryLoadMore = useCallback(() => {
+    if (!paginationFailedRef.current) {
+      return Promise.resolve();
+    }
+    paginationFailedRef.current = false;
+    setLoadMoreError(null);
+    return loadMorePage();
+  }, [loadMorePage]);
 
   function retry() {
     loadProducts({ preserveCurrentItems: false }).catch(() => undefined);
@@ -247,7 +269,7 @@ export function useProducts({
     isError: Boolean(errorMessage) && products.length === 0,
     isEmpty: !isLoading && !errorMessage && products.length === 0,
     loadMore,
-    retryLoadMore: loadMore,
+    retryLoadMore,
     retry,
     refresh,
   };

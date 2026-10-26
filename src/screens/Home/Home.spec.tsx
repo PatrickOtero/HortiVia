@@ -10,6 +10,7 @@ import {
   RecentProductCard,
   SearchInput,
   SectionTitle,
+  TextButton,
 } from '../../components';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { useArticles } from '../../features/articles/hooks/useArticles';
@@ -277,6 +278,39 @@ describe('HomeScreen', () => {
     });
 
     expect(loadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the explicit retry action after a product page failure', async () => {
+    const loadMore = jest.fn().mockResolvedValue(undefined);
+    const retryLoadMore = jest.fn().mockResolvedValue(undefined);
+    mockedUseProducts.mockReturnValue({
+      categories: [{ value: 'ALL', label: 'Todos' }],
+      products: [createDefaultProduct()],
+      meta: { page: 1, limit: 20, total: 2, totalPages: 2 },
+      isLoading: false,
+      isRefreshing: false,
+      isLoadingMore: false,
+      loadMoreError: 'Falha ao carregar mais produtos.',
+      loadMore,
+      retryLoadMore,
+      isError: false,
+      isEmpty: false,
+      retry: jest.fn(),
+      refresh: jest.fn(),
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await ReactTestRenderer.act(async () => {
+      renderer = renderHome();
+    });
+
+    const retryButton = renderer!.root
+      .findAllByType(TextButton)
+      .find(button => button.props.children === 'Tentar novamente');
+    expect(retryButton).toBeDefined();
+    await ReactTestRenderer.act(async () => retryButton?.props.onPress());
+    expect(retryLoadMore).toHaveBeenCalledTimes(1);
+    expect(loadMore).not.toHaveBeenCalled();
   });
 
   it('shows the empty search state when no products are found', async () => {

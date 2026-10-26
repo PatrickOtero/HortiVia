@@ -89,16 +89,24 @@ describe('useArticles pagination', () => {
   });
 
   it('avoids simultaneous next-page calls and preserves articles for retry on failure', async () => {
-    const nextPage = deferred<PaginatedResponse<ArticleListItem>>();
+    const manualRetry = deferred<PaginatedResponse<ArticleListItem>>();
     mockedArticlesService.listArticles
-      .mockResolvedValueOnce(page([article('a1')], 1, 2))
+      .mockResolvedValueOnce(page([article('a1')], 1, 3))
       .mockRejectedValueOnce(new Error('network'))
-      .mockReturnValueOnce(nextPage.promise);
+      .mockReturnValueOnce(manualRetry.promise)
+      .mockResolvedValueOnce(page([article('a3')], 3, 3));
     await mount();
 
     await ReactTestRenderer.act(async () => latestHook?.loadMore());
     expect(latestHook?.articles.map(item => item.id)).toEqual(['a1']);
     expect(latestHook?.loadMoreError).toBe('Não foi possível carregar mais artigos.');
+
+    await ReactTestRenderer.act(async () => {
+      await latestHook?.loadMore();
+      await latestHook?.loadMore();
+    });
+    expect(mockedArticlesService.listArticles).toHaveBeenCalledTimes(2);
+    expect(latestHook?.articles.map(item => item.id)).toEqual(['a1']);
 
     await ReactTestRenderer.act(async () => {
       latestHook?.retryLoadMore().catch(() => undefined);
@@ -107,10 +115,36 @@ describe('useArticles pagination', () => {
     expect(mockedArticlesService.listArticles).toHaveBeenCalledTimes(3);
 
     await ReactTestRenderer.act(async () => {
-      nextPage.resolve(page([article('a2')], 2, 2));
-      await nextPage.promise;
+      manualRetry.resolve(page([article('a2')], 2, 3));
+      await manualRetry.promise;
     });
     expect(latestHook?.articles.map(item => item.id)).toEqual(['a1', 'a2']);
+    expect(latestHook?.loadMoreError).toBeNull();
+
+    await ReactTestRenderer.act(async () => latestHook?.loadMore());
+    expect(mockedArticlesService.listArticles).toHaveBeenCalledTimes(4);
+    expect(latestHook?.articles.map(item => item.id)).toEqual(['a1', 'a2', 'a3']);
+  });
+
+  it('clears a failed-page block when refreshing the first page', async () => {
+    mockedArticlesService.listArticles
+      .mockResolvedValueOnce(page([article('a1')], 1, 2))
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(page([article('a1-refreshed')], 1, 2))
+      .mockResolvedValueOnce(page([article('a2')], 2, 2));
+    await mount();
+
+    await ReactTestRenderer.act(async () => latestHook?.loadMore());
+    expect(latestHook?.loadMoreError).not.toBeNull();
+    await ReactTestRenderer.act(async () => latestHook?.refresh());
+    expect(latestHook?.articles.map(item => item.id)).toEqual(['a1-refreshed']);
+    expect(latestHook?.loadMoreError).toBeNull();
+    await ReactTestRenderer.act(async () => latestHook?.loadMore());
+    expect(mockedArticlesService.listArticles).toHaveBeenCalledTimes(4);
+    expect(latestHook?.articles.map(item => item.id)).toEqual([
+      'a1-refreshed',
+      'a2',
+    ]);
   });
 
   it('resets to page one and ignores an old category response', async () => {
@@ -135,5 +169,31 @@ describe('useArticles pagination', () => {
       limit: 20,
     });
     expect(latestHook?.articles.map(item => item.id)).toEqual(['fresh']);
+  });
+
+  it('clears the pagination failure when the category changes', async () => {
+    mockedArticlesService.listArticles
+      .mockResolvedValueOnce(page([article('old')], 1, 2))
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(page([article('tips')], 1, 2))
+      .mockResolvedValueOnce(page([article('tips-next')], 2, 2));
+    await mount();
+
+    await ReactTestRenderer.act(async () => latestHook?.loadMore());
+    expect(latestHook?.loadMoreError).not.toBeNull();
+
+    await ReactTestRenderer.act(async () => {
+      activeCategory = 'TIPS';
+      renderer.update(<HookProbe />);
+    });
+    expect(latestHook?.articles.map(item => item.id)).toEqual(['tips']);
+    expect(latestHook?.loadMoreError).toBeNull();
+
+    await ReactTestRenderer.act(async () => latestHook?.loadMore());
+    expect(mockedArticlesService.listArticles).toHaveBeenCalledTimes(4);
+    expect(latestHook?.articles.map(item => item.id)).toEqual([
+      'tips',
+      'tips-next',
+    ]);
   });
 });

@@ -58,6 +58,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
     isLoadingMore,
     loadMoreError,
     loadMore,
+    retryLoadMore,
     isError,
     isEmpty,
     retry,
@@ -314,7 +315,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
         {loadMoreError ? (
           <S.FooterContent>
             <S.SectionMessage>{loadMoreError}</S.SectionMessage>
-            <TextButton onPress={() => loadMore().catch(() => undefined)}>
+            <TextButton onPress={() => retryLoadMore().catch(() => undefined)}>
               Tentar novamente
             </TextButton>
           </S.FooterContent>

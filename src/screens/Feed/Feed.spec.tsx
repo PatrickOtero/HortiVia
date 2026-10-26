@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { FlatList } from 'react-native';
+import { TextButton } from '../../components';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { useArticles } from '../../features/articles/hooks/useArticles';
 import { useSavedArticles } from '../../features/articles/hooks/useSavedArticles';
@@ -31,6 +32,8 @@ const article: ArticleListItem = {
 
 describe('FeedScreen pagination', () => {
   const navigate = jest.fn();
+  const loadMore = jest.fn().mockResolvedValue(undefined);
+  const retryLoadMore = jest.fn().mockResolvedValue(undefined);
   let renderer!: ReactTestRenderer.ReactTestRenderer;
 
   beforeEach(() => {
@@ -48,7 +51,8 @@ describe('FeedScreen pagination', () => {
       meta: { page: 1, limit: 20, total: 21, totalPages: 2 },
       retry: jest.fn(),
       refresh: jest.fn(),
-      loadMore: jest.fn().mockResolvedValue(undefined),
+      loadMore,
+      retryLoadMore,
     });
     mockedUseSavedArticles.mockReturnValue({
       isArticleSaved: jest.fn(() => false),
@@ -80,6 +84,44 @@ describe('FeedScreen pagination', () => {
       await list.props.onEndReached();
     });
 
-    expect(mockedUseArticles.mock.results[0].value.loadMore).toHaveBeenCalledTimes(1);
+    expect(loadMore).toHaveBeenCalledTimes(1);
+  });
+
+  it('uses the explicit retry action after an article page failure', async () => {
+    mockedUseArticles.mockReturnValue({
+      articles: [article],
+      categories: [{ value: 'ALL', label: 'Todos' }],
+      canOpenArticle: true,
+      isLoading: false,
+      isRefreshing: false,
+      isLoadingMore: false,
+      loadMoreError: 'Falha ao carregar mais artigos.',
+      isError: false,
+      isEmpty: false,
+      meta: { page: 1, limit: 20, total: 21, totalPages: 2 },
+      retry: jest.fn(),
+      refresh: jest.fn(),
+      loadMore,
+      retryLoadMore,
+    });
+
+    await ReactTestRenderer.act(async () => {
+      renderer = ReactTestRenderer.create(
+        <ThemeProvider>
+          <FeedScreen
+            navigation={{ navigate } as never}
+            route={{ key: 'Feed', name: 'Feed' } as never}
+          />
+        </ThemeProvider>,
+      );
+    });
+
+    const retryButton = renderer.root
+      .findAllByType(TextButton)
+      .find(button => button.props.children === 'Tentar novamente');
+    expect(retryButton).toBeDefined();
+    await ReactTestRenderer.act(async () => retryButton?.props.onPress());
+    expect(retryLoadMore).toHaveBeenCalledTimes(1);
+    expect(loadMore).not.toHaveBeenCalled();
   });
 });

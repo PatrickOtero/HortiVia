@@ -119,20 +119,64 @@ describe('useProducts pagination', () => {
     expect(latestHook?.products.map(item => item.id)).toEqual(['p1', 'p2']);
   });
 
-  it('keeps existing items and retries after a next-page failure', async () => {
+  it('blocks automatic retries after failure and allows exactly one manual retry', async () => {
+    const manualRetry = deferred<PaginatedResponse<ProductListItem>>();
     mockedProductsService.listProducts
-      .mockResolvedValueOnce(page([product('p1')], 1, 2))
+      .mockResolvedValueOnce(page([product('p1')], 1, 3))
       .mockRejectedValueOnce(new Error('network'))
-      .mockResolvedValueOnce(page([product('p2')], 2, 2));
+      .mockReturnValueOnce(manualRetry.promise)
+      .mockResolvedValueOnce(page([product('p3')], 3, 3));
     await mount();
 
     await ReactTestRenderer.act(async () => latestHook?.loadMore());
     expect(latestHook?.products.map(item => item.id)).toEqual(['p1']);
     expect(latestHook?.loadMoreError).toBe('Não foi possível carregar mais produtos.');
 
-    await ReactTestRenderer.act(async () => latestHook?.retryLoadMore());
+    await ReactTestRenderer.act(async () => {
+      await latestHook?.loadMore();
+      await latestHook?.loadMore();
+    });
+    expect(mockedProductsService.listProducts).toHaveBeenCalledTimes(2);
+    expect(latestHook?.products.map(item => item.id)).toEqual(['p1']);
+
+    await ReactTestRenderer.act(async () => {
+      latestHook?.retryLoadMore().catch(() => undefined);
+      latestHook?.retryLoadMore().catch(() => undefined);
+    });
+    expect(mockedProductsService.listProducts).toHaveBeenCalledTimes(3);
+
+    await ReactTestRenderer.act(async () => {
+      manualRetry.resolve(page([product('p2')], 2, 3));
+      await manualRetry.promise;
+    });
     expect(latestHook?.products.map(item => item.id)).toEqual(['p1', 'p2']);
     expect(latestHook?.loadMoreError).toBeNull();
+
+    await ReactTestRenderer.act(async () => latestHook?.loadMore());
+    expect(mockedProductsService.listProducts).toHaveBeenCalledTimes(4);
+    expect(latestHook?.products.map(item => item.id)).toEqual(['p1', 'p2', 'p3']);
+  });
+
+  it('clears a failed-page block when refreshing the first page', async () => {
+    mockedProductsService.listProducts
+      .mockResolvedValueOnce(page([product('p1')], 1, 2))
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(page([product('p1-refreshed')], 1, 2))
+      .mockResolvedValueOnce(page([product('p2')], 2, 2));
+    await mount();
+
+    await ReactTestRenderer.act(async () => latestHook?.loadMore());
+    expect(latestHook?.loadMoreError).not.toBeNull();
+
+    await ReactTestRenderer.act(async () => latestHook?.refresh());
+    expect(latestHook?.products.map(item => item.id)).toEqual(['p1-refreshed']);
+    expect(latestHook?.loadMoreError).toBeNull();
+    await ReactTestRenderer.act(async () => latestHook?.loadMore());
+    expect(mockedProductsService.listProducts).toHaveBeenCalledTimes(4);
+    expect(latestHook?.products.map(item => item.id)).toEqual([
+      'p1-refreshed',
+      'p2',
+    ]);
   });
 
   it('resets page and ignores an old response after the category changes', async () => {
@@ -188,5 +232,31 @@ describe('useProducts pagination', () => {
       limit: 20,
     });
     expect(latestHook?.products.map(item => item.id)).toEqual(['apple-result']);
+  });
+
+  it('unblocks pagination after a new search loads its first page', async () => {
+    mockedProductsService.listProducts
+      .mockResolvedValueOnce(page([product('old')], 1, 2))
+      .mockRejectedValueOnce(new Error('network'))
+      .mockResolvedValueOnce(page([product('new')], 1, 2))
+      .mockResolvedValueOnce(page([product('new-next')], 2, 2));
+    await mount();
+
+    await ReactTestRenderer.act(async () => latestHook?.loadMore());
+    expect(latestHook?.loadMoreError).not.toBeNull();
+
+    await ReactTestRenderer.act(async () => {
+      filters = { activeCategory: 'ALL', searchQuery: 'apple' };
+      renderer.update(<HookProbe />);
+    });
+    await ReactTestRenderer.act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 360));
+    });
+    expect(latestHook?.products.map(item => item.id)).toEqual(['new']);
+    expect(latestHook?.loadMoreError).toBeNull();
+
+    await ReactTestRenderer.act(async () => latestHook?.loadMore());
+    expect(mockedProductsService.listProducts).toHaveBeenCalledTimes(4);
+    expect(latestHook?.products.map(item => item.id)).toEqual(['new', 'new-next']);
   });
 });
