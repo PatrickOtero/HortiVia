@@ -6,31 +6,7 @@ def releaseStoreFile = project.findProperty("HORTIVIA_RELEASE_STORE_FILE")
 def releaseStorePassword = project.findProperty("HORTIVIA_RELEASE_STORE_PASSWORD")
 def releaseKeyAlias = project.findProperty("HORTIVIA_RELEASE_KEY_ALIAS")
 def releaseKeyPassword = project.findProperty("HORTIVIA_RELEASE_KEY_PASSWORD")
-def developmentApiBaseUrl = "http://127.0.0.1:3001"
-def productionApiBaseUrl = "https://p01--frutinavigator--h2j28jgg9qgs.code.run"
-def debugRemoteApiBaseUrl = project.findProperty("HORTIVIA_DEBUG_API_URL")?.toString()?.trim()
-def homologApiBaseUrl = project.findProperty("HORTIVIA_HOMOLOG_API_URL")?.toString()?.trim() ?: ""
 def buildConfigString = { String value -> "\"${value.replace('\\', '\\\\').replace('\"', '\\\"')}\"" }
-def validateRemoteApiBaseUrl = { String value, String propertyName ->
-    try {
-        def remoteUri = new URI(value)
-        def productionUri = new URI(productionApiBaseUrl)
-        if (remoteUri.scheme != "https" || !remoteUri.host || remoteUri.userInfo || remoteUri.query || remoteUri.fragment) {
-            throw new GradleException("${propertyName} must be an HTTPS base URL without credentials, query, or fragment.")
-        }
-        if (remoteUri.host.equalsIgnoreCase(productionUri.host)) {
-            throw new GradleException("${propertyName} must not target the production API.")
-        }
-        return value
-    } catch (Exception error) {
-        if (error instanceof GradleException) throw error
-        throw new GradleException("Set ${propertyName} to a valid HTTPS API URL that is not production.")
-    }
-}
-
-if (debugRemoteApiBaseUrl) {
-    debugRemoteApiBaseUrl = validateRemoteApiBaseUrl(debugRemoteApiBaseUrl, "HORTIVIA_DEBUG_API_URL")
-}
 def hasReleaseSigning =
     releaseStoreFile && releaseStorePassword && releaseKeyAlias && releaseKeyPassword
 
@@ -140,15 +116,13 @@ android {
         debug {
             signingConfig signingConfigs.debug
             manifestPlaceholders = [usesCleartextTraffic: "true"]
-            buildConfigField "String", "HORTIVIA_API_BASE_URL", buildConfigString(debugRemoteApiBaseUrl ?: developmentApiBaseUrl)
-            buildConfigField "String", "HORTIVIA_API_ENVIRONMENT", buildConfigString(debugRemoteApiBaseUrl ? "development-remote" : "development")
+            buildConfigField "String", "HORTIVIA_API_ENVIRONMENT", buildConfigString("development")
         }
         release {
             signingConfig hasReleaseSigning ? signingConfigs.release : signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
             manifestPlaceholders = [usesCleartextTraffic: "false"]
-            buildConfigField "String", "HORTIVIA_API_BASE_URL", buildConfigString(productionApiBaseUrl)
             buildConfigField "String", "HORTIVIA_API_ENVIRONMENT", buildConfigString("production")
         }
         homolog {
@@ -158,25 +132,7 @@ android {
             versionNameSuffix "-homolog"
             signingConfig signingConfigs.debug
             manifestPlaceholders = [usesCleartextTraffic: "false"]
-            buildConfigField "String", "HORTIVIA_API_BASE_URL", buildConfigString(homologApiBaseUrl)
             buildConfigField "String", "HORTIVIA_API_ENVIRONMENT", buildConfigString("homolog")
-        }
-    }
-}
-
-gradle.taskGraph.whenReady { taskGraph ->
-    if (taskGraph.allTasks.any { it.name.toLowerCase().contains("homolog") }) {
-        try {
-            def homologUri = new URI(homologApiBaseUrl)
-            if (homologUri.scheme != "https" || !homologUri.host || homologUri.userInfo || homologUri.query || homologUri.fragment) {
-                throw new GradleException("HORTIVIA_HOMOLOG_API_URL must be an HTTPS base URL without credentials, query, or fragment.")
-            }
-            if (homologUri.host.equalsIgnoreCase(new URI(productionApiBaseUrl).host)) {
-                throw new GradleException("HORTIVIA_HOMOLOG_API_URL must not target the production API.")
-            }
-        } catch (Exception error) {
-            if (error instanceof GradleException) throw error
-            throw new GradleException("Set HORTIVIA_HOMOLOG_API_URL to the approved HTTPS homologation API before building the pilot APK.")
         }
     }
 }

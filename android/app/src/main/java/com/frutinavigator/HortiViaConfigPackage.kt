@@ -11,7 +11,6 @@ class HortiViaConfigModule(context: ReactApplicationContext) : ReactContextBaseJ
   override fun getName(): String = "HortiViaConfig"
 
   override fun getConstants(): MutableMap<String, Any> = mutableMapOf(
-    "apiBaseUrl" to BuildConfig.HORTIVIA_API_BASE_URL,
     "environment" to BuildConfig.HORTIVIA_API_ENVIRONMENT,
   )
 }
