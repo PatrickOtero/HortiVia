@@ -267,6 +267,7 @@ export function AdminProductVisualContentScreen({
         : null,
     [guideSections, sectionEditor],
   );
+  const sectionKindOptions = PRODUCT_GUIDE_SECTION_KIND_OPTIONS;
 
   if (user?.role !== 'ADMIN' || hasAccessDeniedError) {
     return <AdminAccessDenied onGoBack={() => goBackFromAdmin(navigation)} />;
@@ -993,7 +994,7 @@ export function AdminProductVisualContentScreen({
                       <S.FieldGroup>
                         <S.FieldLabel>Tipo da seção</S.FieldLabel>
                         <S.ChipRow>
-                          {PRODUCT_GUIDE_SECTION_KIND_OPTIONS.map(option => (
+                          {sectionKindOptions.map(option => (
                             <FilterChip
                               key={option.value}
                               label={option.label}

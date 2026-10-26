@@ -1,6 +1,11 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
-import { CompactArticleCard, PrimaryButton, SectionTitle } from '../../components';
+import {
+  CompactArticleCard,
+  PrimaryButton,
+  ProductGuideSection,
+  SectionTitle,
+} from '../../components';
 import { trainingService } from '../../features/training/services/training.service';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { useToggleProductFavorite } from '../../features/products/hooks/useToggleProductFavorite';
@@ -102,6 +107,188 @@ describe('ProductDetailScreen', () => {
       .map(section => section.props.title);
 
     expect(sectionTitles).not.toContain('Leituras relacionadas');
+  });
+
+  it('shows only the first guide of each main type and keeps product quick facts separate', async () => {
+    mockedUseProductById.mockReturnValue({
+      product: {
+        id: 'product-1',
+        name: 'Abacate',
+        slug: 'abacate',
+        category: 'FRUIT',
+        shortDescription: 'Versátil para diferentes preparações.',
+        imageUrl: null,
+        isFavorite: false,
+        description: 'Descrição do produto.',
+        benefits: ['Contém fibras.'],
+        howToChoose: [
+          'Prefira leve cedência.',
+          'Evite rachaduras.',
+          'Frutos firmes podem amadurecer.',
+        ],
+        howToStore: [
+          'Firme pode amadurecer fora da geladeira.',
+          'Guarde tampado.',
+        ],
+        usageTips: ['Use em vitaminas.'],
+        nutrients: [{ label: 'Potássio', value: 'Presente naturalmente' }],
+        mainImages: [],
+        guideSections: [
+          {
+            id: 'choose', kind: 'choose', title: 'Seleção', body: 'Prefira leve cedência.',
+            bullets: ['Prefira leve cedência.'], imageUrl: 'https://images.test/choose.png',
+          },
+          {
+            id: 'attention', kind: 'observe', title: 'Pontos de atenção', body: 'Evite rachaduras.',
+            bullets: ['Evite rachaduras.'], imageUrl: 'https://images.test/attention.png',
+          },
+          {
+            id: 'maturity', kind: 'observe', title: 'Ponto de maturação', body: 'Frutos muito firmes amadurecem.',
+            bullets: [], imageUrl: 'https://images.test/maturity.png',
+          },
+          {
+            id: 'ripening', kind: 'store', title: 'Como amadurecer', body: 'Deixe fora da geladeira.',
+            bullets: [], imageUrl: 'https://images.test/ripening.png',
+          },
+          {
+            id: 'storage', kind: 'store', title: 'Como conservar depois de cortar', body: 'Guarde tampado.',
+            bullets: ['Guarde tampado.'], imageUrl: 'https://images.test/storage.png',
+          },
+          {
+            id: 'use', kind: 'use', title: 'Como usar', body: 'A polpa serve para preparações doces ou salgadas.',
+            bullets: [], imageUrl: 'https://images.test/use.png',
+          },
+          {
+            id: 'other-use', kind: 'use', title: 'Receita longa', body: 'Passos completos de uma receita.',
+            bullets: [], imageUrl: 'https://images.test/other-use.png',
+          },
+          {
+            id: 'facts', kind: 'quickFacts', title: 'Benefícios', body: 'Benefícios do guia.',
+            bullets: ['Contém fibras.'], imageUrl: 'https://images.test/facts.png',
+          },
+          {
+            id: 'other', kind: 'other', title: 'Seção legada', body: 'Conteúdo preservado.',
+            bullets: [], imageUrl: 'https://images.test/other.png',
+          },
+        ],
+        relatedArticles: [],
+      },
+      isLoading: false,
+      isNotFound: false,
+      retry: jest.fn(),
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await ReactTestRenderer.act(async () => {
+      renderer = renderScreen();
+    });
+
+    const titles = renderer!.root
+      .findAllByType(SectionTitle)
+      .map(section => section.props.title);
+    expect(titles).toEqual([
+      'Seleção',
+      'Pontos de atenção',
+      'Como amadurecer',
+      'Como usar',
+      'Informações rápidas',
+    ]);
+    expect(titles).not.toContain('Receita longa');
+    expect(titles).not.toContain('Seção legada');
+    expect(renderer!.root.findAllByType(CompactArticleCard)).toHaveLength(0);
+
+    const guides = renderer!.root
+      .findAllByType(ProductGuideSection)
+      .map(section => section.props.section);
+    expect(guides).toHaveLength(4);
+    expect(guides.map(section => section.imageUrl)).toEqual([
+      'https://images.test/choose.png',
+      'https://images.test/attention.png',
+      'https://images.test/ripening.png',
+      'https://images.test/use.png',
+    ]);
+    expect(guides.map(section => section.kind)).toEqual([
+      'choose',
+      'observe',
+      'store',
+      'use',
+    ]);
+    expect(guides[0].bullets).toEqual(['Prefira leve cedência.']);
+    expect(guides[2].bullets).toEqual([]);
+    expect(guides[3].bullets).toEqual([]);
+  });
+
+  it('prioritizes up to four recipe and waste-reduction previews without repeating articles', async () => {
+    const articles = [
+      { id: 'tips', title: 'Dica', category: 'TIPS' },
+      { id: 'recipe-1', title: 'Vitamina', category: 'RECIPES' },
+      { id: 'waste-1', title: 'Aproveitamento', category: 'WASTE_REDUCTION' },
+      { id: 'recipe-2', title: 'Guacamole', category: 'RECIPES' },
+      { id: 'recipe-3', title: 'Torrada', category: 'RECIPES' },
+      { id: 'recipe-4', title: 'Creme', category: 'RECIPES' },
+      { id: 'recipe-5', title: 'Sopa', category: 'RECIPES' },
+    ].map(article => ({
+      ...article,
+      slug: article.id,
+      summary: `Resumo de ${article.title}.`,
+      imageUrl: `https://images.test/${article.id}.jpg`,
+    }));
+    mockedUseProductById.mockReturnValue({
+      product: {
+        id: 'product-1', name: 'Abacate', slug: 'abacate', category: 'FRUIT',
+        shortDescription: 'Versátil.', imageUrl: null, isFavorite: false,
+        description: null, benefits: [], howToChoose: [], howToStore: [], usageTips: [],
+        nutrients: [], mainImages: [], guideSections: [],
+        relatedArticles: [...articles, articles[1]],
+      },
+      isLoading: false, isNotFound: false, retry: jest.fn(),
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await ReactTestRenderer.act(async () => {
+      renderer = renderScreen();
+    });
+
+    const titles = renderer!.root
+      .findAllByType(SectionTitle)
+      .map(section => section.props.title);
+    const cards = renderer!.root.findAllByType(CompactArticleCard);
+    const cardIds = cards.map(card => card.props.article.id);
+
+    expect(titles).toContain('Receitas e ideias para aproveitar');
+    expect(titles).toContain('Leituras relacionadas');
+    expect(cardIds).toEqual([
+      'recipe-1', 'waste-1', 'recipe-2', 'recipe-3', 'tips', 'recipe-4', 'recipe-5',
+    ]);
+    expect(new Set(cardIds).size).toBe(cardIds.length);
+  });
+
+  it('shows no empty recipe area when only other related categories exist', async () => {
+    mockedUseProductById.mockReturnValue({
+      product: {
+        id: 'product-1', name: 'Abacate', slug: 'abacate', category: 'FRUIT',
+        shortDescription: 'Versátil.', imageUrl: null, isFavorite: false,
+        description: null, benefits: [], howToChoose: [], howToStore: [], usageTips: [],
+        nutrients: [], mainImages: [], guideSections: [],
+        relatedArticles: [{
+          id: 'tips', title: 'Dica', slug: 'dica', summary: 'Resumo.', category: 'TIPS',
+          imageUrl: 'https://images.test/tips.jpg',
+        }],
+      },
+      isLoading: false, isNotFound: false, retry: jest.fn(),
+    });
+
+    let renderer: ReactTestRenderer.ReactTestRenderer;
+    await ReactTestRenderer.act(async () => {
+      renderer = renderScreen();
+    });
+
+    const titles = renderer!.root
+      .findAllByType(SectionTitle)
+      .map(section => section.props.title);
+    expect(titles).not.toContain('Receitas e ideias para aproveitar');
+    expect(titles).toContain('Leituras relacionadas');
+    expect(renderer!.root.findAllByType(CompactArticleCard)).toHaveLength(1);
   });
 
   it('does not crash when related articles are missing', async () => {

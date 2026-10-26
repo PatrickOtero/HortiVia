@@ -61,15 +61,39 @@ export function ProductDetailScreen({
     navigation.navigate('ArticleDetail', { articleId });
   }
 
-  const chooseSection =
-    product?.guideSections.find(section => section.kind === 'choose') ?? null;
-  const observeSection =
-    product?.guideSections.find(section => section.kind === 'observe') ?? null;
-  const storeSection =
-    product?.guideSections.find(section => section.kind === 'store') ?? null;
-  const useSection =
-    product?.guideSections.find(section => section.kind === 'use') ?? null;
+  const seenGuideKinds = new Set<string>();
+  const supportedGuideKinds = new Set<string>([
+    'choose',
+    'observe',
+    'store',
+    'use',
+  ]);
+  const visibleGuideSections = (product?.guideSections ?? []).filter(section => {
+    if (!supportedGuideKinds.has(section.kind)) {
+      return false;
+    }
+
+    if (seenGuideKinds.has(section.kind)) {
+      return false;
+    }
+
+    seenGuideKinds.add(section.kind);
+    return true;
+  });
   const relatedArticles = product?.relatedArticles ?? [];
+  const uniqueRelatedArticles = Array.from(
+    new Map(relatedArticles.map(article => [article.id, article])).values(),
+  );
+  const useSuggestions = uniqueRelatedArticles
+    .filter(
+      article =>
+        article.category === 'RECIPES' || article.category === 'WASTE_REDUCTION',
+    )
+    .slice(0, 4);
+  const useSuggestionIds = new Set(useSuggestions.map(article => article.id));
+  const otherRelatedArticles = uniqueRelatedArticles.filter(
+    article => !useSuggestionIds.has(article.id),
+  );
 
   React.useEffect(() => {
     if (!product) {
@@ -186,10 +210,36 @@ export function ProductDetailScreen({
             </S.SummaryContent>
           </S.SummaryCard>
 
-          {chooseSection ? <ProductGuideSection section={chooseSection} /> : null}
-          {observeSection ? <ProductGuideSection section={observeSection} /> : null}
-          {storeSection ? <ProductGuideSection section={storeSection} /> : null}
-          {useSection ? <ProductGuideSection section={useSection} /> : null}
+          {visibleGuideSections.map(section => (
+            <ProductGuideSection key={section.id} section={section} />
+          ))}
+
+          {useSuggestions.length > 0 ? (
+            <SurfaceCard>
+              <S.RelatedSectionCard>
+                <SectionTitle
+                  title="Receitas e ideias para aproveitar"
+                  subtitle="Sugestões para explorar outras formas de usar este produto."
+                />
+                <S.RelatedScroll
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={{
+                    paddingRight: theme.layout.screenPadding,
+                  }}
+                >
+                  {useSuggestions.map(article => (
+                    <S.RelatedCardShell key={article.id}>
+                      <CompactArticleCard
+                        article={article}
+                        onPress={() => handleOpenRelatedArticle(article.id)}
+                      />
+                    </S.RelatedCardShell>
+                  ))}
+                </S.RelatedScroll>
+              </S.RelatedSectionCard>
+            </SurfaceCard>
+          ) : null}
 
           <ProductQuickFactsCard
             nutrients={product.nutrients}
@@ -201,7 +251,7 @@ export function ProductDetailScreen({
             onStart={() => navigation.navigate('Training', { productId: product.id })}
           />
 
-          {relatedArticles.length > 0 ? (
+          {otherRelatedArticles.length > 0 ? (
             <SurfaceCard>
               <S.RelatedSectionCard>
                 <SectionTitle
@@ -215,7 +265,7 @@ export function ProductDetailScreen({
                     paddingRight: theme.layout.screenPadding,
                   }}
                 >
-                  {relatedArticles.map(article => (
+                  {otherRelatedArticles.map(article => (
                     <S.RelatedCardShell key={article.id}>
                       <CompactArticleCard
                         article={article}

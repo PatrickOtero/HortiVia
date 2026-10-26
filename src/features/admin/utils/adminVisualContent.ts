@@ -60,8 +60,6 @@ export const PRODUCT_GUIDE_SECTION_KIND_OPTIONS: Option<ProductGuideSectionKindV
     { value: 'OBSERVE', label: 'O que observar' },
     { value: 'STORE', label: 'Como conservar' },
     { value: 'USE', label: 'Como aproveitar' },
-    { value: 'QUICK_FACTS', label: 'Informações rápidas' },
-    { value: 'OTHER', label: 'Outro' },
   ];
 
 export const INITIAL_PRODUCT_IMAGE_FORM_VALUES: ProductImageFormValues = {
@@ -184,7 +182,7 @@ export function toCreateProductGuideSectionPayload(
   values: ProductGuideSectionFormValues,
 ): CreateProductGuideSectionPayload {
   return {
-    kind: values.kind ?? 'OTHER',
+    kind: values.kind ?? 'CHOOSE',
     title: values.title.trim(),
     body: values.body.trim(),
     imageAlt: values.imageAlt.trim() || null,
@@ -225,17 +223,15 @@ export function getInitialImageFormValuesFromItem(item: {
 export function getInitialGuideSectionFormValuesFromItem(
   item: ProductGuideSection,
 ): ProductGuideSectionFormValues {
-  const kindMap: Record<string, ProductGuideSectionKindValue> = {
+  const kindMap: Partial<Record<string, ProductGuideSectionKindValue>> = {
     choose: 'CHOOSE',
     observe: 'OBSERVE',
     store: 'STORE',
     use: 'USE',
-    quickFacts: 'QUICK_FACTS',
-    other: 'OTHER',
   };
 
   return {
-    kind: kindMap[item.kind] ?? 'OTHER',
+    kind: kindMap[item.kind] ?? null,
     title: item.title,
     body: item.body ?? '',
     imageAlt: item.imageAlt ?? '',

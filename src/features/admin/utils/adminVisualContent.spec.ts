@@ -1,8 +1,10 @@
 import {
+  PRODUCT_GUIDE_SECTION_KIND_OPTIONS,
   getProductGuideSectionKindValueLabel,
   getProductImageKindLabel,
   parseSortOrder,
   toCreateProductGuideSectionPayload,
+  toUpdateProductGuideSectionPayload,
   toUpdateProductImagePayload,
   validateProductGuideSectionForm,
   validateProductImageForm,
@@ -18,9 +20,28 @@ describe('adminVisualContent', () => {
     expect(getProductGuideSectionKindValueLabel('CHOOSE')).toBe(
       'Como escolher',
     );
-    expect(getProductGuideSectionKindValueLabel('QUICK_FACTS')).toBe(
-      'Informações rápidas',
-    );
+    expect(PRODUCT_GUIDE_SECTION_KIND_OPTIONS.map(option => option.value)).toEqual([
+      'CHOOSE',
+      'OBSERVE',
+      'STORE',
+      'USE',
+    ]);
+  });
+
+  it('does not permit selecting legacy guide kinds in the form', () => {
+    expect(
+      toUpdateProductGuideSectionPayload({
+        kind: null,
+        title: 'Seção legada',
+        body: 'Conteúdo já existente.',
+        imageAlt: '',
+        imageCaption: '',
+        bullets: '',
+        idealPoints: '',
+        avoidPoints: '',
+        sortOrder: '',
+      }).kind,
+    ).toBe('CHOOSE');
   });
 
   it('converts multiline section fields into arrays', () => {
