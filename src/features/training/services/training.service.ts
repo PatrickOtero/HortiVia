@@ -6,9 +6,13 @@ import type {
   SaveTrainingQuestion,
   TrainingFeedback,
   TrainingProgressList,
+  TrainingRanking,
 } from '../types/training';
 
 export const trainingService = {
+  async ranking(): Promise<TrainingRanking> {
+    return (await apiClient.get<TrainingRanking>(API_ENDPOINTS.training.ranking)).data;
+  },
   async getProduct(productId: string): Promise<ProductTraining> {
     return (await apiClient.get(API_ENDPOINTS.training.product(productId)))
       .data;

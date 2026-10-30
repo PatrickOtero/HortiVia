@@ -19,8 +19,8 @@ function splitBody(body?: string) {
 }
 
 function renderParagraphs(body?: string) {
-  return splitBody(body).map(paragraph => (
-    <S.BodyText key={paragraph}>{paragraph}</S.BodyText>
+  return splitBody(body).map((paragraph, index) => (
+    <S.BodyText key={`${index}-${paragraph}`}>{paragraph}</S.BodyText>
   ));
 }
 
@@ -34,6 +34,7 @@ function renderBlockImage(block: ArticleBlock) {
       <S.MediaImage
         source={{ uri: block.imageUrl }}
         accessibilityLabel={block.imageAlt ?? block.title ?? 'Imagem do artigo'}
+        accessibilityRole="image"
       />
       {block.imageCaption ? (
         <S.ImageCaption>{block.imageCaption}</S.ImageCaption>
@@ -60,18 +61,35 @@ export function ArticleBlockRenderer({ block }: ArticleBlockRendererProps) {
       return block.title || block.body || block.imageUrl ? (
         <S.BlockContainer testID="article-block-heading">
           {block.title || block.body ? (
-            <S.HeadingText>{block.title ?? block.body}</S.HeadingText>
+            <S.HeadingText accessibilityRole="header">
+              {block.title ?? block.body}
+            </S.HeadingText>
           ) : null}
+          {block.title ? renderParagraphs(block.body) : null}
           {blockImage}
         </S.BlockContainer>
       ) : null;
 
     case 'SECTION':
-      return hasGenericContent || block.imageUrl ? (
+      return hasGenericContent || normalizedItems.length > 0 || block.imageUrl ? (
         <S.SectionBlock testID="article-block-section">
-          {block.title ? <S.SectionHeading>{block.title}</S.SectionHeading> : null}
+          {block.title ? (
+            <S.SectionHeading accessibilityRole="header">
+              {block.title}
+            </S.SectionHeading>
+          ) : null}
           {renderParagraphs(block.body)}
           {blockImage}
+          {normalizedItems.length > 0 ? (
+            <S.List>
+              {normalizedItems.map((item, index) => (
+                <S.ListItem key={`${index}-${item}`}>
+                  <S.ListBulletText>•</S.ListBulletText>
+                  <S.ListItemText>{item}</S.ListItemText>
+                </S.ListItem>
+              ))}
+            </S.List>
+          ) : null}
         </S.SectionBlock>
       ) : null;
 
@@ -89,14 +107,16 @@ export function ArticleBlockRenderer({ block }: ArticleBlockRendererProps) {
 
       return (
         <S.HighlightBlock $tone="tip" testID="article-block-tip">
-          <S.HighlightLabel>{block.title ?? 'Dica pratica'}</S.HighlightLabel>
+          <S.HighlightLabel $tone="tip">
+            {block.title ?? 'Dica prática'}
+          </S.HighlightLabel>
           {renderParagraphs(block.body)}
           {blockImage}
           {normalizedItems.length > 0 ? (
             <S.List>
-              {normalizedItems.map(item => (
-                <S.ListItem key={item}>
-                  <S.ListBulletText>-</S.ListBulletText>
+              {normalizedItems.map((item, index) => (
+                <S.ListItem key={`${index}-${item}`}>
+                  <S.ListBulletText>•</S.ListBulletText>
                   <S.ListItemText>{item}</S.ListItemText>
                 </S.ListItem>
               ))}
@@ -112,14 +132,16 @@ export function ArticleBlockRenderer({ block }: ArticleBlockRendererProps) {
 
       return (
         <S.HighlightBlock $tone="warning" testID="article-block-warning">
-          <S.HighlightLabel>{block.title ?? 'Atencao'}</S.HighlightLabel>
+          <S.HighlightLabel $tone="warning">
+            {block.title ?? 'Atenção'}
+          </S.HighlightLabel>
           {renderParagraphs(block.body)}
           {blockImage}
           {normalizedItems.length > 0 ? (
             <S.List>
-              {normalizedItems.map(item => (
-                <S.ListItem key={item}>
-                  <S.ListBulletText>-</S.ListBulletText>
+              {normalizedItems.map((item, index) => (
+                <S.ListItem key={`${index}-${item}`}>
+                  <S.ListBulletText>•</S.ListBulletText>
                   <S.ListItemText>{item}</S.ListItemText>
                 </S.ListItem>
               ))}
@@ -135,7 +157,11 @@ export function ArticleBlockRenderer({ block }: ArticleBlockRendererProps) {
 
       return (
         <S.SectionBlock testID="article-block-checklist">
-          {block.title ? <S.SectionHeading>{block.title}</S.SectionHeading> : null}
+          {block.title ? (
+            <S.SectionHeading accessibilityRole="header">
+              {block.title}
+            </S.SectionHeading>
+          ) : null}
           {renderParagraphs(block.body)}
           {blockImage}
           {normalizedItems.length > 0 ? (
@@ -160,7 +186,11 @@ export function ArticleBlockRenderer({ block }: ArticleBlockRendererProps) {
 
       return (
         <S.SectionBlock testID="article-block-steps">
-          {block.title ? <S.SectionHeading>{block.title}</S.SectionHeading> : null}
+          {block.title ? (
+            <S.SectionHeading accessibilityRole="header">
+              {block.title}
+            </S.SectionHeading>
+          ) : null}
           {renderParagraphs(block.body)}
           {blockImage}
           {normalizedItems.length > 0 ? (
@@ -199,14 +229,18 @@ export function ArticleBlockRenderer({ block }: ArticleBlockRendererProps) {
 
       return (
         <S.SectionBlock testID={`article-block-${block.kind.toLowerCase()}`}>
-          {block.title ? <S.SectionHeading>{block.title}</S.SectionHeading> : null}
+          {block.title ? (
+            <S.SectionHeading accessibilityRole="header">
+              {block.title}
+            </S.SectionHeading>
+          ) : null}
           {renderParagraphs(block.body)}
           {blockImage}
           {normalizedItems.length > 0 ? (
             <S.List>
-              {normalizedItems.map(item => (
-                <S.ListItem key={item}>
-                  <S.ListBulletText>-</S.ListBulletText>
+              {normalizedItems.map((item, index) => (
+                <S.ListItem key={`${index}-${item}`}>
+                  <S.ListBulletText>•</S.ListBulletText>
                   <S.ListItemText>{item}</S.ListItemText>
                 </S.ListItem>
               ))}

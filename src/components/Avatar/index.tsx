@@ -9,11 +9,13 @@ type AvatarProps = {
 
 export function Avatar({ label, size = 44, imageUrl }: AvatarProps) {
   const [hasImageError, setHasImageError] = useState(false);
-  const initials = label
-    .split(' ')
-    .slice(0, 2)
-    .map(item => item.charAt(0).toUpperCase())
-    .join('');
+  const initials =
+    label
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map(item => item.charAt(0).toUpperCase())
+      .join('') || 'U';
   const shouldShowImage = Boolean(imageUrl) && !hasImageError;
 
   useEffect(() => {

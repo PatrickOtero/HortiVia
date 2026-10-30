@@ -128,6 +128,8 @@ export const Title = styled.Text`
   font-size: ${({ theme }) => theme.typography.display.fontSize}px;
   line-height: ${({ theme }) => theme.typography.display.lineHeight}px;
   font-weight: ${({ theme }) => theme.typography.display.fontWeight};
+  letter-spacing: ${({ theme }) =>
+    theme.typography.display.letterSpacing ?? 0}px;
 `;
 
 export const Subtitle = styled.Text`
@@ -152,7 +154,7 @@ export const MetaRow = styled.View`
   gap: ${({ theme }) => theme.spacing.md}px;
 `;
 
-export const AuthorRow = styled.View`
+export const AuthorRow = styled.TouchableOpacity`
   flex-direction: row;
   align-items: center;
   gap: ${({ theme }) => theme.spacing.sm}px;
@@ -165,6 +167,7 @@ export const AuthorCopy = styled.View`
 `;
 
 export const AuthorName = styled.Text`
+  flex-shrink: 1;
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.bodyMd.fontSize}px;
   line-height: ${({ theme }) => theme.typography.bodyMd.lineHeight}px;
@@ -201,18 +204,18 @@ export const MetaInfoText = styled.Text`
 `;
 
 export const BodySection = styled.View`
-  gap: ${({ theme }) => theme.spacing.xl}px;
-  padding-vertical: ${({ theme }) => theme.spacing.sm}px;
+  gap: ${({ theme }) => theme.spacing.lg}px;
+  padding-vertical: ${({ theme }) => theme.spacing.xs}px;
 `;
 
 export const BlocksList = styled.View`
-  gap: ${({ theme }) => theme.spacing.xl}px;
+  gap: ${({ theme }) => theme.spacing.lg}px;
 `;
 
 export const Paragraph = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.bodyLg.fontSize}px;
-  line-height: 30px;
+  line-height: 28px;
 `;
 
 export const TagsCard = styled.View`
@@ -358,14 +361,29 @@ export const CommentHeader = styled.View`
 `;
 
 export const CommentMeta = styled.View`
+  flex: 1;
   gap: ${({ theme }) => theme.spacing.xxs}px;
 `;
 
+export const CommentIdentity = styled.TouchableOpacity`
+  flex-direction: row;
+  align-items: center;
+  gap: ${({ theme }) => theme.spacing.sm}px;
+`;
+
 export const CommentAuthor = styled.Text`
+  flex-shrink: 1;
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.bodyMd.fontSize}px;
   line-height: ${({ theme }) => theme.typography.bodyMd.lineHeight}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+`;
+
+export const IdentityNameRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing.xs}px;
 `;
 
 export const CommentDate = styled.Text`
@@ -393,7 +411,9 @@ export const CommentActionLabel = styled.Text<{
       return theme.colors.textMuted;
     }
 
-    return $tone === 'danger' ? theme.colors.danger : theme.colors.primaryStrong;
+    return $tone === 'danger'
+      ? theme.colors.danger
+      : theme.colors.primaryStrong;
   }};
   font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
   line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
@@ -451,10 +471,14 @@ export const CommentControlLabel = styled.Text<{
 }>`
   color: ${({ theme, $variant, $disabled }) => {
     if ($disabled) {
-      return $variant === 'primary' ? theme.colors.primaryStrong : theme.colors.textMuted;
+      return $variant === 'primary'
+        ? theme.colors.primaryStrong
+        : theme.colors.textMuted;
     }
 
-    return $variant === 'primary' ? theme.colors.textOnPrimary : theme.colors.text;
+    return $variant === 'primary'
+      ? theme.colors.textOnPrimary
+      : theme.colors.text;
   }};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   line-height: ${({ theme }) => theme.typography.label.lineHeight}px;

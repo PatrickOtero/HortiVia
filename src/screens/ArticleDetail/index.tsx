@@ -17,6 +17,7 @@ import {
   ScreenContainer,
   SectionTitle,
   SurfaceCard,
+  UserBadge,
 } from '../../components';
 import { getArticleCategoryLabel } from '../../features/articles/mappers/article.mapper';
 import { useArticleById } from '../../features/articles/hooks/useArticleById';
@@ -187,10 +188,7 @@ function CommentControlButton({
           }
         />
       ) : (
-        <S.CommentControlLabel
-          $variant={variant}
-          $disabled={isDisabled}
-        >
+        <S.CommentControlLabel $variant={variant} $disabled={isDisabled}>
           {label}
         </S.CommentControlLabel>
       )}
@@ -235,8 +233,9 @@ export function ArticleDetailScreen({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingBody, setEditingBody] = useState('');
   const [editingMessage, setEditingMessage] = useState<string | null>(null);
-  const [commentsActionMessage, setCommentsActionMessage] =
-    useState<string | null>(null);
+  const [commentsActionMessage, setCommentsActionMessage] = useState<
+    string | null
+  >(null);
   const coverImageUrl = article?.coverImageUrl ?? article?.imageUrl ?? null;
   const currentUser = auth?.user ?? null;
   const isAuthenticated = auth?.isAuthenticated === true;
@@ -544,7 +543,7 @@ export function ArticleDetailScreen({
               </S.IntroTopRow>
 
               <S.IntroCopy>
-                <S.Title>{article.title}</S.Title>
+                <S.Title accessibilityRole="header">{article.title}</S.Title>
                 {article.subtitle ? (
                   <S.Subtitle>{article.subtitle}</S.Subtitle>
                 ) : null}
@@ -571,12 +570,28 @@ export function ArticleDetailScreen({
               <S.Divider />
 
               <S.MetaRow>
-                <S.AuthorRow>
-                  <Avatar label={article.author.name} size={40} />
+                <S.AuthorRow
+                  accessibilityRole="button"
+                  accessibilityLabel={`Abrir perfil de ${article.author.name}`}
+                  disabled={!article.author.id}
+                  onPress={() =>
+                    navigation.navigate('UserProfile', {
+                      userId: article.author.id,
+                    })
+                  }
+                >
+                  <Avatar
+                    label={article.author.name}
+                    imageUrl={article.author.avatarUrl}
+                    size={40}
+                  />
                   <S.AuthorCopy>
-                    <S.AuthorName numberOfLines={1} ellipsizeMode="tail">
-                      {article.author.name}
-                    </S.AuthorName>
+                    <S.IdentityNameRow>
+                      <S.AuthorName numberOfLines={1} ellipsizeMode="tail">
+                        {article.author.name}
+                      </S.AuthorName>
+                      <UserBadge badge={article.author.specialBadge} />
+                    </S.IdentityNameRow>
                     <S.AuthorLabel numberOfLines={1} ellipsizeMode="tail">
                       Leitura educativa
                     </S.AuthorLabel>
@@ -697,16 +712,22 @@ export function ArticleDetailScreen({
                 </S.CommentComposerCard>
               ) : (
                 <S.CommentsPromptCard>
-                  <S.CommentsPromptTitle>Entre para comentar.</S.CommentsPromptTitle>
+                  <S.CommentsPromptTitle>
+                    Entre para comentar.
+                  </S.CommentsPromptTitle>
                   <S.CommentsPromptText>
-                    Acompanhe esta leitura e compartilhe sua duvida quando entrar.
+                    Acompanhe esta leitura e compartilhe sua duvida quando
+                    entrar.
                   </S.CommentsPromptText>
                 </S.CommentsPromptCard>
               )}
 
               {isCommentsLoading && comments.length === 0 ? (
                 <S.CommentsStatusCard>
-                  <ActivityIndicator size="small" color={theme.colors.primary} />
+                  <ActivityIndicator
+                    size="small"
+                    color={theme.colors.primary}
+                  />
                   <S.CommentsStatusText>
                     Carregando comentarios...
                   </S.CommentsStatusText>
@@ -743,7 +764,9 @@ export function ArticleDetailScreen({
                     Seja o primeiro a comentar este artigo.
                   </S.CommentsPromptText>
                   {!isAuthenticated ? (
-                    <S.CommentsPromptExtra>Entre para comentar.</S.CommentsPromptExtra>
+                    <S.CommentsPromptExtra>
+                      Entre para comentar.
+                    </S.CommentsPromptExtra>
                   ) : null}
                 </S.CommentsPromptCard>
               ) : null}
@@ -753,8 +776,7 @@ export function ArticleDetailScreen({
                   {comments.map(comment => {
                     const isEditing = editingCommentId === comment.id;
                     const canEdit = currentUser?.id === comment.author.id;
-                    const canDelete =
-                      canEdit || currentUser?.role === 'ADMIN';
+                    const canDelete = canEdit || currentUser?.role === 'ADMIN';
                     const canModerate = currentUser?.role === 'ADMIN';
                     const isUpdating = isUpdatingComment(comment.id);
                     const isDeleting = isDeletingComment(comment.id);
@@ -765,12 +787,35 @@ export function ArticleDetailScreen({
                     return (
                       <S.CommentCard key={comment.id}>
                         <S.CommentHeader>
-                          <S.CommentMeta>
-                            <S.CommentAuthor>{comment.author.name}</S.CommentAuthor>
-                            {createdDate ? (
-                              <S.CommentDate>{createdDate}</S.CommentDate>
-                            ) : null}
-                          </S.CommentMeta>
+                          <S.CommentIdentity
+                            accessibilityRole="button"
+                            accessibilityLabel={`Abrir perfil de ${comment.author.name}`}
+                            disabled={!comment.author.id}
+                            onPress={() =>
+                              navigation.navigate('UserProfile', {
+                                userId: comment.author.id,
+                              })
+                            }
+                          >
+                            <Avatar
+                              label={comment.author.name}
+                              imageUrl={comment.author.avatarUrl}
+                              size={36}
+                            />
+                            <S.CommentMeta>
+                              <S.IdentityNameRow>
+                                <S.CommentAuthor>
+                                  {comment.author.name}
+                                </S.CommentAuthor>
+                                <UserBadge
+                                  badge={comment.author.specialBadge}
+                                />
+                              </S.IdentityNameRow>
+                              {createdDate ? (
+                                <S.CommentDate>{createdDate}</S.CommentDate>
+                              ) : null}
+                            </S.CommentMeta>
+                          </S.CommentIdentity>
                           {canEdit || canDelete || canModerate ? (
                             <S.CommentActionsRow>
                               {canEdit && !isEditing ? (
@@ -783,7 +828,9 @@ export function ArticleDetailScreen({
                               ) : null}
                               {canModerate && comment.status !== 'HIDDEN' ? (
                                 <CommentActionButton
-                                  label={isModerating ? 'Ocultando...' : 'Ocultar'}
+                                  label={
+                                    isModerating ? 'Ocultando...' : 'Ocultar'
+                                  }
                                   onPress={() => handleHideComment(comment.id)}
                                   disabled={isBusy}
                                   testID={`comment-action-hide-${comment.id}`}
@@ -791,8 +838,12 @@ export function ArticleDetailScreen({
                               ) : null}
                               {canDelete ? (
                                 <CommentActionButton
-                                  label={isDeleting ? 'Removendo...' : 'Remover'}
-                                  onPress={() => handleRequestDeleteComment(comment.id)}
+                                  label={
+                                    isDeleting ? 'Removendo...' : 'Remover'
+                                  }
+                                  onPress={() =>
+                                    handleRequestDeleteComment(comment.id)
+                                  }
                                   disabled={isBusy}
                                   tone="danger"
                                   testID={`comment-action-remove-${comment.id}`}
@@ -819,7 +870,9 @@ export function ArticleDetailScreen({
                                 $tone={editingMessage ? 'danger' : 'default'}
                               >
                                 {editingMessage ??
-                                  `${editingBody.trim().length}/${COMMENT_MAX_LENGTH}`}
+                                  `${
+                                    editingBody.trim().length
+                                  }/${COMMENT_MAX_LENGTH}`}
                               </S.CommentHelperText>
                               <S.CommentEditActions>
                                 <CommentControlButton
@@ -831,7 +884,9 @@ export function ArticleDetailScreen({
                                 />
                                 <CommentControlButton
                                   label="Salvar"
-                                  onPress={() => handleSaveEditedComment(comment.id)}
+                                  onPress={() =>
+                                    handleSaveEditedComment(comment.id)
+                                  }
                                   loading={isUpdating}
                                   disabled={isUpdating}
                                   testID={`comment-save-button-${comment.id}`}

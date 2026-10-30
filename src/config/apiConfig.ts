@@ -45,6 +45,7 @@ export const API_ENDPOINTS = {
     product: (productId: string) => `/training/products/${encodeURIComponent(productId)}`,
     answer: (questionId: string) => `/training/questions/${encodeURIComponent(questionId)}/answers`,
     progress: '/training/progress',
+    ranking: '/training/ranking',
     adminQuestions: (productId: string) => `/admin/training/products/${encodeURIComponent(productId)}/questions`,
     adminQuestion: (productId: string, questionId: string) =>
       `/admin/training/products/${encodeURIComponent(productId)}/questions/${encodeURIComponent(questionId)}`,
@@ -104,6 +105,7 @@ export const API_ENDPOINTS = {
     articles: '/saved/articles',
   },
   profile: {
+    user: (userId: string) => `/profile/${encodeURIComponent(userId)}`,
     get: '/profile',
     update: '/profile',
     avatar: '/profile/avatar',
@@ -111,5 +113,8 @@ export const API_ENDPOINTS = {
   preferences: {
     get: '/preferences',
     update: '/preferences',
+  },
+  users: {
+    detail: (userId: string) => `/users/${encodeURIComponent(userId)}`,
   },
 } as const;

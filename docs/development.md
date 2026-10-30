@@ -57,4 +57,14 @@ Sem essas propriedades, `release` usa assinatura de debug para testes internos c
 
 ## Backend
 
+### Perfis e aprendizado
+
+O perfil está em Ajustes > Meu perfil e nos nomes/fotos de autores, comentaristas e participantes do ranking. A edição existente permite informar loja, função profissional, telefone, cidade e UF. E-mail e contato/localização ficam restritos ao titular e aos administradores pela API.
+
+O ranking pode ser aberto por Meu aprendizado ou pelo perfil. O percentual mantém o cálculo existente: acertos sobre perguntas publicadas de produtos ativos, considerando a última tentativa da versão atual. Os selos são apenas identificação visual.
+
+Administradores encontram a seleção/remoção de selo no perfil consultado; a ação usa a administração existente em `PATCH /users/:id`. Não há atribuição automática ou alteração de permissões.
+
+Antes de disponibilizar esta versão, a API precisa receber a migração `20261027000000_user_profiles_and_badges` e os endpoints de perfil/ranking. A migração não foi aplicada a ambientes remotos nesta tarefa. Contratos e procedimento: `backend/docs/user-profiles.md`.
+
 As instruções técnicas da API estão em https://github.com/PatrickOtero/HortiVia-API/blob/main/docs/backend-setup.md.

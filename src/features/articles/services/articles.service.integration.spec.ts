@@ -12,7 +12,12 @@ describe('articlesService HTTP contracts', () => {
     body: 'Test comment',
     status: 'VISIBLE',
     createdAt: '2026-01-01T00:00:00.000Z',
-    author: { id: 'test-user', name: 'Test User' },
+    author: {
+      id: 'test-user',
+      name: 'Test User',
+      avatarUrl: null,
+      specialBadge: null,
+    },
   };
 
   it('preserves GET pagination, POST/PATCH JSON and DELETE without a body', async () => {
