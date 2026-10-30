@@ -8,7 +8,7 @@ import {
   TextButton,
 } from '../../../../components';
 import { useAuth } from '../../../auth/hooks/useAuth';
-import { normalizeBlockItems } from '../../../articles/utils/articleBlocks';
+import { normalizeBlockItems, sortArticleBlocks } from '../../../articles/utils/articleBlocks';
 import { articlesService } from '../../../articles/services/articles.service';
 import type {
   ArticleBlock,
@@ -127,20 +127,6 @@ function buildBlockPreview(block: ArticleBlock) {
   return 'Sem conteudo complementar.';
 }
 
-function sortBlocks(blocks: ArticleBlock[]) {
-  return [...blocks].sort((left, right) => {
-    const leftSortOrder = typeof left.sortOrder === 'number' ? left.sortOrder : 0;
-    const rightSortOrder =
-      typeof right.sortOrder === 'number' ? right.sortOrder : 0;
-
-    if (leftSortOrder !== rightSortOrder) {
-      return leftSortOrder - rightSortOrder;
-    }
-
-    return left.id.localeCompare(right.id);
-  });
-}
-
 export function ArticleBlockManager({
   articleId,
   blocks,
@@ -159,7 +145,7 @@ export function ArticleBlockManager({
   const [actionState, setActionState] = useState<ActionState>(null);
 
   const isAdmin = user?.role === 'ADMIN';
-  const sortedBlocks = useMemo(() => sortBlocks(blocks), [blocks]);
+  const sortedBlocks = useMemo(() => sortArticleBlocks(blocks), [blocks]);
   const editingBlock = useMemo(
     () =>
       editorState?.mode === 'edit'
