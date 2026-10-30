@@ -1,28 +1,65 @@
-# Arquitetura
+# Arquitetura do aplicativo
 
-## Visão geral
+Este documento descreve a organização atual do HortiVia mobile e indica onde implementar mudanças sem duplicar responsabilidades. O app usa React Native CLI; `src/features` organiza as regras por domínio e `src/screens` compõe os fluxos de navegação.
 
-O HortiVia está organizado em duas camadas principais:
+## Fluxo de dados
 
-- aplicativo mobile para a experiência de consulta do usuário
-- API responsável por contas, conteúdo, perfil e persistência de dados
+```mermaid
+flowchart TD
+  N[Navegação] --> S[Tela]
+  S --> H[Hook do domínio]
+  H --> V[Service]
+  V --> A[Cliente HTTP]
+  A --> API[API NestJS]
+  V --> M[Mapper de resposta]
+  M --> H
+  H --> S
+  S --> C[Componentes compartilhados]
+```
 
-## Fluxos internos
+As telas coordenam a apresentação e a navegação. Hooks de domínio controlam carregamento, mutações e estado assíncrono. Services fazem I/O, e mappers convertem respostas externas para os tipos usados pela interface.
 
-- fluxo autenticado para acesso à conta do usuário
-- recuperação de senha para suporte de acesso
-- perfil com preferências de uso
-- área interna protegida para manutenção de conteúdos
+## Onde encontrar cada responsabilidade
 
-## Conteúdo do produto
+- `src/app`: composição raiz e providers globais.
+- `src/navigation`: stacks, tabs e proteção/transição entre áreas autenticadas.
+- `src/types/navigation.ts`: parâmetros tipados das rotas.
+- `src/screens`: telas de fluxo e composição de componentes. Regras que possam ser reutilizadas ou testadas fora da tela pertencem ao domínio correspondente.
+- `src/features/<domínio>`: comportamento por domínio:
+  - `auth`: sessão, credenciais e recuperação de acesso.
+  - `products`: catálogo, favoritos, histórico, guias e imagens.
+  - `articles`: leitura, comentários, reações e artigos salvos.
+  - `training`: perguntas, respostas, progresso e ranking.
+  - `profile`: perfil próprio e público, avatar e dados de apresentação.
+  - `admin`: formulários e operações administrativas de conteúdo.
+  - `preferences`: preferências persistidas do usuário.
+- `src/components`: controles compartilhados entre domínios. Um componente deve encapsular uma apresentação ou interação realmente reutilizada, sem absorver regras de negócio do domínio.
+- `src/services/api`: Axios, autenticação HTTP, erros, endpoints, uploads e transporte comum.
+- `src/config`: valores de ambiente e configuração central. Telas não devem definir URLs de API.
+- `src/contexts` e `src/hooks`: estado/contextos transversais, como autenticação e tema. Estado específico de um domínio permanece em `features/<domínio>`.
+- `src/theme`: tokens visuais e temas.
+- `src/types`: tipos realmente compartilhados entre domínios; tipos de resposta e de operações pertencem ao domínio que os usa.
+- `src/utils`: funções puras transversais. Regras de produto não devem ser movidas para utilitários genéricos.
 
-O conteúdo consultado no app está dividido entre:
+## Caminho recomendado para uma mudança
 
-- guia de produtos hortifruti
-- detalhes práticos de cada item
-- artigos educativos
+1. Atualize ou crie o tipo do domínio.
+2. Mantenha endpoints e detalhes HTTP em `src/services/api` e a operação de domínio em `features/<domínio>/services`.
+3. Normalize formatos externos em um mapper; não espalhe leitura tolerante de payload entre componentes.
+4. Use um hook do domínio para coordenar carregamento, concorrência, erros e mutações reutilizadas.
+5. Deixe a tela compor estados visuais e navegação. Extraia um componente quando houver reutilização ou uma unidade visual com responsabilidade própria.
+6. Coloque o teste junto ao módulo alterado e preserve testes de fluxo quando a mudança atravessar navegação, autenticação ou API.
 
-## Documentação técnica relacionada
+## Convenções importantes
 
-- mobile: [development.md](development.md)
-- backend: [../../backend/docs/backend-setup.md](../../backend/docs/backend-setup.md)
+- Cada tela ou componente React Native vive em sua pasta; estilos usam `styled-components/native` em `styles.ts`.
+- Os componentes são funções TypeScript, sem `React.FC`.
+- A API é centralizada em `src/config/apiConfig.ts` e `src/services/api`.
+- Chaves de cache e estado assíncrono devem ter um único proprietário. Não mantenha em estado algo que possa ser derivado com segurança dos dados atuais.
+- Proteções contra respostas obsoletas, duplicidade e ações concorrentes devem permanecer no hook/service que controla a operação, e ser cobertas por testes.
+- A variante Android e a resolução das URLs são configuradas centralmente; não coloque endpoints diretamente em telas.
+- Antes de remover um arquivo ou dependência, procure consumidores, imports dinâmicos, configuração nativa e testes.
+
+## Validação
+
+Use `npm run lint`, `npm run typecheck` e `npm test -- --runInBand`. Para mudanças nativas, valide também a variante Android afetada. O guia de setup e ambientes está em [development.md](development.md). A API tem seu próprio `docs/architecture.md` no repositório HortiVia-API.
