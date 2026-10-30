@@ -37,6 +37,7 @@ import type {
 } from '../../../articles/types/article';
 import { AdminAccessDenied } from '../../components/AdminAccessDenied';
 import { ArticleBlockManager } from '../../components/ArticleBlockManager';
+import { sortArticleBlocks } from '../../../articles/utils/articleBlocks';
 import { AdminFormSection } from '../../components/AdminFormSection';
 import {
   ADMIN_LOAD_DATA_ERROR_MESSAGE,
@@ -110,19 +111,6 @@ function validateForm(values: ArticleFormValues): ArticleFormErrors {
   }
 
   return errors;
-}
-
-function sortArticleBlocks(blocks: ArticleBlock[]) {
-  return [...blocks].sort((left, right) => {
-    const leftSortOrder = typeof left.sortOrder === 'number' ? left.sortOrder : 0;
-    const rightSortOrder = typeof right.sortOrder === 'number' ? right.sortOrder : 0;
-
-    if (leftSortOrder !== rightSortOrder) {
-      return leftSortOrder - rightSortOrder;
-    }
-
-    return left.id.localeCompare(right.id);
-  });
 }
 
 export function AdminArticleFormScreen({
