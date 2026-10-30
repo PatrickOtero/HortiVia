@@ -1,7 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, type GestureResponderEvent } from 'react-native';
 import { FavoriteButton } from '../FavoriteButton';
-import { ProductThumbnail } from '../ProductThumbnail';
 import { getProductCategoryLabel } from '../../features/products/mappers/product.mapper';
 import { useToggleProductFavorite } from '../../features/products/hooks/useToggleProductFavorite';
 import type { ProductListItem } from '../../features/products/types/product';
@@ -16,6 +15,14 @@ type ProductCardProps = {
   onToggleFavorite?: () => void;
 };
 
+function getProductInitials(name: string) {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map(part => part.charAt(0).toUpperCase())
+    .join('');
+}
+
 export function ProductCard({
   product,
   onPress,
@@ -24,6 +31,7 @@ export function ProductCard({
   isFavoriteLoading,
   onToggleFavorite,
 }: ProductCardProps) {
+  const [hasImageError, setHasImageError] = useState(false);
   const {
     isFavorite: internalIsFavorite,
     isSubmitting: internalIsSubmitting,
@@ -40,6 +48,11 @@ export function ProductCard({
     },
   });
 
+  useEffect(() => {
+    setHasImageError(false);
+  }, [product.imageUrl]);
+
+  const shouldShowImage = Boolean(product.imageUrl) && !hasImageError;
   const resolvedIsFavorite = isFavorite ?? internalIsFavorite;
   const resolvedIsFavoriteLoading = isFavoriteLoading ?? internalIsSubmitting;
 
@@ -56,12 +69,16 @@ export function ProductCard({
 
   return (
     <S.Button testID="product-card" onPress={onPress} activeOpacity={0.92}>
-      <ProductThumbnail
-        imageUrl={product.imageUrl}
-        name={product.name}
-        category={product.category}
-        size="row"
-      />
+      <S.ImageShell $category={product.category}>
+        {shouldShowImage ? (
+          <S.ProductImage
+            source={{ uri: product.imageUrl ?? undefined }}
+            onError={() => setHasImageError(true)}
+          />
+        ) : (
+          <S.ImageFallbackText>{getProductInitials(product.name)}</S.ImageFallbackText>
+        )}
+      </S.ImageShell>
 
       <S.Content>
         <S.HeaderRow>
