@@ -28,30 +28,6 @@ export const Button = styled.TouchableOpacity`
   elevation: ${({ theme }) => theme.elevation.card};
 `;
 
-export const ImageShell = styled.View<{ $category: ProductCategory }>`
-  width: 100%;
-  height: 120px;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border-radius: ${({ theme }) => theme.radius.md}px;
-  ${({ $category }) => categoryShellStyles[$category]}
-`;
-
-export const ProductImage = styled.Image.attrs({
-  resizeMode: 'cover',
-})`
-  width: 100%;
-  height: 100%;
-`;
-
-export const ImageFallbackText = styled.Text`
-  color: ${({ theme }) => theme.colors.primaryStrong};
-  font-size: ${({ theme }) => theme.typography.headingLg.fontSize}px;
-  line-height: ${({ theme }) => theme.typography.headingLg.lineHeight}px;
-  font-weight: ${({ theme }) => theme.typography.headingLg.fontWeight};
-`;
-
 export const Content = styled.View`
   gap: ${({ theme }) => theme.spacing.xs}px;
 `;
