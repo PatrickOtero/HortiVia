@@ -6,6 +6,7 @@ import {
   CompactProductCard,
   SavedArticleButton,
   SectionTitle,
+  Avatar,
 } from '../../components';
 import { ThemeProvider } from '../../contexts/ThemeContext';
 import { useArticleById } from '../../features/articles/hooks/useArticleById';
@@ -47,7 +48,9 @@ const mockedUseArticleReaction = useArticleReaction as jest.Mock;
 const mockedUseArticleById = useArticleById as jest.Mock;
 const mockedUseToggleArticleSaved = useToggleArticleSaved as jest.Mock;
 const mockedUseOptionalAuth = useOptionalAuth as jest.Mock;
-const mockedArticlesService = articlesService as jest.Mocked<typeof articlesService>;
+const mockedArticlesService = articlesService as jest.Mocked<
+  typeof articlesService
+>;
 
 function createArticleDetail(overrides?: Record<string, unknown>) {
   return {
@@ -209,6 +212,65 @@ describe('ArticleDetailScreen', () => {
     );
   }
 
+  it('shows author/comment photos and badges and opens their profiles', async () => {
+    mockedUseArticleById.mockReturnValue({
+      article: createArticleDetail({
+        author: {
+          id: 'author-1',
+          name: 'Ana Autora',
+          avatarUrl: 'https://example.invalid/author.jpg',
+          specialBadge: 'FOUNDER',
+        },
+      }),
+      isLoading: false,
+      isNotFound: false,
+      retry: jest.fn(),
+    });
+    mockedArticlesService.listArticleComments.mockResolvedValue({
+      items: [
+        createComment({
+          author: {
+            id: 'commenter',
+            name: 'Bia Leitora',
+            avatarUrl: 'https://example.invalid/comment.jpg',
+            specialBadge: 'SPECIALIST',
+          },
+        }),
+      ],
+      page: 1,
+      limit: 10,
+      total: 1,
+      totalPages: 1,
+    });
+    const renderer = await renderAndWait();
+    expect(
+      renderer.root.findAllByType(Avatar).map(node => node.props.imageUrl),
+    ).toEqual(
+      expect.arrayContaining([
+        'https://example.invalid/author.jpg',
+        'https://example.invalid/comment.jpg',
+      ]),
+    );
+    for (const [name, userId] of [
+      ['Ana Autora', 'author-1'],
+      ['Bia Leitora', 'commenter'],
+    ]) {
+      await ReactTestRenderer.act(async () =>
+        renderer.root
+          .findAll(
+            node =>
+              node.props.accessibilityLabel === `Abrir perfil de ${name}` &&
+              typeof node.props.onPress === 'function',
+          )[0]
+          .props.onPress(),
+      );
+      expect(navigate).toHaveBeenCalledWith('UserProfile', { userId });
+    }
+    expect(getRenderedOutput(renderer)).toContain('Fundador');
+    expect(getRenderedOutput(renderer)).toContain('Especialista');
+    await ReactTestRenderer.act(async () => renderer.unmount());
+  });
+
   it('renders blocks, useful action and comments empty state', async () => {
     const renderer = await renderAndWait();
     const output = getRenderedOutput(renderer);
@@ -216,14 +278,35 @@ describe('ArticleDetailScreen', () => {
     expect(output).toContain('Observe textura, aroma e firmeza.');
     expect(output).toContain('Veja antes de apertar');
     expect(output).toContain('Procure um aroma suave e agradavel.');
+    expect(output).not.toContain('Observe a textura e a casca.');
     expect(output).toContain('12 pessoas acharam util.');
     expect(output).toContain('Nenhum comentario ainda.');
+  });
+
+  it('keeps rendering legacy article content when structured blocks are absent', async () => {
+    mockedUseArticleById.mockReturnValue({
+      article: createArticleDetail({
+        blocks: [],
+        content: 'Primeiro parágrafo.\n\nSegundo parágrafo.',
+      }),
+      isLoading: false,
+      isNotFound: false,
+      retry: jest.fn(),
+    });
+
+    const renderer = await renderAndWait();
+    const output = getRenderedOutput(renderer);
+
+    expect(output).toContain('Primeiro parágrafo.');
+    expect(output).toContain('Segundo parágrafo.');
   });
 
   it('shows the composer for authenticated users', async () => {
     const renderer = await renderAndWait();
 
-    expect(renderer.root.findByProps({ testID: 'comment-composer-input' })).toBeTruthy();
+    expect(
+      renderer.root.findByProps({ testID: 'comment-composer-input' }),
+    ).toBeTruthy();
     expect(getRenderedOutput(renderer)).toContain('Publicar comentario');
   });
 
@@ -237,7 +320,9 @@ describe('ArticleDetailScreen', () => {
     const output = getRenderedOutput(renderer);
 
     expect(output).toContain('Entre para comentar.');
-    expect(renderer.root.findAllByProps({ testID: 'comment-composer-input' })).toHaveLength(0);
+    expect(
+      renderer.root.findAllByProps({ testID: 'comment-composer-input' }),
+    ).toHaveLength(0);
   });
 
   it('publishes a valid comment and adds it to the local list', async () => {
@@ -495,7 +580,9 @@ describe('ArticleDetailScreen', () => {
       expect(
         findPressablesByTestId(renderer, 'comment-action-hide-comment-1'),
       ).toHaveLength(0);
-      expect(mockedArticlesService.moderateArticleComment).not.toHaveBeenCalled();
+      expect(
+        mockedArticlesService.moderateArticleComment,
+      ).not.toHaveBeenCalled();
     },
   );
 
@@ -529,19 +616,23 @@ describe('ArticleDetailScreen', () => {
         .props.onPress();
     });
 
-    expect(mockedArticlesService.moderateArticleComment).toHaveBeenCalledTimes(1);
+    expect(mockedArticlesService.moderateArticleComment).toHaveBeenCalledTimes(
+      1,
+    );
     expect(mockedArticlesService.moderateArticleComment).toHaveBeenCalledWith(
       'article-1',
       'comment-1',
       'HIDDEN',
     );
     expect(
-      renderer.root.findByProps({ testID: 'comment-action-hide-comment-1' }).props
-        .disabled,
+      renderer.root.findByProps({ testID: 'comment-action-hide-comment-1' })
+        .props.disabled,
     ).toBe(true);
     expect(getRenderedOutput(renderer)).toContain('Comentario a ocultar');
     expect(
-      renderer.root.findAllByType(SectionTitle).map(section => section.props.title),
+      renderer.root
+        .findAllByType(SectionTitle)
+        .map(section => section.props.title),
     ).toContain('Comentarios · 2');
 
     await ReactTestRenderer.act(async () => {
@@ -551,7 +642,9 @@ describe('ArticleDetailScreen', () => {
     expect(getRenderedOutput(renderer)).not.toContain('Comentario a ocultar');
     expect(getRenderedOutput(renderer)).toContain('Comentario preservado');
     expect(
-      renderer.root.findAllByType(SectionTitle).map(section => section.props.title),
+      renderer.root
+        .findAllByType(SectionTitle)
+        .map(section => section.props.title),
     ).toContain('Comentarios · 1');
   });
 
@@ -583,11 +676,13 @@ describe('ArticleDetailScreen', () => {
       'Nao foi possivel atualizar o comentario.',
     );
     expect(
-      renderer.root.findAllByType(SectionTitle).map(section => section.props.title),
+      renderer.root
+        .findAllByType(SectionTitle)
+        .map(section => section.props.title),
     ).toContain('Comentarios · 1');
     expect(
-      renderer.root.findByProps({ testID: 'comment-action-hide-comment-1' }).props
-        .disabled,
+      renderer.root.findByProps({ testID: 'comment-action-hide-comment-1' })
+        .props.disabled,
     ).toBe(false);
   });
 

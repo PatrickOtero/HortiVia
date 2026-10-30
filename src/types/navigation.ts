@@ -37,6 +37,8 @@ export type AppTabParamList = {
 };
 
 export type AppStackParamList = {
+  UserProfile: { userId: string };
+  TrainingRanking: undefined;
   Training: { productId: string };
   TrainingProgress: undefined;
   AdminTrainingProducts: undefined;

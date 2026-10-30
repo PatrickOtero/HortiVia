@@ -59,18 +59,63 @@ type ActionState =
 const BLOCK_KIND_OPTIONS: Array<{
   value: ArticleBlockKind;
   label: string;
+  description: string;
 }> = [
-  { value: 'SECTION', label: 'Secao' },
-  { value: 'PARAGRAPH', label: 'Paragrafo' },
-  { value: 'HEADING', label: 'Titulo' },
-  { value: 'IMAGE', label: 'Imagem' },
-  { value: 'TIP', label: 'Dica' },
-  { value: 'WARNING', label: 'Atencao' },
-  { value: 'CHECKLIST', label: 'Checklist' },
-  { value: 'STEPS', label: 'Passos' },
-  { value: 'QUOTE', label: 'Citacao' },
-  { value: 'PRODUCT_REFERENCE', label: 'Referencia' },
-  { value: 'OTHER', label: 'Outro' },
+  {
+    value: 'SECTION',
+    label: 'Seção',
+    description: 'Agrupa um subtítulo, texto, itens e uma imagem de apoio.',
+  },
+  {
+    value: 'PARAGRAPH',
+    label: 'Parágrafo',
+    description: 'Apresenta texto corrido, com opção de imagem complementar.',
+  },
+  {
+    value: 'HEADING',
+    label: 'Título de seção',
+    description: 'Marca uma mudança de assunto com um subtítulo destacado.',
+  },
+  {
+    value: 'IMAGE',
+    label: 'Imagem',
+    description: 'Exibe uma imagem independente com texto alternativo e legenda.',
+  },
+  {
+    value: 'TIP',
+    label: 'Dica',
+    description: 'Destaca uma orientação prática ligada ao tema do artigo.',
+  },
+  {
+    value: 'WARNING',
+    label: 'Atenção',
+    description: 'Chama atenção para um cuidado ou limite relevante.',
+  },
+  {
+    value: 'CHECKLIST',
+    label: 'Checklist',
+    description: 'Organiza pontos que o leitor pode conferir um a um.',
+  },
+  {
+    value: 'STEPS',
+    label: 'Passos',
+    description: 'Apresenta instruções em uma sequência numerada.',
+  },
+  {
+    value: 'QUOTE',
+    label: 'Citação',
+    description: 'Destaca uma frase; o título do bloco pode indicar a fonte.',
+  },
+  {
+    value: 'PRODUCT_REFERENCE',
+    label: 'Referência de produto',
+    description: 'Relaciona uma informação específica ao produto tratado.',
+  },
+  {
+    value: 'OTHER',
+    label: 'Outro',
+    description: 'Apresenta conteúdo complementar com título, texto ou itens.',
+  },
 ];
 
 const INITIAL_BLOCK_KIND: ArticleBlockKind = 'SECTION';
@@ -421,6 +466,13 @@ export function ArticleBlockManager({
                   />
                 ))}
               </S.ChipRow>
+              <S.HelperText>
+                {
+                  BLOCK_KIND_OPTIONS.find(
+                    option => option.value === formValues.kind,
+                  )?.description
+                }
+              </S.HelperText>
             </S.FieldGroup>
 
             <InputField
@@ -606,6 +658,13 @@ export function ArticleBlockManager({
                             />
                           ))}
                         </S.ChipRow>
+                        <S.HelperText>
+                          {
+                            BLOCK_KIND_OPTIONS.find(
+                              option => option.value === formValues.kind,
+                            )?.description
+                          }
+                        </S.HelperText>
                       </S.FieldGroup>
 
                       <InputField

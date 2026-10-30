@@ -125,6 +125,7 @@ export function SavedArticlesScreen({
               toggleSavedArticle(item).catch(() => undefined);
             }}
             onPress={() => handleOpenArticle(item.id)}
+            onAuthorPress={() => navigation.navigate('UserProfile', { userId: item.author.id })}
           />
         )}
         refreshing={isRefreshing}

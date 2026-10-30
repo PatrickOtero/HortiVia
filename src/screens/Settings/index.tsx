@@ -29,7 +29,7 @@ type SettingsScreenProps = CompositeScreenProps<
 
 export function SettingsScreen({ navigation }: SettingsScreenProps) {
   const { theme } = useTheme();
-  const { signOut } = useAuth();
+  const { signOut, user } = useAuth();
   const {
     sections,
     isLoading,
@@ -116,6 +116,9 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
             title="Perfil e preferências"
             subtitle="Escolha como quer usar o HortiVia."
           />
+
+          {user ? <SettingsRow label="Meu perfil" description="Identificação e aprendizado" showChevron
+            onPress={() => navigation.navigate('UserProfile', { userId: user.id })} /> : null}
 
           {isLoading ? (
             <SurfaceCard>

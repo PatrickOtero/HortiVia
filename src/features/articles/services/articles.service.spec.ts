@@ -93,6 +93,8 @@ describe('articlesService', () => {
           author: {
             id: 'user-1',
             name: 'Pessoa leitora',
+            avatarUrl: null,
+            specialBadge: null,
           },
         },
       ],
@@ -138,6 +140,8 @@ describe('articlesService', () => {
         author: {
           id: 'user-1',
           name: 'Pessoa leitora',
+            avatarUrl: null,
+            specialBadge: null,
         },
       },
     });

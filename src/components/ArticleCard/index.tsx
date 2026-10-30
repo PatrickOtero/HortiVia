@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Alert, type GestureResponderEvent } from 'react-native';
 import { ArticleReactionButton } from '../ArticleReactionButton';
 import { Avatar } from '../Avatar';
+import { UserBadge } from '../UserBadge';
 import { SavedArticleButton } from '../SavedArticleButton';
 import { getArticleCategoryLabel } from '../../features/articles/mappers/article.mapper';
 import { useArticleReaction } from '../../features/articles/hooks/useArticleReaction';
@@ -12,6 +13,7 @@ import * as S from './styles';
 type ArticleCardProps = {
   article: ArticleListItem;
   onPress?: () => void;
+  onAuthorPress?: () => void;
   showSaveButton?: boolean;
   isSaved?: boolean;
   isSavedLoading?: boolean;
@@ -64,6 +66,7 @@ function getArticlePreviewImageUrl(article: ArticleListItem) {
 export function ArticleCard({
   article,
   onPress,
+  onAuthorPress,
   showSaveButton = false,
   isSaved,
   isSavedLoading,
@@ -173,12 +176,27 @@ export function ArticleCard({
         </S.Summary>
 
         <S.FooterRow>
-          <S.AuthorRow>
-            <Avatar label={article.author.name} size={34} />
+          <S.AuthorRow
+            disabled={!onAuthorPress || !article.author.id}
+            accessibilityRole="button"
+            accessibilityLabel={`Abrir perfil de ${article.author.name}`}
+            onPress={event => {
+              event.stopPropagation();
+              onAuthorPress?.();
+            }}
+          >
+            <Avatar
+              label={article.author.name}
+              imageUrl={article.author.avatarUrl}
+              size={34}
+            />
             <S.AuthorCopy>
-              <S.AuthorName numberOfLines={1}>
-                {article.author.name}
-              </S.AuthorName>
+              <S.IdentityNameRow>
+                <S.AuthorName numberOfLines={1}>
+                  {article.author.name}
+                </S.AuthorName>
+                <UserBadge badge={article.author.specialBadge} />
+              </S.IdentityNameRow>
               <S.AuthorRole>Leitura educativa</S.AuthorRole>
             </S.AuthorCopy>
           </S.AuthorRow>

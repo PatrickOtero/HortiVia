@@ -296,6 +296,7 @@ export function HomeScreen({ navigation }: HomeScreenProps) {
               key={article.id}
               article={article}
               onPress={() => handleOpenArticle(article.id)}
+              onAuthorPress={() => navigation.navigate('UserProfile', { userId: article.author.id })}
             />
           ))}
         </S.ArticlePreviewStack>

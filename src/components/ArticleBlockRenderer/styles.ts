@@ -16,21 +16,22 @@ export const SectionBlock = styled.View`
 export const HeadingText = styled.Text`
   color: ${({ theme }) => theme.colors.primaryStrong};
   font-size: ${({ theme }) => theme.typography.headingMd.fontSize}px;
-  line-height: 28px;
+  line-height: ${({ theme }) => theme.typography.headingMd.lineHeight + 4}px;
   font-weight: ${({ theme }) => theme.typography.headingMd.fontWeight};
+  letter-spacing: ${({ theme }) => theme.typography.headingMd.letterSpacing ?? 0}px;
 `;
 
 export const SectionHeading = styled.Text`
   color: ${({ theme }) => theme.colors.primaryStrong};
-  font-size: ${({ theme }) => theme.typography.headingSm.fontSize}px;
-  line-height: 24px;
-  font-weight: ${({ theme }) => theme.typography.headingSm.fontWeight};
+  font-size: ${({ theme }) => theme.typography.headingMd.fontSize}px;
+  line-height: ${({ theme }) => theme.typography.headingMd.lineHeight + 2}px;
+  font-weight: 700;
 `;
 
 export const BodyText = styled.Text`
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.bodyLg.fontSize}px;
-  line-height: 30px;
+  line-height: 28px;
 `;
 
 export const MediaBlock = styled.View`
@@ -43,7 +44,7 @@ export const MediaImage = styled.Image.attrs({
   resizeMode: 'cover',
 })`
   width: 100%;
-  height: 220px;
+  aspect-ratio: 1.5;
   border-radius: ${({ theme }) => theme.radius.xl}px;
   background-color: ${({ theme }) => theme.colors.backgroundAlt};
 `;
@@ -73,8 +74,9 @@ export const HighlightBlock = styled.View<{ $tone: 'tip' | 'warning' }>`
   ${({ $tone }) => highlightStyles[$tone]}
 `;
 
-export const HighlightLabel = styled.Text`
-  color: ${({ theme }) => theme.colors.primaryStrong};
+export const HighlightLabel = styled.Text<{ $tone: 'tip' | 'warning' }>`
+  color: ${({ theme, $tone }) =>
+    $tone === 'warning' ? theme.colors.text : theme.colors.primaryStrong};
   font-size: ${({ theme }) => theme.typography.label.fontSize}px;
   line-height: ${({ theme }) => theme.typography.label.lineHeight}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
@@ -152,7 +154,7 @@ export const QuoteBlock = styled.View`
 export const QuoteText = styled.Text`
   color: ${({ theme }) => theme.colors.primaryStrong};
   font-size: ${({ theme }) => theme.typography.bodyLg.fontSize}px;
-  line-height: 30px;
+  line-height: 28px;
   font-weight: ${({ theme }) => theme.typography.bodyLg.fontWeight};
 `;
 

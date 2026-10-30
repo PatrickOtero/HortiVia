@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -36,6 +36,7 @@ import type {
   CreateArticlePayload,
 } from '../../../articles/types/article';
 import { AdminAccessDenied } from '../../components/AdminAccessDenied';
+import { AdminArticlePreview } from '../../components/AdminArticlePreview';
 import { ArticleBlockManager } from '../../components/ArticleBlockManager';
 import { AdminFormSection } from '../../components/AdminFormSection';
 import {
@@ -87,7 +88,7 @@ const INITIAL_FORM_VALUES: ArticleFormValues = {
   category: null,
   imageUrl: '',
   tags: '',
-  isPublished: true,
+  isPublished: false,
 };
 
 function validateForm(values: ArticleFormValues): ArticleFormErrors {
@@ -220,11 +221,6 @@ export function AdminArticleFormScreen({
   useEffect(() => {
     setHasImageLoadError(false);
   }, [remoteImageUrl, selectedImageFile?.uri]);
-
-  const submitLabel = useMemo(
-    () => (isEditing ? 'Salvar alterações' : 'Salvar artigo'),
-    [isEditing],
-  );
 
   const previewImageUrl = selectedImageFile?.uri ?? remoteImageUrl;
   const shouldShowImage = Boolean(previewImageUrl) && !hasImageLoadError;
@@ -708,6 +704,18 @@ export function AdminArticleFormScreen({
                   )}
                 </AdminFormSection>
 
+                <AdminArticlePreview
+                  title={formValues.title}
+                  summary={formValues.summary}
+                  content={formValues.content}
+                  category={formValues.category}
+                  imageUrl={previewImageUrl}
+                  tags={parseTags(formValues.tags)}
+                  blocks={articleBlocks}
+                  authorName={user?.name}
+                  isPublished={formValues.isPublished}
+                />
+
                 {screenError ? <S.ErrorText>{screenError}</S.ErrorText> : null}
 
                 <S.Actions>
@@ -716,7 +724,13 @@ export function AdminArticleFormScreen({
                     loading={isSaving}
                     disabled={isUploadingImage}
                   >
-                    {submitLabel}
+                    {formValues.isPublished
+                      ? isEditing
+                        ? 'Salvar alterações publicadas'
+                        : 'Salvar e publicar'
+                      : isEditing
+                        ? 'Salvar alterações como rascunho'
+                        : 'Salvar rascunho'}
                   </PrimaryButton>
                   <SecondaryButton
                     onPress={() => goBackFromAdmin(navigation)}

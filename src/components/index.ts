@@ -32,3 +32,4 @@ export { SettingsSection } from './SettingsSection';
 export { SettingsToggleRow } from './SettingsToggleRow';
 export { SectionTitle } from './SectionTitle';
 export { SurfaceCard } from './SurfaceCard';
+export { UserBadge } from './UserBadge';

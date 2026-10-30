@@ -12,6 +12,8 @@ import { AdminProductVisualContentScreen } from '../features/admin/screens/Admin
 import { useTheme } from '../hooks/useTheme';
 import { ArticleDetailScreen } from '../screens/ArticleDetail';
 import { EditProfileScreen } from '../screens/EditProfile';
+import { UserProfileScreen } from '../screens/UserProfile';
+import { TrainingRankingScreen } from '../features/training/screens/TrainingRankingScreen';
 import { ProductDetailScreen } from '../screens/ProductDetail';
 import { SavedArticlesScreen } from '../screens/SavedArticles';
 import { AppStackParamList } from '../types/navigation';
@@ -67,6 +69,8 @@ export function AppNavigator() {
         options={{ headerShown: false }}
       />
       <Stack.Screen name="Training" component={TrainingScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="UserProfile" component={UserProfileScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="TrainingRanking" component={TrainingRankingScreen} options={{ headerShown: false }} />
       <Stack.Screen name="TrainingProgress" component={TrainingProgressScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AdminTrainingProducts" component={AdminTrainingProductsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="AdminTrainingQuestions" component={AdminTrainingQuestionsScreen} options={{ headerShown: false }} />

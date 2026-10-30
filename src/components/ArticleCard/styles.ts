@@ -112,7 +112,7 @@ export const FooterRow = styled.View`
   gap: ${({ theme }) => theme.spacing.md}px;
 `;
 
-export const AuthorRow = styled.View`
+export const AuthorRow = styled.TouchableOpacity`
   flex: 1;
   flex-direction: row;
   align-items: center;
@@ -125,10 +125,18 @@ export const AuthorCopy = styled.View`
 `;
 
 export const AuthorName = styled.Text`
+  flex-shrink: 1;
   color: ${({ theme }) => theme.colors.text};
   font-size: ${({ theme }) => theme.typography.bodySm.fontSize}px;
   line-height: ${({ theme }) => theme.typography.bodySm.lineHeight}px;
   font-weight: ${({ theme }) => theme.typography.label.fontWeight};
+`;
+
+export const IdentityNameRow = styled.View`
+  flex-direction: row;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.spacing.xs}px;
 `;
 
 export const AuthorRole = styled.Text`

@@ -1,7 +1,17 @@
 import type { AuthUser } from '../../auth/types/auth';
-import type { GenderOption, UpdateProfilePayload, UserProfile } from '../types/profile';
+import type {
+  GenderOption,
+  UpdateProfilePayload,
+  UserProfile,
+} from '../types/profile';
 
 type ApiProfileResponse = {
+  store?: string | null;
+  jobTitle?: string | null;
+  phone?: string | null;
+  city?: string | null;
+  state?: string | null;
+  specialBadge?: UserProfile['specialBadge'];
   id: string;
   name: string;
   email: string;
@@ -33,6 +43,12 @@ export function getGenderLabel(gender: UserProfile['gender']) {
 
 export function toUserProfile(profile: ApiProfileResponse): UserProfile {
   return {
+    store: profile.store ?? null,
+    jobTitle: profile.jobTitle ?? null,
+    phone: profile.phone ?? null,
+    city: profile.city ?? null,
+    state: profile.state ?? null,
+    specialBadge: profile.specialBadge ?? null,
     id: profile.id,
     name: profile.name,
     email: profile.email,
@@ -62,6 +78,20 @@ export function sanitizeUpdateProfilePayload(
   payload: UpdateProfilePayload,
 ): UpdateProfilePayload {
   const nextPayload: UpdateProfilePayload = {};
+
+  for (const field of [
+    'store',
+    'jobTitle',
+    'phone',
+    'city',
+    'state',
+  ] as const) {
+    if (payload[field] !== undefined) {
+      const value = payload[field]?.trim() || null;
+      nextPayload[field] =
+        field === 'state' ? value?.toUpperCase() ?? null : value;
+    }
+  }
 
   if (typeof payload.name === 'string') {
     nextPayload.name = payload.name.trim();

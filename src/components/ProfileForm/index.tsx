@@ -2,7 +2,10 @@ import React, { useRef } from 'react';
 import { TextInput } from 'react-native';
 import { InputField } from '../InputField';
 import { PrimaryButton, SecondaryButton } from '../Button';
-import { UserProfileFormErrors, UserProfileFormValues } from '../../types/userProfile';
+import {
+  UserProfileFormErrors,
+  UserProfileFormValues,
+} from '../../types/userProfile';
 import * as S from './styles';
 
 type ProfileFormProps = {
@@ -59,8 +62,33 @@ export function ProfileForm({
         onSubmitEditing={onSubmit}
       />
 
+      {(
+        [
+          ['store', 'Loja', 100],
+          ['jobTitle', 'Função profissional', 100],
+          ['phone', 'Telefone (privado)', 25],
+          ['city', 'Cidade (privada)', 100],
+          ['state', 'Estado / UF (privado)', 2],
+        ] as const
+      ).map(([field, label, maxLength]) => (
+        <InputField
+          key={field}
+          label={label}
+          placeholder="Opcional"
+          value={values[field]}
+          onChangeText={value => onChangeField(field, value)}
+          helperText={errors[field]}
+          editable={!isSubmitting}
+          maxLength={maxLength}
+          autoCapitalize={field === 'state' ? 'characters' : 'words'}
+          keyboardType={field === 'phone' ? 'phone-pad' : 'default'}
+        />
+      ))}
+
       {errorMessage ? <S.ErrorMessage>{errorMessage}</S.ErrorMessage> : null}
-      {successMessage ? <S.SuccessMessage>{successMessage}</S.SuccessMessage> : null}
+      {successMessage ? (
+        <S.SuccessMessage>{successMessage}</S.SuccessMessage>
+      ) : null}
 
       <S.Actions>
         <PrimaryButton onPress={onSubmit} loading={isSubmitting}>

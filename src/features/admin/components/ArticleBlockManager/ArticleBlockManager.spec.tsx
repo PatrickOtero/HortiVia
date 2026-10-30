@@ -146,7 +146,7 @@ describe('ArticleBlockManager', () => {
     });
 
     const chips = renderer.root.findAllByType(FilterChip);
-    const sectionChip = chips.find(chip => chip.props.label === 'Secao');
+    const sectionChip = chips.find(chip => chip.props.label === 'Seção');
 
     await ReactTestRenderer.act(async () => {
       sectionChip?.props.onPress();

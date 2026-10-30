@@ -1,4 +1,5 @@
 import type { ProductCategory } from '../../products/types/product';
+import type { UserBadgeType } from '../../../types/userBadge';
 
 export type ArticleCategory =
   | 'TIPS'
@@ -15,6 +16,7 @@ export type ArticleCategoryOption = {
 };
 
 export type ArticleAuthor = {
+  specialBadge?: UserBadgeType | null;
   id: string;
   name: string;
   avatarUrl: string | null;
@@ -23,6 +25,8 @@ export type ArticleAuthor = {
 export type ArticleCommentStatus = 'VISIBLE' | 'HIDDEN' | 'DELETED';
 
 export type ArticleCommentAuthor = {
+  avatarUrl?: string | null;
+  specialBadge?: UserBadgeType | null;
   id: string;
   name: string;
 };

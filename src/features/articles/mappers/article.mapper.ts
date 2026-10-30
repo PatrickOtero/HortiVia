@@ -23,6 +23,7 @@ type ApiArticleAuthor = {
   id: string;
   name: string;
   avatarUrl?: string | null;
+  specialBadge?: ArticleAuthor['specialBadge'];
 };
 
 type ApiArticleListItem = {
@@ -238,6 +239,7 @@ function toArticleAuthor(author: ApiArticleAuthor): ArticleAuthor {
     id: author.id,
     name: author.name,
     avatarUrl: author.avatarUrl ?? null,
+    specialBadge: author.specialBadge ?? null,
   };
 }
 
@@ -249,6 +251,8 @@ function toArticleCommentAuthor(author: unknown): ArticleCommentAuthor | null {
   const candidate = author as {
     id?: unknown;
     name?: unknown;
+    avatarUrl?: unknown;
+    specialBadge?: unknown;
   };
 
   if (typeof candidate.id !== 'string' || typeof candidate.name !== 'string') {
@@ -258,6 +262,9 @@ function toArticleCommentAuthor(author: unknown): ArticleCommentAuthor | null {
   return {
     id: candidate.id,
     name: candidate.name,
+    avatarUrl: typeof candidate.avatarUrl === 'string' ? candidate.avatarUrl : null,
+    specialBadge: candidate.specialBadge === 'FOUNDER' || candidate.specialBadge === 'CO_FOUNDER' ||
+      candidate.specialBadge === 'SPECIALIST' ? candidate.specialBadge : null,
   };
 }
 

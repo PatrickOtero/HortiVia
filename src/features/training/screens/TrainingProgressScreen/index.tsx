@@ -10,6 +10,7 @@ import {
   ScreenContainer,
   SectionTitle,
   SurfaceCard,
+  TextButton,
 } from '../../../../components';
 import type { AppStackParamList } from '../../../../types/navigation';
 import { useTrainingResource } from '../../hooks/useTrainingResource';
@@ -38,6 +39,7 @@ export function TrainingProgressScreen({
             title="Meu aprendizado"
             subtitle="Sua resposta mais recente em cada pergunta define o progresso."
           />
+          <TextButton onPress={() => navigation.navigate('TrainingRanking')}>Ranking de aprendizado</TextButton>
           {isLoading ? (
             <ActivityIndicator accessibilityLabel="Carregando progresso" />
           ) : null}

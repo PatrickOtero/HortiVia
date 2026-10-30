@@ -153,6 +153,7 @@ export function FeedScreen({ navigation }: FeedScreenProps) {
               toggleSavedArticle(item).catch(() => undefined);
             }}
             onPress={canOpenArticle ? () => handleOpenArticle(item.id) : undefined}
+            onAuthorPress={() => navigation.navigate('UserProfile', { userId: item.author.id })}
           />
         )}
         refreshing={isRefreshing}

@@ -27,6 +27,11 @@ const SAFE_AVATAR_ERROR_MESSAGES = new Set([
 ]);
 
 export type UserProfileFormValues = {
+  store: string;
+  jobTitle: string;
+  phone: string;
+  city: string;
+  state: string;
   name: string;
   email: string;
 };
@@ -54,14 +59,32 @@ type UseProfileResult = {
 
 function createFormValues(profile: UserProfile | null): UserProfileFormValues {
   return {
+    store: profile?.store ?? '',
+    jobTitle: profile?.jobTitle ?? '',
+    phone: profile?.phone ?? '',
+    city: profile?.city ?? '',
+    state: profile?.state ?? '',
     name: profile?.name ?? '',
     email: profile?.email ?? '',
   };
 }
 
-function validateProfileForm(values: UserProfileFormValues): UserProfileFormErrors {
+function validateProfileForm(
+  values: UserProfileFormValues,
+): UserProfileFormErrors {
   const errors: UserProfileFormErrors = {};
   const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  if (values.phone.trim() && !/^[+()\d .-]{7,25}$/.test(values.phone.trim())) {
+    errors.phone = 'Informe um telefone válido.';
+  }
+  if (values.state.trim() && !/^[A-Za-z]{2}$/.test(values.state.trim())) {
+    errors.state = 'Informe a UF com duas letras.';
+  }
+  for (const field of ['store', 'jobTitle', 'city'] as const) {
+    if (values[field].trim().length > 100)
+      errors[field] = 'Use até 100 caracteres.';
+  }
 
   if (!values.name.trim()) {
     errors.name = 'Informe seu nome.';
@@ -101,6 +124,7 @@ export function useProfile(): UseProfileResult {
   const [isSaving, setIsSaving] = useState(false);
   const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
   const hasAppliedFallbackRef = useRef(false);
+  const hasLoadedServerProfileRef = useRef(false);
 
   const fallbackProfile = useMemo<UserProfile | null>(() => {
     if (!user) {
@@ -144,10 +168,11 @@ export function useProfile(): UseProfileResult {
     try {
       const nextProfile = await profileService.getProfile();
 
+      hasLoadedServerProfileRef.current = true;
       applyProfile(nextProfile);
       setFormErrors({});
     } catch {
-      if (!fallbackProfile) {
+      if (!hasLoadedServerProfileRef.current) {
         setProfile(null);
       }
 
@@ -155,10 +180,10 @@ export function useProfile(): UseProfileResult {
     } finally {
       setIsLoading(false);
     }
-  }, [applyProfile, fallbackProfile]);
+  }, [applyProfile]);
 
   useEffect(() => {
-    if (fallbackProfile && !hasAppliedFallbackRef.current) {
+    if (fallbackProfile && !hasAppliedFallbackRef.current && !hasLoadedServerProfileRef.current) {
       hasAppliedFallbackRef.current = true;
       applyProfile(fallbackProfile);
     }
@@ -203,6 +228,10 @@ export function useProfile(): UseProfileResult {
   }
 
   async function saveProfile() {
+    if (!hasLoadedServerProfileRef.current) {
+      setErrorMessage('Carregue seu perfil antes de salvar. Tente novamente.');
+      return false;
+    }
     const nextErrors = validateProfileForm(formValues);
 
     if (Object.keys(nextErrors).length > 0) {
@@ -216,6 +245,11 @@ export function useProfile(): UseProfileResult {
 
     try {
       const updatedProfile = await profileService.updateProfile({
+        store: formValues.store,
+        jobTitle: formValues.jobTitle,
+        phone: formValues.phone,
+        city: formValues.city,
+        state: formValues.state,
         name: formValues.name,
         email: formValues.email,
       });

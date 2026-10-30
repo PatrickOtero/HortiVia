@@ -9,9 +9,20 @@ import type {
   AvatarUploadFile,
   UpdateProfilePayload,
   UserProfile,
+  PublicUserProfile,
 } from '../types/profile';
 
 export const profileService = {
+  async getUserProfile(
+    userId: string,
+    signal?: AbortSignal,
+  ): Promise<PublicUserProfile> {
+    const response = await apiClient.get<PublicUserProfile>(
+      API_ENDPOINTS.profile.user(userId),
+      { signal },
+    );
+    return response.data;
+  },
   async getProfile(): Promise<UserProfile> {
     const response = await apiClient.get(API_ENDPOINTS.profile.get);
 

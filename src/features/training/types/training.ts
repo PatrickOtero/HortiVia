@@ -1,3 +1,5 @@
+import type { PublicUserSummary } from '../../profile/types/profile';
+
 export type TrainingProgress = {
   total: number;
   answered: number;
@@ -46,4 +48,15 @@ export type TrainingProgressList = {
     product: { id: string; name: string };
     progress: TrainingProgress;
   }[];
+};
+
+export type TrainingRankingEntry = {
+  user: PublicUserSummary;
+  progress: TrainingProgress;
+  position: number;
+};
+export type TrainingRanking = {
+  participants: number;
+  top: TrainingRankingEntry[];
+  currentUser: TrainingRankingEntry | null;
 };
