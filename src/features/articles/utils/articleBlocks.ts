@@ -1,3 +1,5 @@
+import type { ArticleBlock } from '../types/article';
+
 export function normalizeBlockItems(items: unknown): string[] {
   if (!Array.isArray(items)) {
     return [];
@@ -52,4 +54,17 @@ export function getArticleContentParagraphs(content: string, summary: string) {
   }
 
   return summary ? [summary] : [];
+}
+
+/**
+ * Sorts blocks by display order and then by ID without mutating the input.
+ * Missing sortOrder values intentionally behave as zero.
+ */
+export function sortArticleBlocks(blocks: ArticleBlock[]): ArticleBlock[] {
+  return [...blocks].sort((left, right) => {
+    const leftOrder = left.sortOrder ?? 0;
+    const rightOrder = right.sortOrder ?? 0;
+
+    return leftOrder - rightOrder || left.id.localeCompare(right.id);
+  });
 }
