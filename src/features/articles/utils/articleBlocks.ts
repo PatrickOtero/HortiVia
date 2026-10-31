@@ -1,3 +1,16 @@
+import type { ArticleBlock } from '../types/article';
+
+export function sortArticleBlocks(blocks: ArticleBlock[]): ArticleBlock[] {
+  return [...blocks].sort((left, right) => {
+    const leftSortOrder = typeof left.sortOrder === 'number' ? left.sortOrder : 0;
+    const rightSortOrder = typeof right.sortOrder === 'number' ? right.sortOrder : 0;
+
+    return leftSortOrder === rightSortOrder
+      ? left.id.localeCompare(right.id)
+      : leftSortOrder - rightSortOrder;
+  });
+}
+
 export function normalizeBlockItems(items: unknown): string[] {
   if (!Array.isArray(items)) {
     return [];
