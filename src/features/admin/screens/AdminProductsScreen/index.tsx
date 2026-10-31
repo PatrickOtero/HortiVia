@@ -48,7 +48,7 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
 
   useFocusEffect(
     useCallback(() => {
-      loadProducts();
+      loadProducts({ refreshIfBusy: true });
     }, [loadProducts]),
   );
 
@@ -127,7 +127,7 @@ export function AdminProductsScreen({ navigation }: AdminProductsScreenProps) {
         data={products}
         keyExtractor={item => item.id}
         refreshing={isRefreshing}
-        onRefresh={() => loadProducts(true)}
+        onRefresh={() => loadProducts({ refresh: true })}
         ItemSeparatorComponent={ListItemSeparator}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{

@@ -57,6 +57,8 @@ export function useAdminProductForm({
   const [hasImageLoadError, setHasImageLoadError] = useState(false);
   const [hasAccessDeniedError, setHasAccessDeniedError] = useState(false);
   const loadRequestId = useRef(0);
+  const loadedProductId = useRef<string | null>(null);
+  const syncedInitialProductId = useRef(initialProductId);
   const isMounted = useRef(true);
   const isSavingRef = useRef(false);
   const isUploadingRef = useRef(false);
@@ -75,14 +77,23 @@ export function useAdminProductForm({
 
   const loadProduct = useCallback(async (productId: string) => {
     const requestId = ++loadRequestId.current;
+    loadedProductId.current = null;
     setIsLoading(true);
     setScreenError('');
+    setFormValues(INITIAL_PRODUCT_FORM_VALUES);
+    setFormErrors({});
+    setRemoteImageUrl(null);
+    setSelectedImageFile(null);
+    setImageErrorMessage('');
+    setImageSuccessMessage('');
+    setHasAccessDeniedError(false);
 
     try {
       const product = await productsService.getProductById(productId);
       if (!isMounted.current || requestId !== loadRequestId.current) return;
 
       setFormValues(productToFormValues(product));
+      loadedProductId.current = productId;
       setRemoteImageUrl(product.imageUrl ?? null);
       setSelectedImageFile(null);
       setImageErrorMessage('');
@@ -109,6 +120,8 @@ export function useAdminProductForm({
 
   useEffect(() => {
     const nextProductId = initialProductId ?? null;
+    syncedInitialProductId.current = initialProductId;
+    loadedProductId.current = null;
     setCurrentProductId(nextProductId);
 
     if (nextProductId) {
@@ -117,6 +130,7 @@ export function useAdminProductForm({
     }
 
     loadRequestId.current += 1;
+    loadedProductId.current = null;
     setFormValues(INITIAL_PRODUCT_FORM_VALUES);
     setFormErrors({});
     setRemoteImageUrl(null);
@@ -240,6 +254,13 @@ export function useAdminProductForm({
 
   async function handleSubmit() {
     if (isSavingRef.current || isUploadingRef.current) return null;
+    if (
+      syncedInitialProductId.current !== initialProductId ||
+      (initialProductId && initialProductId !== currentProductId) ||
+      (currentProductId && loadedProductId.current !== currentProductId)
+    ) {
+      return null;
+    }
 
     const errors = validateProductForm(formValues);
     if (Object.keys(errors).length > 0) {
@@ -261,6 +282,7 @@ export function useAdminProductForm({
       if (!isMounted.current) return;
 
       setCurrentProductId(product.id);
+      loadedProductId.current = product.id;
       setRemoteImageUrl(product.imageUrl ?? null);
       setFormValues(current => ({
         ...current,

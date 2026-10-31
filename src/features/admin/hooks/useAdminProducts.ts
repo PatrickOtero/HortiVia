@@ -9,6 +9,11 @@ import {
 
 const ADMIN_PRODUCTS_PAGE_SIZE = 20;
 
+type LoadProductsOptions = {
+  refresh?: boolean;
+  refreshIfBusy?: boolean;
+};
+
 export function useAdminProducts() {
   const [products, setProducts] = useState<ProductListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -20,6 +25,7 @@ export function useAdminProducts() {
   const isMounted = useRef(true);
   const requestId = useRef(0);
   const isLoadingRef = useRef(false);
+  const refreshQueuedRef = useRef(false);
   const deletionsInFlight = useRef(new Set<string>());
 
   useEffect(() => {
@@ -27,44 +33,61 @@ export function useAdminProducts() {
     return () => {
       isMounted.current = false;
       requestId.current += 1;
+      refreshQueuedRef.current = false;
     };
   }, []);
 
-  const loadProducts = useCallback(async (refresh = false) => {
-    if (isLoadingRef.current) return;
+  const loadProducts = useCallback(
+    async ({
+      refresh = false,
+      refreshIfBusy = false,
+    }: LoadProductsOptions = {}) => {
+      if (isLoadingRef.current) {
+        if (refresh || refreshIfBusy) refreshQueuedRef.current = true;
+        return;
+      }
 
-    const currentRequestId = ++requestId.current;
-    isLoadingRef.current = true;
-    if (refresh) setIsRefreshing(true);
-    else setIsLoading(true);
+      const currentRequestId = ++requestId.current;
+      isLoadingRef.current = true;
+      if (refresh) setIsRefreshing(true);
+      else setIsLoading(true);
 
-    try {
-      const response = await productsService.getProducts({
-        page: 1,
-        limit: ADMIN_PRODUCTS_PAGE_SIZE,
-      });
-      if (!isMounted.current || currentRequestId !== requestId.current) return;
+      try {
+        const response = await productsService.getProducts({
+          page: 1,
+          limit: ADMIN_PRODUCTS_PAGE_SIZE,
+        });
+        if (!isMounted.current || currentRequestId !== requestId.current)
+          return;
 
-      setProducts(response.data);
-      setErrorMessage('');
-      setHasAccessDeniedError(false);
-    } catch (error) {
-      if (!isMounted.current || currentRequestId !== requestId.current) return;
-      if (isAdminAccessDeniedError(error)) {
-        setHasAccessDeniedError(true);
+        setProducts(response.data);
         setErrorMessage('');
-      } else {
-        toApiError(error);
-        setErrorMessage('Não foi possível carregar os produtos.');
+        setHasAccessDeniedError(false);
+      } catch (error) {
+        if (!isMounted.current || currentRequestId !== requestId.current)
+          return;
+        if (isAdminAccessDeniedError(error)) {
+          setHasAccessDeniedError(true);
+          setErrorMessage('');
+        } else {
+          toApiError(error);
+          setErrorMessage('Não foi possível carregar os produtos.');
+        }
+      } finally {
+        if (isMounted.current && currentRequestId === requestId.current) {
+          isLoadingRef.current = false;
+          setIsLoading(false);
+          setIsRefreshing(false);
+
+          if (refreshQueuedRef.current) {
+            refreshQueuedRef.current = false;
+            await loadProducts({ refresh: true });
+          }
+        }
       }
-    } finally {
-      if (isMounted.current && currentRequestId === requestId.current) {
-        isLoadingRef.current = false;
-        setIsLoading(false);
-        setIsRefreshing(false);
-      }
-    }
-  }, []);
+    },
+    [],
+  );
 
   const deleteProduct = useCallback(
     async (productId: string) => {
@@ -87,9 +110,10 @@ export function useAdminProducts() {
         // A remoção invalida qualquer lista iniciada antes da operação.
         requestId.current += 1;
         isLoadingRef.current = false;
+        refreshQueuedRef.current = false;
         setIsLoading(false);
         setIsRefreshing(false);
-        await loadProducts(true);
+        await loadProducts({ refresh: true });
         return true;
       } catch (error) {
         if (!isMounted.current) return false;

@@ -33,6 +33,14 @@ function page(items: ProductListItem[]) {
   };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  const promise = new Promise<T>(resolvePromise => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+}
+
 describe('useAdminProducts', () => {
   let tree: Renderer.ReactTestRenderer | undefined;
   let state: ReturnType<typeof useAdminProducts>;
@@ -63,7 +71,7 @@ describe('useAdminProducts', () => {
 
     await act(async () => {
       const first = state.loadProducts();
-      const duplicate = state.loadProducts(true);
+      const duplicate = state.loadProducts();
       expect(mockedProductsService.getProducts).toHaveBeenCalledTimes(1);
       expect(mockedProductsService.getProducts).toHaveBeenCalledWith({
         page: 1,
@@ -73,6 +81,41 @@ describe('useAdminProducts', () => {
       await Promise.all([first, duplicate]);
     });
     expect(state.products.map(item => item.id)).toEqual(['one']);
+  });
+
+  it('runs a requested refresh after an earlier list request completes', async () => {
+    const firstPage = deferred<ReturnType<typeof page>>();
+    const refreshedPage = deferred<ReturnType<typeof page>>();
+    mockedProductsService.getProducts
+      .mockReturnValueOnce(firstPage.promise)
+      .mockReturnValueOnce(refreshedPage.promise);
+    await act(async () => {
+      tree = Renderer.create(<Probe />);
+    });
+
+    let initialRequest!: Promise<void>;
+    await act(async () => {
+      initialRequest = state.loadProducts();
+    });
+    await act(async () => {
+      await state.loadProducts({ refreshIfBusy: true });
+    });
+    expect(mockedProductsService.getProducts).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      firstPage.resolve(page([product('stale-list')]));
+      await firstPage.promise;
+    });
+    expect(mockedProductsService.getProducts).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      refreshedPage.resolve(page([product('latest-list')]));
+      await refreshedPage.promise;
+      await initialRequest;
+    });
+
+    expect(state.products.map(item => item.id)).toEqual(['latest-list']);
+    expect(mockedProductsService.getProducts).toHaveBeenCalledTimes(2);
   });
 
   it('removes the product after confirmation handling and refreshes the list', async () => {

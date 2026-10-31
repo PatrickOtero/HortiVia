@@ -115,6 +115,29 @@ describe('useAdminProductForm', () => {
     expect(form.formValues.name).toBe('Novo');
   });
 
+  it('clears the prior product and blocks saving when the newly selected product fails to load', async () => {
+    mockedProductsService.getProductById
+      .mockResolvedValueOnce(product('old-id', { name: 'Produto antigo' }))
+      .mockRejectedValueOnce(new Error('offline'));
+    await mount('old-id');
+    expect(form.formValues.name).toBe('Produto antigo');
+
+    await act(async () => tree?.update(<Probe productId="new-id" />));
+
+    expect(form.currentProductId).toBe('new-id');
+    expect(form.formValues.name).toBe('');
+    expect(form.screenError).toBe('Não foi possível carregar os dados.');
+
+    let result: Awaited<ReturnType<typeof form.handleSubmit>>;
+    await act(async () => {
+      result = await form.handleSubmit();
+    });
+
+    expect(result!).toBeNull();
+    expect(mockedProductsService.updateProduct).not.toHaveBeenCalled();
+    expect(mockedProductsService.createProduct).not.toHaveBeenCalled();
+  });
+
   it('can retry a failed edit load without leaving stale form data', async () => {
     mockedProductsService.getProductById
       .mockRejectedValueOnce(new Error('offline'))
