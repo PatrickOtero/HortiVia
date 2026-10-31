@@ -70,3 +70,10 @@ Use `npm run lint`, `npm run typecheck` e `npm test -- --runInBand`. Para mudan√
 - `features/admin/hooks/useAdminArticleForm.ts` coordena carregamento do artigo, validacao, criacao/edicao e selecao/envio da capa. A tela mantem a navegacao e compoe os campos, o gerenciador de blocos e a previa.
 - `features/admin/components/ArticleBlockManager` concentra lista e persistencia/reordenacao dos blocos. `ArticleBlockEditor` apresenta o mesmo formulario na criacao e edicao; `ArticleBlockImageManager` continua responsavel por arquivos e metadados das imagens de bloco.
 - `features/articles/utils/articleBlocks.ts` centraliza normalizacao de itens, ordenacao de blocos e preparacao de paragrafos legados. A previa usa os mesmos tipos e renderizador publico de blocos.
+
+
+### Leitura e interacao com artigos
+
+- `features/articles/hooks/useArticleById.ts` carrega os detalhes e descarta respostas obsoletas ou concluidas depois da desmontagem. `features/articles/hooks/useArticleComments.ts` controla listagem, pagina, deduplica chamadas e coordena as mutacoes locais de comentarios por artigo.
+- `screens/ArticleDetail/index.tsx` compoe o estado de carregamento/erro, cabe?alho, conteudo, metadados relacionados e comentarios. `components/ArticleHeader.tsx` agrupa capa, autor, salvar e reacao; `components/ArticleContent.tsx` escolhe blocos estruturados ou o texto legado; `components/ArticleCommentsSection` apresenta comentarios e suas acoes de acordo com a sessao atual.
+- `features/articles/services/articles.service.ts` continua sendo a fronteira HTTP, e `article.mapper.ts` continua normalizando respostas externas. As permissoes do frontend controlam apenas a apresentacao; a API permanece autoridade para as operacoes.

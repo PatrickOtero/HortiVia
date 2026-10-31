@@ -115,6 +115,11 @@ export function useArticleComments({
   const [deletingIds, setDeletingIds] = useState<string[]>([]);
   const [moderatingIds, setModeratingIds] = useState<string[]>([]);
   const requestIdRef = useRef(0);
+  const activeListRequestRef = useRef<string | null>(null);
+  const resourceVersionRef = useRef(0);
+  const loadMoreInFlightRef = useRef(false);
+  const createInFlightRef = useRef(false);
+  const commentActionsInFlightRef = useRef(new Set<string>());
 
   const loadComments = useCallback(
     async (page: number, append: boolean) => {
@@ -130,6 +135,11 @@ export function useArticleComments({
         return;
       }
 
+      const requestKey = `${articleId}:${page}:${append}`;
+      if (activeListRequestRef.current === requestKey) {
+        return;
+      }
+      activeListRequestRef.current = requestKey;
       const requestId = requestIdRef.current + 1;
       requestIdRef.current = requestId;
       setErrorMessage(null);
@@ -145,10 +155,13 @@ export function useArticleComments({
       }
 
       try {
-        const nextResponse = await articlesService.listArticleComments(articleId, {
-          page,
-          limit,
-        });
+        const nextResponse = await articlesService.listArticleComments(
+          articleId,
+          {
+            page,
+            limit,
+          },
+        );
 
         if (requestId !== requestIdRef.current) {
           return;
@@ -179,6 +192,7 @@ export function useArticleComments({
           return;
         }
 
+        activeListRequestRef.current = null;
         setIsLoading(false);
         setIsLoadingMore(false);
         setHasLoaded(true);
@@ -188,6 +202,19 @@ export function useArticleComments({
   );
 
   useEffect(() => {
+    const resourceVersion = resourceVersionRef.current + 1;
+    resourceVersionRef.current = resourceVersion;
+    requestIdRef.current += 1;
+    activeListRequestRef.current = null;
+    loadMoreInFlightRef.current = false;
+    createInFlightRef.current = false;
+    commentActionsInFlightRef.current = new Set();
+    setIsCreating(false);
+    setIsLoadingMore(false);
+    setUpdatingIds([]);
+    setDeletingIds([]);
+    setModeratingIds([]);
+
     if (!articleId) {
       setResponse({
         ...INITIAL_RESPONSE,
@@ -197,14 +224,24 @@ export function useArticleComments({
       setIsLoadingMore(false);
       setHasLoaded(true);
       setErrorMessage('Nao foi possivel carregar os comentarios.');
-      return;
+    } else {
+      setResponse({
+        ...INITIAL_RESPONSE,
+        limit,
+      });
+      loadComments(1, false);
     }
 
-    setResponse({
-      ...INITIAL_RESPONSE,
-      limit,
-    });
-    loadComments(1, false);
+    return () => {
+      if (resourceVersionRef.current === resourceVersion) {
+        resourceVersionRef.current += 1;
+        requestIdRef.current += 1;
+        activeListRequestRef.current = null;
+        loadMoreInFlightRef.current = false;
+        createInFlightRef.current = false;
+        commentActionsInFlightRef.current = new Set();
+      }
+    };
   }, [articleId, limit, loadComments]);
 
   const refresh = useCallback(async () => {
@@ -212,19 +249,41 @@ export function useArticleComments({
   }, [loadComments]);
 
   const loadMore = useCallback(async () => {
-    if (isLoading || isLoadingMore || response.page >= response.totalPages) {
+    if (
+      loadMoreInFlightRef.current ||
+      isLoading ||
+      isLoadingMore ||
+      response.page >= response.totalPages
+    ) {
       return;
     }
 
-    await loadComments(response.page + 1, true);
-  }, [isLoading, isLoadingMore, loadComments, response.page, response.totalPages]);
+    loadMoreInFlightRef.current = true;
+    const resourceVersion = resourceVersionRef.current;
+
+    try {
+      await loadComments(response.page + 1, true);
+    } finally {
+      if (resourceVersion === resourceVersionRef.current) {
+        loadMoreInFlightRef.current = false;
+      }
+    }
+  }, [
+    isLoading,
+    isLoadingMore,
+    loadComments,
+    response.page,
+    response.totalPages,
+  ]);
 
   const createComment = useCallback(
     async (body: string) => {
-      if (!articleId || isCreating) {
+      if (!articleId || createInFlightRef.current) {
         return null;
       }
 
+      createInFlightRef.current = true;
+      const resourceVersion = resourceVersionRef.current;
       setIsCreating(true);
 
       try {
@@ -233,27 +292,39 @@ export function useArticleComments({
           body,
         );
 
-        setResponse(currentResponse => ({
-          ...buildNextMeta(currentResponse, currentResponse.total + 1),
-          items: upsertComment(currentResponse.items, createdComment),
-        }));
+        if (resourceVersion === resourceVersionRef.current) {
+          setResponse(currentResponse => ({
+            ...buildNextMeta(currentResponse, currentResponse.total + 1),
+            items: upsertComment(currentResponse.items, createdComment),
+          }));
+        }
 
         return createdComment;
       } catch (error) {
         throw toApiError(error);
       } finally {
-        setIsCreating(false);
+        if (resourceVersion === resourceVersionRef.current) {
+          createInFlightRef.current = false;
+          setIsCreating(false);
+        }
       }
     },
-    [articleId, isCreating],
+    [articleId],
   );
 
   const updateComment = useCallback(
     async (commentId: string, body: string) => {
-      if (!articleId || commentId.length === 0) {
+      if (
+        !articleId ||
+        commentId.length === 0 ||
+        commentActionsInFlightRef.current.has(commentId)
+      ) {
         return null;
       }
 
+      const activeActions = commentActionsInFlightRef.current;
+      const resourceVersion = resourceVersionRef.current;
+      activeActions.add(commentId);
       setUpdatingIds(createLoadingSetUpdater(commentId, true));
 
       try {
@@ -263,18 +334,23 @@ export function useArticleComments({
           body,
         );
 
-        setResponse(currentResponse => ({
-          ...currentResponse,
-          items: upsertComment(currentResponse.items, updatedComment, {
-            prepend: false,
-          }),
-        }));
+        if (resourceVersion === resourceVersionRef.current) {
+          setResponse(currentResponse => ({
+            ...currentResponse,
+            items: upsertComment(currentResponse.items, updatedComment, {
+              prepend: false,
+            }),
+          }));
+        }
 
         return updatedComment;
       } catch (error) {
         throw toApiError(error);
       } finally {
-        setUpdatingIds(createLoadingSetUpdater(commentId, false));
+        activeActions.delete(commentId);
+        if (resourceVersion === resourceVersionRef.current) {
+          setUpdatingIds(createLoadingSetUpdater(commentId, false));
+        }
       }
     },
     [articleId],
@@ -282,33 +358,45 @@ export function useArticleComments({
 
   const deleteComment = useCallback(
     async (commentId: string) => {
-      if (!articleId || commentId.length === 0) {
+      if (
+        !articleId ||
+        commentId.length === 0 ||
+        commentActionsInFlightRef.current.has(commentId)
+      ) {
         return;
       }
 
+      const activeActions = commentActionsInFlightRef.current;
+      const resourceVersion = resourceVersionRef.current;
+      activeActions.add(commentId);
       setDeletingIds(createLoadingSetUpdater(commentId, true));
 
       try {
         await articlesService.deleteArticleComment(articleId, commentId);
 
-        setResponse(currentResponse => {
-          const nextItems = currentResponse.items.filter(
-            comment => comment.id !== commentId,
-          );
-          const hasComment = nextItems.length !== currentResponse.items.length;
-          const nextTotal = hasComment
-            ? Math.max(currentResponse.total - 1, 0)
-            : currentResponse.total;
+        if (resourceVersion === resourceVersionRef.current)
+          setResponse(currentResponse => {
+            const nextItems = currentResponse.items.filter(
+              comment => comment.id !== commentId,
+            );
+            const hasComment =
+              nextItems.length !== currentResponse.items.length;
+            const nextTotal = hasComment
+              ? Math.max(currentResponse.total - 1, 0)
+              : currentResponse.total;
 
-          return {
-            ...buildNextMeta(currentResponse, nextTotal),
-            items: nextItems,
-          };
-        });
+            return {
+              ...buildNextMeta(currentResponse, nextTotal),
+              items: nextItems,
+            };
+          });
       } catch (error) {
         throw toApiError(error);
       } finally {
-        setDeletingIds(createLoadingSetUpdater(commentId, false));
+        activeActions.delete(commentId);
+        if (resourceVersion === resourceVersionRef.current) {
+          setDeletingIds(createLoadingSetUpdater(commentId, false));
+        }
       }
     },
     [articleId],
@@ -319,10 +407,17 @@ export function useArticleComments({
       commentId: string,
       status: ModerateArticleCommentInput['status'],
     ) => {
-      if (!articleId || commentId.length === 0) {
+      if (
+        !articleId ||
+        commentId.length === 0 ||
+        commentActionsInFlightRef.current.has(commentId)
+      ) {
         return null;
       }
 
+      const activeActions = commentActionsInFlightRef.current;
+      const resourceVersion = resourceVersionRef.current;
+      activeActions.add(commentId);
       setModeratingIds(createLoadingSetUpdater(commentId, true));
 
       try {
@@ -332,40 +427,45 @@ export function useArticleComments({
           status,
         );
 
-        setResponse(currentResponse => {
-          if (status === 'HIDDEN') {
-            const nextItems = currentResponse.items.filter(
-              comment => comment.id !== commentId,
+        if (resourceVersion === resourceVersionRef.current)
+          setResponse(currentResponse => {
+            if (status === 'HIDDEN') {
+              const nextItems = currentResponse.items.filter(
+                comment => comment.id !== commentId,
+              );
+              const hasComment =
+                nextItems.length !== currentResponse.items.length;
+              const nextTotal = hasComment
+                ? Math.max(currentResponse.total - 1, 0)
+                : currentResponse.total;
+
+              return {
+                ...buildNextMeta(currentResponse, nextTotal),
+                items: nextItems,
+              };
+            }
+
+            const hasExistingComment = currentResponse.items.some(
+              comment => comment.id === commentId,
             );
-            const hasComment = nextItems.length !== currentResponse.items.length;
-            const nextTotal = hasComment
-              ? Math.max(currentResponse.total - 1, 0)
-              : currentResponse.total;
+            const nextTotal = hasExistingComment
+              ? currentResponse.total
+              : currentResponse.total + 1;
 
             return {
               ...buildNextMeta(currentResponse, nextTotal),
-              items: nextItems,
+              items: upsertComment(currentResponse.items, updatedComment),
             };
-          }
-
-          const hasExistingComment = currentResponse.items.some(
-            comment => comment.id === commentId,
-          );
-          const nextTotal = hasExistingComment
-            ? currentResponse.total
-            : currentResponse.total + 1;
-
-          return {
-            ...buildNextMeta(currentResponse, nextTotal),
-            items: upsertComment(currentResponse.items, updatedComment),
-          };
-        });
+          });
 
         return updatedComment;
       } catch (error) {
         throw toApiError(error);
       } finally {
-        setModeratingIds(createLoadingSetUpdater(commentId, false));
+        activeActions.delete(commentId);
+        if (resourceVersion === resourceVersionRef.current) {
+          setModeratingIds(createLoadingSetUpdater(commentId, false));
+        }
       }
     },
     [articleId],
@@ -373,7 +473,10 @@ export function useArticleComments({
 
   const updatingIdSet = useMemo(() => new Set(updatingIds), [updatingIds]);
   const deletingIdSet = useMemo(() => new Set(deletingIds), [deletingIds]);
-  const moderatingIdSet = useMemo(() => new Set(moderatingIds), [moderatingIds]);
+  const moderatingIdSet = useMemo(
+    () => new Set(moderatingIds),
+    [moderatingIds],
+  );
 
   return {
     comments: response.items,

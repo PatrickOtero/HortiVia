@@ -64,6 +64,9 @@ export function useArticleById({ articleId }: UseArticleByIdOptions) {
 
   useEffect(() => {
     loadArticle();
+    return () => {
+      requestIdRef.current += 1;
+    };
   }, [loadArticle]);
 
   function retry() {

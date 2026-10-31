@@ -371,6 +371,26 @@ describe('ArticleDetailScreen', () => {
     );
   });
 
+  it('rejects comments longer than the established limit', async () => {
+    const renderer = await renderAndWait();
+    const composerInput = renderer.root.findByProps({
+      testID: 'comment-composer-input',
+    });
+    const submitButton = renderer.root.findByProps({
+      testID: 'comment-submit-button',
+    });
+
+    await ReactTestRenderer.act(async () => {
+      composerInput.props.onChangeText('x'.repeat(1001));
+    });
+    await ReactTestRenderer.act(async () => submitButton.props.onPress());
+
+    expect(mockedArticlesService.createArticleComment).not.toHaveBeenCalled();
+    expect(getRenderedOutput(renderer)).toContain(
+      'O comentario esta muito longo.',
+    );
+  });
+
   it('shows the edit action only for the owner comment', async () => {
     mockedArticlesService.listArticleComments.mockResolvedValue({
       items: [
