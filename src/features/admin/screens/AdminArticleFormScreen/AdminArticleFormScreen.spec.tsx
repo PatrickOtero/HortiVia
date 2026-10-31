@@ -1,7 +1,13 @@
 import React from 'react';
 import ReactTestRenderer from 'react-test-renderer';
 import { Alert, Switch } from 'react-native';
-import { FilterChip, InputField, PrimaryButton } from '../../../../components';
+import { launchImageLibrary } from 'react-native-image-picker';
+import {
+  FilterChip,
+  InputField,
+  PrimaryButton,
+  SecondaryButton,
+} from '../../../../components';
 import { ThemeProvider } from '../../../../contexts/ThemeContext';
 import { useAuth } from '../../../auth/hooks/useAuth';
 import { articlesService } from '../../../articles/services/articles.service';
@@ -26,6 +32,9 @@ jest.mock('../../../articles/services/articles.service', () => ({
 
 const mockedUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 const mockedArticlesService = articlesService as jest.Mocked<typeof articlesService>;
+const mockedLaunchImageLibrary = launchImageLibrary as jest.MockedFunction<
+  typeof launchImageLibrary
+>;
 
 const savedArticle = {
   id: 'article-1',
@@ -77,7 +86,7 @@ describe('AdminArticleFormScreen article preview and publication', () => {
     mockedArticlesService.getAdminArticleById.mockResolvedValue(savedArticle);
   });
 
-  async function renderScreen() {
+  async function renderScreen(articleId?: string) {
     let renderer: ReactTestRenderer.ReactTestRenderer;
 
     await ReactTestRenderer.act(async () => {
@@ -91,7 +100,7 @@ describe('AdminArticleFormScreen article preview and publication', () => {
             route={{
               key: 'AdminArticleForm',
               name: 'AdminArticleForm',
-              params: undefined,
+              params: articleId ? { articleId } : undefined,
             } as never}
           />
         </ThemeProvider>,
@@ -167,6 +176,154 @@ describe('AdminArticleFormScreen article preview and publication', () => {
 
     expect(mockedArticlesService.createArticle).toHaveBeenCalledWith(
       expect.objectContaining({ isPublished: true }),
+    );
+  });
+
+  it('shows required field errors without sending an incomplete article', async () => {
+    const renderer = await renderScreen();
+    const saveButton = renderer.root
+      .findAllByType(PrimaryButton)
+      .find(button => button.props.children === 'Salvar rascunho');
+
+    await ReactTestRenderer.act(async () => {
+      await saveButton?.props.onPress();
+    });
+
+    expect(mockedArticlesService.createArticle).not.toHaveBeenCalled();
+    expect(JSON.stringify(renderer.toJSON())).toContain('Informe o título do artigo.');
+    expect(JSON.stringify(renderer.toJSON())).toContain('Selecione uma categoria.');
+  });
+
+  it('loads an existing article and saves edits without changing its publication state', async () => {
+    const publishedArticle = {
+      ...savedArticle,
+      publishedAt: '2026-06-01T12:00:00.000Z',
+    };
+    mockedArticlesService.getAdminArticleById.mockResolvedValue(publishedArticle);
+    mockedArticlesService.updateArticle.mockResolvedValue(publishedArticle);
+
+    const renderer = await renderScreen('article-1');
+
+    expect(mockedArticlesService.getAdminArticleById).toHaveBeenCalledWith(
+      'article-1',
+    );
+    expect(renderer.root.findByType(Switch).props.value).toBe(true);
+
+    const summary = renderer.root
+      .findAllByType(InputField)
+      .find(input => input.props.label === 'Resumo');
+
+    await ReactTestRenderer.act(async () => {
+      summary?.props.onChangeText('Resumo revisado.');
+    });
+
+    const saveButton = renderer.root
+      .findAllByType(PrimaryButton)
+      .find(button => button.props.children === 'Salvar alterações publicadas');
+
+    await ReactTestRenderer.act(async () => {
+      await saveButton?.props.onPress();
+    });
+
+    expect(mockedArticlesService.updateArticle).toHaveBeenCalledWith(
+      'article-1',
+      expect.objectContaining({
+        summary: 'Resumo revisado.',
+        isPublished: true,
+      }),
+    );
+  });
+
+  it('uploads a selected cover after the article has been saved', async () => {
+    mockedLaunchImageLibrary.mockResolvedValue({
+      didCancel: false,
+      errorCode: undefined,
+      errorMessage: undefined,
+      assets: [
+        {
+          uri: 'file:///cover.jpg',
+          fileName: 'cover.jpg',
+          type: 'image/jpeg',
+          fileSize: 1024,
+        },
+      ],
+    });
+    mockedArticlesService.uploadArticleImage.mockResolvedValue({
+      ...savedArticle,
+      imageUrl: 'https://cdn.hortivia.test/cover.jpg',
+    });
+
+    const renderer = await renderScreen();
+    const changeImageButton = renderer.root
+      .findAllByType(SecondaryButton)
+      .find(button => button.props.children === 'Alterar imagem');
+
+    await ReactTestRenderer.act(async () => {
+      await changeImageButton?.props.onPress();
+    });
+    await fillRequiredFields(renderer);
+
+    const saveButton = renderer.root
+      .findAllByType(PrimaryButton)
+      .find(button => button.props.children === 'Salvar rascunho');
+
+    await ReactTestRenderer.act(async () => {
+      await saveButton?.props.onPress();
+    });
+
+    expect(mockedArticlesService.createArticle).toHaveBeenCalledTimes(1);
+    expect(mockedArticlesService.uploadArticleImage).toHaveBeenCalledWith(
+      'article-1',
+      expect.objectContaining({
+        uri: 'file:///cover.jpg',
+        name: 'article-image.jpg',
+        type: 'image/jpeg',
+      }),
+    );
+  });
+
+  it('keeps the saved article available when uploading its selected cover fails', async () => {
+    mockedLaunchImageLibrary.mockResolvedValue({
+      didCancel: false,
+      errorCode: undefined,
+      errorMessage: undefined,
+      assets: [
+        {
+          uri: 'file:///cover.jpg',
+          fileName: 'cover.jpg',
+          type: 'image/jpeg',
+          fileSize: 1024,
+        },
+      ],
+    });
+    mockedArticlesService.uploadArticleImage.mockRejectedValueOnce(
+      new Error('network error'),
+    );
+
+    const renderer = await renderScreen();
+    const changeImageButton = renderer.root
+      .findAllByType(SecondaryButton)
+      .find(button => button.props.children === 'Alterar imagem');
+
+    await ReactTestRenderer.act(async () => {
+      await changeImageButton?.props.onPress();
+    });
+    await fillRequiredFields(renderer);
+
+    const saveButton = renderer.root
+      .findAllByType(PrimaryButton)
+      .find(button => button.props.children === 'Salvar rascunho');
+
+    await ReactTestRenderer.act(async () => {
+      await saveButton?.props.onPress();
+    });
+
+    expect(mockedArticlesService.createArticle).toHaveBeenCalledTimes(1);
+    expect(mockedArticlesService.uploadArticleImage).toHaveBeenCalledTimes(1);
+    expect(JSON.stringify(renderer.toJSON())).toContain('Blocos do artigo');
+    expect(Alert.alert).toHaveBeenCalledWith(
+      'Artigo salvo.',
+      'Não foi possível enviar a imagem.',
     );
   });
 });

@@ -63,3 +63,10 @@ As telas coordenam a apresentação e a navegação. Hooks de domínio controlam
 ## Validação
 
 Use `npm run lint`, `npm run typecheck` e `npm test -- --runInBand`. Para mudanças nativas, valide também a variante Android afetada. O guia de setup e ambientes está em [development.md](development.md). A API tem seu próprio `docs/architecture.md` no repositório HortiVia-API.
+
+
+### Administracao de artigos
+
+- `features/admin/hooks/useAdminArticleForm.ts` coordena carregamento do artigo, validacao, criacao/edicao e selecao/envio da capa. A tela mantem a navegacao e compoe os campos, o gerenciador de blocos e a previa.
+- `features/admin/components/ArticleBlockManager` concentra lista e persistencia/reordenacao dos blocos. `ArticleBlockEditor` apresenta o mesmo formulario na criacao e edicao; `ArticleBlockImageManager` continua responsavel por arquivos e metadados das imagens de bloco.
+- `features/articles/utils/articleBlocks.ts` centraliza normalizacao de itens, ordenacao de blocos e preparacao de paragrafos legados. A previa usa os mesmos tipos e renderizador publico de blocos.

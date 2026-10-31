@@ -219,6 +219,14 @@ describe('ArticleBlockManager', () => {
       editButton?.props.onPress();
     });
 
+    const checklistChip = renderer.root
+      .findAllByType(FilterChip)
+      .find(chip => chip.props.label === 'Checklist');
+
+    await ReactTestRenderer.act(async () => {
+      checklistChip?.props.onPress();
+    });
+
     const inputs = renderer.root.findAllByType(InputField);
 
     await ReactTestRenderer.act(async () => {
@@ -238,7 +246,7 @@ describe('ArticleBlockManager', () => {
       'article-1',
       'block-1',
       {
-        kind: 'SECTION',
+        kind: 'CHECKLIST',
         title: 'Secagem correta',
         body: 'Texto atualizado',
         items: ['Use um pano limpo'],
@@ -284,6 +292,40 @@ describe('ArticleBlockManager', () => {
       'block-1',
     );
     expect(onDeleteBlock).toHaveBeenCalledWith('block-1');
+  });
+
+  it('reorders adjacent blocks by exchanging their sort orders', async () => {
+    const secondBlock = {
+      ...blocks[0],
+      id: 'block-2',
+      title: 'Preparo',
+      sortOrder: 2,
+    };
+    mockedArticlesService.updateArticleBlock
+      .mockResolvedValueOnce({ ...secondBlock, sortOrder: 1 })
+      .mockResolvedValueOnce({ ...blocks[0], sortOrder: 2 });
+
+    const renderer = await renderManager({ blocks: [blocks[0], secondBlock] });
+    const moveUpButton = renderer.root
+      .findAllByType(TextButton)
+      .filter(button => button.props.children === 'Subir')[1];
+
+    await ReactTestRenderer.act(async () => {
+      await moveUpButton?.props.onPress();
+    });
+
+    expect(mockedArticlesService.updateArticleBlock).toHaveBeenNthCalledWith(
+      1,
+      'article-1',
+      'block-2',
+      { sortOrder: 1 },
+    );
+    expect(mockedArticlesService.updateArticleBlock).toHaveBeenNthCalledWith(
+      2,
+      'article-1',
+      'block-1',
+      { sortOrder: 2 },
+    );
   });
 
   it('hides block controls for non-admin users', async () => {

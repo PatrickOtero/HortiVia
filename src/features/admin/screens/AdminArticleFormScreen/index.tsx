@@ -1,12 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   ActivityIndicator,
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Switch,
 } from 'react-native';
-import { launchImageLibrary } from 'react-native-image-picker';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import {
   BackButton,
@@ -21,20 +19,8 @@ import {
   SurfaceCard,
 } from '../../../../components';
 import { AppStackParamList } from '../../../../types/navigation';
-import {
-  IMAGE_LIBRARY_OPTIONS,
-  normalizeImageUploadFile,
-  validateImageUploadFile,
-  type ImageUploadFile,
-} from '../../../../utils/images/imagePicker';
 import { useTheme } from '../../../../hooks/useTheme';
 import { useAuth } from '../../../auth/hooks/useAuth';
-import { articlesService } from '../../../articles/services/articles.service';
-import type {
-  ArticleBlock,
-  ArticleCategory,
-  CreateArticlePayload,
-} from '../../../articles/types/article';
 import { AdminAccessDenied } from '../../components/AdminAccessDenied';
 import { AdminArticlePreview } from '../../components/AdminArticlePreview';
 import { ArticleBlockManager } from '../../components/ArticleBlockManager';
@@ -42,15 +28,13 @@ import { AdminFormSection } from '../../components/AdminFormSection';
 import {
   ADMIN_LOAD_DATA_ERROR_MESSAGE,
   ADMIN_RETRY_MESSAGE,
-  getSafeAdminImageErrorMessage,
-  isAdminAccessDeniedError,
 } from '../../utils/adminFeedback';
 import { goBackFromAdmin } from '../../utils/adminNavigation';
 import {
   ADMIN_ARTICLE_CATEGORY_OPTIONS,
-  formatTags,
   parseTags,
 } from '../../utils/adminContent';
+import { useAdminArticleForm } from '../../hooks/useAdminArticleForm';
 import * as S from './styles';
 
 type AdminArticleFormScreenProps = NativeStackScreenProps<
@@ -58,405 +42,45 @@ type AdminArticleFormScreenProps = NativeStackScreenProps<
   'AdminArticleForm'
 >;
 
-type ArticleFormValues = {
-  title: string;
-  summary: string;
-  content: string;
-  category: ArticleCategory | null;
-  imageUrl: string;
-  tags: string;
-  isPublished: boolean;
-};
-
-type ArticleFormErrors = Partial<
-  Record<'title' | 'summary' | 'content' | 'category', string>
->;
-
-const MAX_ARTICLE_IMAGE_FILE_SIZE = 5 * 1024 * 1024;
-const ARTICLE_IMAGE_FALLBACK_FILE_NAME = 'article-image.jpg';
-const ARTICLE_IMAGE_INVALID_MESSAGE = 'Escolha uma imagem válida.';
-const ARTICLE_IMAGE_TOO_LARGE_MESSAGE = 'A imagem deve ter no máximo 5 MB.';
-const ARTICLE_IMAGE_UPLOAD_ERROR_MESSAGE = 'Não foi possível enviar a imagem.';
-const ARTICLE_IMAGE_SUCCESS_MESSAGE = 'Imagem atualizada.';
-const SAVE_ARTICLE_BEFORE_IMAGE_MESSAGE =
-  'Salve o artigo antes de enviar a imagem.';
-
-const INITIAL_FORM_VALUES: ArticleFormValues = {
-  title: '',
-  summary: '',
-  content: '',
-  category: null,
-  imageUrl: '',
-  tags: '',
-  isPublished: false,
-};
-
-function validateForm(values: ArticleFormValues): ArticleFormErrors {
-  const errors: ArticleFormErrors = {};
-
-  if (!values.title.trim()) {
-    errors.title = 'Informe o título do artigo.';
-  }
-
-  if (!values.summary.trim()) {
-    errors.summary = 'Informe o resumo do artigo.';
-  }
-
-  if (!values.content.trim()) {
-    errors.content = 'Escreva o conteúdo do artigo.';
-  }
-
-  if (!values.category) {
-    errors.category = 'Selecione uma categoria.';
-  }
-
-  return errors;
-}
-
-function sortArticleBlocks(blocks: ArticleBlock[]) {
-  return [...blocks].sort((left, right) => {
-    const leftSortOrder = typeof left.sortOrder === 'number' ? left.sortOrder : 0;
-    const rightSortOrder = typeof right.sortOrder === 'number' ? right.sortOrder : 0;
-
-    if (leftSortOrder !== rightSortOrder) {
-      return leftSortOrder - rightSortOrder;
-    }
-
-    return left.id.localeCompare(right.id);
-  });
-}
-
 export function AdminArticleFormScreen({
   navigation,
   route,
 }: AdminArticleFormScreenProps) {
   const { theme } = useTheme();
   const { user } = useAuth();
-  const [currentArticleId, setCurrentArticleId] = useState<string | null>(
-    route.params?.articleId ?? null,
-  );
-  const isEditing = Boolean(currentArticleId);
-  const [formValues, setFormValues] = useState<ArticleFormValues>(INITIAL_FORM_VALUES);
-  const [formErrors, setFormErrors] = useState<ArticleFormErrors>({});
-  const [screenError, setScreenError] = useState('');
-  const [isLoading, setIsLoading] = useState(isEditing);
-  const [isSaving, setIsSaving] = useState(false);
-  const [remoteImageUrl, setRemoteImageUrl] = useState<string | null>(null);
-  const [articleBlocks, setArticleBlocks] = useState<ArticleBlock[]>([]);
-  const [selectedImageFile, setSelectedImageFile] = useState<ImageUploadFile | null>(
-    null,
-  );
-  const [isUploadingImage, setIsUploadingImage] = useState(false);
-  const [imageSuccessMessage, setImageSuccessMessage] = useState('');
-  const [imageErrorMessage, setImageErrorMessage] = useState('');
-  const [hasImageLoadError, setHasImageLoadError] = useState(false);
-  const [hasAccessDeniedError, setHasAccessDeniedError] = useState(false);
-
-  useEffect(() => {
-    setCurrentArticleId(route.params?.articleId ?? null);
-  }, [route.params?.articleId]);
-
-  useEffect(() => {
-    if (!currentArticleId) {
-      setArticleBlocks([]);
-      setIsLoading(false);
-      return;
-    }
-
-    const nextArticleId = currentArticleId;
-    let isMounted = true;
-
-    async function loadArticle() {
-      setIsLoading(true);
-      setScreenError('');
-
-      try {
-        const article = await articlesService.getAdminArticleById(nextArticleId);
-
-        if (!isMounted) {
-          return;
-        }
-
-        setFormValues({
-          title: article.title,
-          summary: article.summary,
-          content: article.content,
-          category: article.category,
-          imageUrl: article.imageUrl ?? '',
-          tags: formatTags(article.tags),
-          isPublished: Boolean(article.publishedAt),
-        });
-        setRemoteImageUrl(article.imageUrl ?? null);
-        setArticleBlocks(sortArticleBlocks(article.blocks ?? []));
-        setSelectedImageFile(null);
-        setImageErrorMessage('');
-        setImageSuccessMessage('');
-        setHasAccessDeniedError(false);
-      } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
-        if (isAdminAccessDeniedError(error)) {
-          setHasAccessDeniedError(true);
-          setScreenError('');
-          return;
-        }
-
-        setScreenError(ADMIN_LOAD_DATA_ERROR_MESSAGE);
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    }
-
-    loadArticle();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentArticleId]);
-
-  useEffect(() => {
-    setHasImageLoadError(false);
-  }, [remoteImageUrl, selectedImageFile?.uri]);
-
-  const previewImageUrl = selectedImageFile?.uri ?? remoteImageUrl;
-  const shouldShowImage = Boolean(previewImageUrl) && !hasImageLoadError;
+  const form = useAdminArticleForm({
+    initialArticleId: route.params?.articleId,
+    onArticleSaved: articleId => navigation.setParams({ articleId }),
+  });
+  const {
+    currentArticleId,
+    isEditing,
+    formValues,
+    formErrors,
+    screenError,
+    isLoading,
+    isSaving,
+    articleBlocks,
+    selectedImageFile,
+    isUploadingImage,
+    imageSuccessMessage,
+    imageErrorMessage,
+    hasAccessDeniedError,
+    previewImageUrl,
+    shouldShowImage,
+    saveArticleBeforeImageMessage,
+    updateField,
+    handleSelectImage,
+    handleUploadImage,
+    handleSubmit,
+    setHasImageLoadError,
+    updateArticleBlock,
+    addArticleBlock,
+    removeArticleBlock,
+  } = form;
 
   if (user?.role !== 'ADMIN' || hasAccessDeniedError) {
     return <AdminAccessDenied onGoBack={() => goBackFromAdmin(navigation)} />;
-  }
-
-  function clearImageFeedback() {
-    setImageErrorMessage('');
-    setImageSuccessMessage('');
-  }
-
-  function updateField<K extends keyof ArticleFormValues>(
-    field: K,
-    value: ArticleFormValues[K],
-  ) {
-    setFormValues(current => ({
-      ...current,
-      [field]: value,
-    }));
-
-    setFormErrors(current => ({
-      ...current,
-      [field]: undefined,
-    }));
-
-    if (screenError) {
-      setScreenError('');
-    }
-  }
-
-  async function handleSelectImage() {
-    if (isUploadingImage) {
-      return;
-    }
-
-    clearImageFeedback();
-
-    try {
-      const pickerResponse = await launchImageLibrary(IMAGE_LIBRARY_OPTIONS);
-
-      if (pickerResponse.didCancel) {
-        return;
-      }
-
-      if (pickerResponse.errorCode || pickerResponse.errorMessage) {
-        setImageErrorMessage(ARTICLE_IMAGE_UPLOAD_ERROR_MESSAGE);
-        return;
-      }
-
-      const selectedAsset = pickerResponse.assets?.[0];
-
-      if (!selectedAsset) {
-        setImageErrorMessage(ARTICLE_IMAGE_INVALID_MESSAGE);
-        return;
-      }
-
-      const nextImageFile = normalizeImageUploadFile(
-        selectedAsset,
-        ARTICLE_IMAGE_FALLBACK_FILE_NAME,
-      );
-
-      if (!nextImageFile) {
-        setImageErrorMessage(ARTICLE_IMAGE_INVALID_MESSAGE);
-        return;
-      }
-
-      const validationMessage = validateImageUploadFile(nextImageFile, {
-        invalidMessage: ARTICLE_IMAGE_INVALID_MESSAGE,
-        maxSizeInBytes: MAX_ARTICLE_IMAGE_FILE_SIZE,
-        tooLargeMessage: ARTICLE_IMAGE_TOO_LARGE_MESSAGE,
-      });
-
-      if (validationMessage) {
-        setImageErrorMessage(validationMessage);
-        return;
-      }
-
-      setSelectedImageFile(nextImageFile);
-      setHasImageLoadError(false);
-    } catch {
-      setImageErrorMessage(ARTICLE_IMAGE_UPLOAD_ERROR_MESSAGE);
-    }
-  }
-
-  async function uploadSelectedImage(articleId: string) {
-    if (!selectedImageFile || isUploadingImage) {
-      return false;
-    }
-
-    setIsUploadingImage(true);
-    setImageErrorMessage('');
-    setImageSuccessMessage('');
-
-    try {
-      const updatedArticle = await articlesService.uploadArticleImage(
-        articleId,
-        selectedImageFile,
-      );
-
-      setRemoteImageUrl(updatedArticle.imageUrl ?? null);
-      setSelectedImageFile(null);
-      setHasImageLoadError(false);
-      setFormValues(current => ({
-        ...current,
-        imageUrl: updatedArticle.imageUrl ?? '',
-      }));
-      setImageSuccessMessage(ARTICLE_IMAGE_SUCCESS_MESSAGE);
-
-      return true;
-    } catch (error) {
-      if (isAdminAccessDeniedError(error)) {
-        setHasAccessDeniedError(true);
-        return false;
-      }
-
-      setImageErrorMessage(
-        getSafeAdminImageErrorMessage(error, {
-          invalidMessage: ARTICLE_IMAGE_INVALID_MESSAGE,
-          tooLargeMessage: ARTICLE_IMAGE_TOO_LARGE_MESSAGE,
-          uploadMessage: ARTICLE_IMAGE_UPLOAD_ERROR_MESSAGE,
-        }),
-      );
-      return false;
-    } finally {
-      setIsUploadingImage(false);
-    }
-  }
-
-  async function handleUploadImage() {
-    if (!currentArticleId) {
-      setImageSuccessMessage('');
-      setImageErrorMessage(SAVE_ARTICLE_BEFORE_IMAGE_MESSAGE);
-      return;
-    }
-
-    await uploadSelectedImage(currentArticleId);
-  }
-
-  async function handleSubmit() {
-    const errors = validateForm(formValues);
-
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      return;
-    }
-
-    const payload: CreateArticlePayload = {
-      title: formValues.title,
-      summary: formValues.summary,
-      content: formValues.content,
-      category: formValues.category!,
-      imageUrl: formValues.imageUrl,
-      tags: parseTags(formValues.tags),
-      isPublished: formValues.isPublished,
-    };
-
-    const wasEditing = Boolean(currentArticleId);
-
-    setIsSaving(true);
-    setScreenError('');
-
-    try {
-      const savedArticle = currentArticleId
-        ? await articlesService.updateArticle(currentArticleId, payload)
-        : await articlesService.createArticle(payload);
-
-      setCurrentArticleId(savedArticle.id);
-      navigation.setParams({
-        articleId: savedArticle.id,
-      });
-      setRemoteImageUrl(savedArticle.imageUrl ?? null);
-      setArticleBlocks(sortArticleBlocks(savedArticle.blocks ?? []));
-      setFormValues(current => ({
-        ...current,
-        imageUrl: savedArticle.imageUrl ?? '',
-      }));
-
-      if (selectedImageFile) {
-        const didUploadImage = await uploadSelectedImage(savedArticle.id);
-
-        if (!didUploadImage) {
-          Alert.alert(
-            wasEditing ? 'Artigo atualizado.' : 'Artigo salvo.',
-            ARTICLE_IMAGE_UPLOAD_ERROR_MESSAGE,
-          );
-          return;
-        }
-      }
-
-      Alert.alert(
-        wasEditing ? 'Artigo atualizado.' : 'Artigo salvo.',
-        wasEditing
-          ? selectedImageFile
-            ? ARTICLE_IMAGE_SUCCESS_MESSAGE
-            : 'Continue editando os blocos e imagens do artigo nesta tela.'
-          : 'Agora voce ja pode criar blocos e enviar imagens sem sair desta tela.',
-      );
-    } catch (error) {
-      if (isAdminAccessDeniedError(error)) {
-        setHasAccessDeniedError(true);
-        return;
-      }
-
-      setScreenError('Não foi possível salvar o artigo.');
-    } finally {
-      setIsSaving(false);
-    }
-  }
-
-  function handleUpdatedBlock(updatedBlock: ArticleBlock) {
-    setArticleBlocks(currentBlocks =>
-      sortArticleBlocks(
-        currentBlocks.map(block =>
-          block.id === updatedBlock.id
-            ? {
-                ...block,
-                ...updatedBlock,
-              }
-            : block,
-        ),
-      ),
-    );
-  }
-
-  function handleCreatedBlock(createdBlock: ArticleBlock) {
-    setArticleBlocks(currentBlocks =>
-      sortArticleBlocks([...currentBlocks, createdBlock]),
-    );
-  }
-
-  function handleDeletedBlock(blockId: string) {
-    setArticleBlocks(currentBlocks =>
-      currentBlocks.filter(block => block.id !== blockId),
-    );
   }
 
   if (isLoading) {
@@ -628,7 +252,7 @@ export function AdminArticleFormScreen({
 
                     {!currentArticleId && selectedImageFile ? (
                       <S.ImageMetaDescription>
-                        {SAVE_ARTICLE_BEFORE_IMAGE_MESSAGE}
+                        {saveArticleBeforeImageMessage}
                       </S.ImageMetaDescription>
                     ) : null}
                     {imageSuccessMessage ? (
@@ -697,9 +321,9 @@ export function AdminArticleFormScreen({
                     <ArticleBlockManager
                       articleId={currentArticleId}
                       blocks={articleBlocks}
-                      onCreateBlock={handleCreatedBlock}
-                      onUpdateBlock={handleUpdatedBlock}
-                      onDeleteBlock={handleDeletedBlock}
+                      onCreateBlock={addArticleBlock}
+                      onUpdateBlock={updateArticleBlock}
+                      onDeleteBlock={removeArticleBlock}
                     />
                   )}
                 </AdminFormSection>

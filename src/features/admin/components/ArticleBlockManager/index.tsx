@@ -1,19 +1,19 @@
 import React, { useMemo, useState } from 'react';
 import {
   EmptyStateCard,
-  FilterChip,
-  InputField,
   PrimaryButton,
   SecondaryButton,
   TextButton,
 } from '../../../../components';
 import { useAuth } from '../../../auth/hooks/useAuth';
-import { normalizeBlockItems } from '../../../articles/utils/articleBlocks';
+import { normalizeBlockItems, sortArticleBlocks } from '../../../articles/utils/articleBlocks';
 import { articlesService } from '../../../articles/services/articles.service';
-import type {
-  ArticleBlock,
-  ArticleBlockKind,
-} from '../../../articles/types/article';
+import type { ArticleBlock, ArticleBlockKind } from '../../../articles/types/article';
+import {
+  ArticleBlockEditor,
+  ARTICLE_BLOCK_KIND_OPTIONS,
+  type BlockFormValues,
+} from './ArticleBlockEditor';
 import {
   ADMIN_REMOVE_ERROR_MESSAGE,
   getSafeAdminSaveErrorMessage,
@@ -39,14 +39,6 @@ type EditorState =
     }
   | null;
 
-type BlockFormValues = {
-  kind: ArticleBlockKind;
-  title: string;
-  body: string;
-  items: string[];
-  sortOrder: string;
-};
-
 type BlockFormErrors = Partial<Record<'sortOrder', string>>;
 
 type ActionState =
@@ -55,68 +47,6 @@ type ActionState =
       type: 'save' | 'delete' | 'move-up' | 'move-down';
     }
   | null;
-
-const BLOCK_KIND_OPTIONS: Array<{
-  value: ArticleBlockKind;
-  label: string;
-  description: string;
-}> = [
-  {
-    value: 'SECTION',
-    label: 'Seção',
-    description: 'Agrupa um subtítulo, texto, itens e uma imagem de apoio.',
-  },
-  {
-    value: 'PARAGRAPH',
-    label: 'Parágrafo',
-    description: 'Apresenta texto corrido, com opção de imagem complementar.',
-  },
-  {
-    value: 'HEADING',
-    label: 'Título de seção',
-    description: 'Marca uma mudança de assunto com um subtítulo destacado.',
-  },
-  {
-    value: 'IMAGE',
-    label: 'Imagem',
-    description: 'Exibe uma imagem independente com texto alternativo e legenda.',
-  },
-  {
-    value: 'TIP',
-    label: 'Dica',
-    description: 'Destaca uma orientação prática ligada ao tema do artigo.',
-  },
-  {
-    value: 'WARNING',
-    label: 'Atenção',
-    description: 'Chama atenção para um cuidado ou limite relevante.',
-  },
-  {
-    value: 'CHECKLIST',
-    label: 'Checklist',
-    description: 'Organiza pontos que o leitor pode conferir um a um.',
-  },
-  {
-    value: 'STEPS',
-    label: 'Passos',
-    description: 'Apresenta instruções em uma sequência numerada.',
-  },
-  {
-    value: 'QUOTE',
-    label: 'Citação',
-    description: 'Destaca uma frase; o título do bloco pode indicar a fonte.',
-  },
-  {
-    value: 'PRODUCT_REFERENCE',
-    label: 'Referência de produto',
-    description: 'Relaciona uma informação específica ao produto tratado.',
-  },
-  {
-    value: 'OTHER',
-    label: 'Outro',
-    description: 'Apresenta conteúdo complementar com título, texto ou itens.',
-  },
-];
 
 const INITIAL_BLOCK_KIND: ArticleBlockKind = 'SECTION';
 
@@ -149,7 +79,7 @@ function buildBlockTitle(block: ArticleBlock) {
     return block.title.trim();
   }
 
-  const kindLabel = BLOCK_KIND_OPTIONS.find(
+  const kindLabel = ARTICLE_BLOCK_KIND_OPTIONS.find(
     option => option.value === block.kind,
   )?.label;
 
@@ -172,20 +102,6 @@ function buildBlockPreview(block: ArticleBlock) {
   return 'Sem conteudo complementar.';
 }
 
-function sortBlocks(blocks: ArticleBlock[]) {
-  return [...blocks].sort((left, right) => {
-    const leftSortOrder = typeof left.sortOrder === 'number' ? left.sortOrder : 0;
-    const rightSortOrder =
-      typeof right.sortOrder === 'number' ? right.sortOrder : 0;
-
-    if (leftSortOrder !== rightSortOrder) {
-      return leftSortOrder - rightSortOrder;
-    }
-
-    return left.id.localeCompare(right.id);
-  });
-}
-
 export function ArticleBlockManager({
   articleId,
   blocks,
@@ -204,7 +120,7 @@ export function ArticleBlockManager({
   const [actionState, setActionState] = useState<ActionState>(null);
 
   const isAdmin = user?.role === 'ADMIN';
-  const sortedBlocks = useMemo(() => sortBlocks(blocks), [blocks]);
+  const sortedBlocks = useMemo(() => sortArticleBlocks(blocks), [blocks]);
   const editingBlock = useMemo(
     () =>
       editorState?.mode === 'edit'
@@ -445,117 +361,19 @@ export function ArticleBlockManager({
       </S.HeaderRow>
 
       {editorState?.mode === 'create' ? (
-        <S.EditorShell>
-          <S.EditorCard>
-            <S.EditorHeader>
-              <S.EditorTitle>Novo bloco</S.EditorTitle>
-              <S.EditorDescription>
-                Escolha o tipo de bloco e preencha o conteudo principal.
-              </S.EditorDescription>
-            </S.EditorHeader>
-
-            <S.FieldGroup>
-              <S.FieldLabel>Tipo de bloco</S.FieldLabel>
-              <S.ChipRow>
-                {BLOCK_KIND_OPTIONS.map(option => (
-                  <FilterChip
-                    key={option.value}
-                    label={option.label}
-                    active={formValues.kind === option.value}
-                    onPress={() => updateField('kind', option.value)}
-                  />
-                ))}
-              </S.ChipRow>
-              <S.HelperText>
-                {
-                  BLOCK_KIND_OPTIONS.find(
-                    option => option.value === formValues.kind,
-                  )?.description
-                }
-              </S.HelperText>
-            </S.FieldGroup>
-
-            <InputField
-              label="Titulo do bloco"
-              value={formValues.title}
-              onChangeText={value => updateField('title', value)}
-            />
-            <InputField
-              label="Texto do bloco"
-              value={formValues.body}
-              onChangeText={value => updateField('body', value)}
-              multiline
-              numberOfLines={5}
-              textAlignVertical="top"
-            />
-
-            <S.FieldGroup>
-              <S.FieldLabel>Itens</S.FieldLabel>
-              <S.ItemList>
-                {formValues.items.map((item, index) => (
-                  <S.ItemEditorRow key={`${index + 1}`}>
-                    <S.ItemInputShell>
-                      <InputField
-                        label={`Item ${index + 1}`}
-                        value={item}
-                        onChangeText={value => updateItem(index, value)}
-                      />
-                    </S.ItemInputShell>
-                    <TextButton
-                      fullWidth={false}
-                      onPress={() => removeItem(index)}
-                    >
-                      Remover item
-                    </TextButton>
-                  </S.ItemEditorRow>
-                ))}
-              </S.ItemList>
-              <SecondaryButton fullWidth={false} onPress={addItem}>
-                Adicionar item
-              </SecondaryButton>
-              {formValues.items.length === 0 ? (
-                <S.HelperText>
-                  Adicione itens quando o bloco for checklist, passos, dica ou alerta.
-                </S.HelperText>
-              ) : null}
-            </S.FieldGroup>
-
-            <InputField
-              label="Ordem"
-              value={formValues.sortOrder}
-              onChangeText={value => updateField('sortOrder', value)}
-              keyboardType="number-pad"
-              helperText={formErrors.sortOrder}
-              helperTone={formErrors.sortOrder ? 'danger' : 'default'}
-            />
-
-            <S.EditorActions>
-              <PrimaryButton
-                onPress={handleSaveBlock}
-                loading={
-                  actionState?.type === 'save' &&
-                  actionState.blockId === `draft-${articleId}`
-                }
-              >
-                Criar bloco
-              </PrimaryButton>
-              <SecondaryButton
-                onPress={() => resetEditor()}
-                disabled={Boolean(actionState)}
-              >
-                Cancelar
-              </SecondaryButton>
-            </S.EditorActions>
-          </S.EditorCard>
-
-          <S.SupportBox>
-            <S.SupportTitle>Salve o bloco para adicionar imagem.</S.SupportTitle>
-            <S.HelperText>
-              Depois de criar o bloco, voce podera enviar a imagem, ajustar o texto
-              alternativo e a legenda.
-            </S.HelperText>
-          </S.SupportBox>
-        </S.EditorShell>
+        <ArticleBlockEditor
+          mode="create"
+          values={formValues}
+          errors={formErrors}
+          isSaving={actionState?.type === 'save' && actionState.blockId === `draft-${articleId}`}
+          isBusy={Boolean(actionState)}
+          onChange={updateField}
+          onUpdateItem={updateItem}
+          onAddItem={addItem}
+          onRemoveItem={removeItem}
+          onSave={handleSaveBlock}
+          onCancel={() => resetEditor()}
+        />
       ) : null}
 
       {feedbackMessage ? <S.SuccessText>{feedbackMessage}</S.SuccessText> : null}
@@ -637,112 +455,22 @@ export function ArticleBlockManager({
                 </S.ItemActions>
 
                 {isEditingBlock ? (
-                  <S.EditorShell>
-                    <S.EditorCard>
-                      <S.EditorHeader>
-                        <S.EditorTitle>Editar bloco</S.EditorTitle>
-                        <S.EditorDescription>
-                          Atualize o conteudo e a ordem deste bloco.
-                        </S.EditorDescription>
-                      </S.EditorHeader>
-
-                      <S.FieldGroup>
-                        <S.FieldLabel>Tipo de bloco</S.FieldLabel>
-                        <S.ChipRow>
-                          {BLOCK_KIND_OPTIONS.map(option => (
-                            <FilterChip
-                              key={option.value}
-                              label={option.label}
-                              active={formValues.kind === option.value}
-                              onPress={() => updateField('kind', option.value)}
-                            />
-                          ))}
-                        </S.ChipRow>
-                        <S.HelperText>
-                          {
-                            BLOCK_KIND_OPTIONS.find(
-                              option => option.value === formValues.kind,
-                            )?.description
-                          }
-                        </S.HelperText>
-                      </S.FieldGroup>
-
-                      <InputField
-                        label="Titulo do bloco"
-                        value={formValues.title}
-                        onChangeText={value => updateField('title', value)}
-                      />
-                      <InputField
-                        label="Texto do bloco"
-                        value={formValues.body}
-                        onChangeText={value => updateField('body', value)}
-                        multiline
-                        numberOfLines={5}
-                        textAlignVertical="top"
-                      />
-
-                      <S.FieldGroup>
-                        <S.FieldLabel>Itens</S.FieldLabel>
-                        <S.ItemList>
-                          {formValues.items.map((item, itemIndex) => (
-                            <S.ItemEditorRow key={`${block.id}-${itemIndex + 1}`}>
-                              <S.ItemInputShell>
-                                <InputField
-                                  label={`Item ${itemIndex + 1}`}
-                                  value={item}
-                                  onChangeText={value =>
-                                    updateItem(itemIndex, value)
-                                  }
-                                />
-                              </S.ItemInputShell>
-                              <TextButton
-                                fullWidth={false}
-                                onPress={() => removeItem(itemIndex)}
-                              >
-                                Remover item
-                              </TextButton>
-                            </S.ItemEditorRow>
-                          ))}
-                        </S.ItemList>
-                        <SecondaryButton fullWidth={false} onPress={addItem}>
-                          Adicionar item
-                        </SecondaryButton>
-                        {formValues.items.length === 0 ? (
-                          <S.HelperText>
-                            Adicione itens quando o bloco for checklist, passos,
-                            dica ou alerta.
-                          </S.HelperText>
-                        ) : null}
-                      </S.FieldGroup>
-
-                      <InputField
-                        label="Ordem"
-                        value={formValues.sortOrder}
-                        onChangeText={value => updateField('sortOrder', value)}
-                        keyboardType="number-pad"
-                        helperText={formErrors.sortOrder}
-                        helperTone={formErrors.sortOrder ? 'danger' : 'default'}
-                      />
-
-                      <S.EditorActions>
-                        <PrimaryButton
-                          onPress={handleSaveBlock}
-                          loading={
-                            actionState?.type === 'save' &&
-                            actionState.blockId === block.id
-                          }
-                        >
-                          Salvar bloco
-                        </PrimaryButton>
-                        <SecondaryButton
-                          onPress={() => resetEditor()}
-                          disabled={Boolean(actionState)}
-                        >
-                          Cancelar
-                        </SecondaryButton>
-                      </S.EditorActions>
-                    </S.EditorCard>
-
+                  <ArticleBlockEditor
+                    mode="edit"
+                    values={formValues}
+                    errors={formErrors}
+                    isSaving={
+                      actionState?.type === 'save' &&
+                      actionState.blockId === block.id
+                    }
+                    isBusy={Boolean(actionState)}
+                    onChange={updateField}
+                    onUpdateItem={updateItem}
+                    onAddItem={addItem}
+                    onRemoveItem={removeItem}
+                    onSave={handleSaveBlock}
+                    onCancel={() => resetEditor()}
+                  >
                     {editingBlock ? (
                       <ArticleBlockImageManager
                         articleId={articleId}
@@ -750,7 +478,7 @@ export function ArticleBlockManager({
                         onUpdatedBlock={onUpdateBlock}
                       />
                     ) : null}
-                  </S.EditorShell>
+                  </ArticleBlockEditor>
                 ) : null}
               </S.ItemCard>
             );

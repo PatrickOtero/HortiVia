@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { ArticleBlockRenderer } from '../../../../components/ArticleBlockRenderer';
 import { getArticleCategoryLabel } from '../../../articles/mappers/article.mapper';
 import type {
@@ -31,10 +31,7 @@ export function AdminArticlePreview({
   authorName,
   isPublished,
 }: AdminArticlePreviewProps) {
-  const contentParagraphs = useMemo(
-    () => getArticleContentParagraphs(content, summary),
-    [content, summary],
-  );
+  const contentParagraphs = getArticleContentParagraphs(content, summary);
 
   return (
     <S.Container testID="admin-article-preview">

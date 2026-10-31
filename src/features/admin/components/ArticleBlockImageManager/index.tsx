@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { launchImageLibrary } from 'react-native-image-picker';
 import {
   InputField,
@@ -103,8 +103,8 @@ export function ArticleBlockImageManager({
   const previewImageUrl = selectedImageFile?.uri ?? block.imageUrl;
   const hasImage = Boolean(previewImageUrl);
   const shouldShowPreview = hasImage && !hasPreviewError;
-  const title = useMemo(() => buildBlockTitle(block), [block]);
-  const description = useMemo(() => buildBlockDescription(block), [block]);
+  const title = buildBlockTitle(block);
+  const description = buildBlockDescription(block);
 
   useEffect(() => {
     setImageAlt(block.imageAlt ?? '');
