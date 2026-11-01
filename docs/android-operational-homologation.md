@@ -33,13 +33,13 @@ Foi feita somente a leitura `GET /health`: **HTTP 200**, corpo `{"status":"ok","
 - Bundle verificado no APK e no diretório gerado: `android/app/build/generated/assets/react/homolog/index.android.bundle` (**2.377.140 bytes**).
 - Configuração nativa gerada contém `HORTIVIA_API_ENVIRONMENT = "homolog"`; manifest merged contém `usesCleartextTraffic="false"`.
 
-O APK local pode ser instalado com `adb install -r "C:\dev\Frutinavigator\FrutiNavigator\android\app\build\outputs\apk\homolog\app-homolog.apk"`, após confirmar que o dispositivo e os dados/sessão nele são de QA. Não executei esse comando: há um Samsung SM-M236B visível no ADB por conexão de rede, mas não foi possível comprovar que o dispositivo e sua sessão pertencem ao ambiente de teste. Nenhum app foi removido nem alterado.
+O APK local foi instalado no Samsung SM-M236B confirmado como aparelho de QA, com o pacote `com.frutinavigator.homolog`, sem remover o aplicativo principal. O aplicativo abriu sem Metro e sem `adb reverse`, permaneceu na tela de login e não apresentou `FATAL EXCEPTION` do aplicativo no Logcat. Não foram inseridas credenciais nem executadas chamadas autenticadas.
 
 ## Workflow para gerar e baixar o APK
 
 Foi adicionado `.github/workflows/android-homolog.yml`. Em Pull Requests para `develop`, ele usa Node 22 e JDK 17, `npm ci`, lint, typecheck, Jest e `:app:assembleHomolog`, verifica o bundle/APK e gera SHA-256 e manifesto. Publica APK e `manifest.json` como artifact por 14 dias tanto em `workflow_dispatch` quanto em PRs internos originados neste repositório. Não publica artifacts em PRs de forks. Actions estão fixadas em SHAs; as permissões do token são somente `contents: read`. Não há credenciais nem etapa de deploy/loja.
 
-**Limitação de disponibilidade do botão manual:** a branch padrão do repositório é `main`. O GitHub exige que o YAML já exista na branch padrão para aceitar `workflow_dispatch`; esta etapa proíbe alterar `main`. Portanto, **somente o botão manual** depende de futura mudança autorizada na `main`: não é necessário modificar a branch padrão para baixar um APK de um PR interno. A publicação do artifact ainda precisa ser confirmada no novo run do CI; execuções antigas não fizeram upload. A instalação continua restrita a um dispositivo QA autorizado.
+**Limitação de disponibilidade do botão manual:** a branch padrão do repositório é `main`. O GitHub exige que o YAML já exista na branch padrão para aceitar `workflow_dispatch`; esta etapa proíbe alterar `main`. Portanto, **somente o botão manual** depende de futura mudança autorizada na `main`: não é necessário modificar a branch padrão para baixar um APK de um PR interno. A publicação do artifact foi confirmada no run [41335488524](https://github.com/PatrickOtero/HortiVia/actions/runs/41335488524); APK e `manifest.json` foram publicados como `hortivia-homolog-0b0dd0e61285410b850bbd58acfd0838a8f9193c`, com retenção de 14 dias. A instalação continua restrita a um dispositivo QA autorizado.
 
 ## Migration e backend
 
@@ -60,13 +60,13 @@ A migration foi validada localmente em `hortivia-readiness-postgres-20261017`, P
 | Isolamento remoto de banco/R2 | BLOQUEADO | Configuração do provedor não acessível/verificável; nenhuma operação com escrita executada |
 | Migration em PostgreSQL descartável | APROVADO LOCALMENTE | PostgreSQL 16 preexistente de testes; migration aplicada e reaplicada; status atualizado; contagens preexistentes inalteradas |
 | Instalação e inicialização no Android | APROVADO PARCIALMENTE | Instalado no Samsung M23 autorizado; versão homolog confirmada, Login em primeiro plano, sem crash. Login e fluxos autenticados pendentes |
-| CI Android do PR | APROVADO | Run [41332067510](https://github.com/PatrickOtero/HortiVia/actions/runs/41332067510): lint, typecheck, Jest, `assembleHomolog` e verificação do APK/bundle passaram; upload foi pulado no evento PR |
-| Workflow manual/artifact GitHub | PARCIAL | O botão `workflow_dispatch` depende do arquivo em `main`; artifact de PR interno habilitado no workflow e pendente de confirmação no novo run |
-| GitGuardian | APROVADO | Check do commit final: [124924062569](https://github.com/PatrickOtero/HortiVia/runs/124924062569) |
+| CI Android do PR | APROVADO | Run [41335488524](https://github.com/PatrickOtero/HortiVia/actions/runs/41335488524): lint, typecheck, Jest, `assembleHomolog`, verificação de APK/bundle e upload do artifact passaram |
+| Workflow manual/artifact GitHub | PARCIAL | O botão `workflow_dispatch` depende do arquivo em `main`; artifact de PR interno publicado e confirmado no run `41335488524` |
+| GitGuardian | APROVADO | GitGuardian aprovado no commit `c98fab99a4a8fc494520260924533e554d27d12e` |
 
 Build apresentou avisos de APIs/dependências Android deprecated e aviso do Gradle sobre compatibilidade futura com Gradle 10. Não impediram a compilação e não foram alterados nesta etapa.
 
-A primeira execução do workflow Android falhou porque o wrapper `gradlew` não tem bit executável no Git (`Permission denied` em Linux). A chamada foi corrigida para `bash ./gradlew`; o run seguinte acima passou. A CI geral do commit final passou no run [41332067606](https://github.com/PatrickOtero/HortiVia/actions/runs/41332067606).
+A primeira execução do workflow Android falhou porque o wrapper `gradlew` não tem bit executável no Git (`Permission denied` em Linux). A chamada foi corrigida para `bash ./gradlew`; o run seguinte acima passou. A CI geral do commit `c98fab99a4a8fc494520260924533e554d27d12e` passou no run [41335488544](https://github.com/PatrickOtero/HortiVia/actions/runs/41335488544).
 
 ## Ficha para homologação por funcionários
 
@@ -90,7 +90,7 @@ Registrar para cada execução: objetivo, passos, resultado esperado, resultado 
 
 1. Comprovar no provedor o isolamento real de banco e R2 da instância de desenvolvimento/homologação; não basta o hostname nem `/health`.
 2. Confirmar backup e aplicar a migration no banco de homologação somente após autorização específica para o alvo verificado.
-3. Confirmar artifact, manifesto e checksum no novo run de PR interno e compartilhar somente com responsáveis pelo QA. Para disponibilizar futuramente o botão `Run workflow`, solicitar autorização separada para adicionar o workflow à `main`.
+3. Baixar o artifact confirmado no run `41335488524`, comparar o SHA-256 do APK extraído com o `manifest.json` e compartilhar somente com responsáveis pelo QA. Para disponibilizar futuramente o botão `Run workflow`, solicitar autorização separada para adicionar o workflow à `main`.
 4. Executar no aparelho os fluxos de login, catálogo, artigos, treinamento, sessão e rede. Credenciais devem ser inseridas pelo usuário no aparelho; não foram usadas nesta validação.
 5. Conferir Actions/GitGuardian no commit mais recente do PR. O PR não libera migration, operação no bucket nem deploy.
 
