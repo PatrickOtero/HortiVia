@@ -6,7 +6,7 @@
 
 ## Parecer
 
-**Não apto para piloto operacional ainda.** O APK homolog foi compilado e distinguido visualmente do aplicativo principal. A API responde ao health check, mas o isolamento do banco e do R2 não foi comprovado; a rota `/health` não consulta PostgreSQL. Também falta instalar e percorrer os fluxos em um aparelho cuja finalidade de teste esteja confirmada. Não foi feita escrita remota, migration remota ou operação no R2.
+**Não apto para piloto operacional ainda.** O APK homolog foi compilado, instalado no Samsung M23 de testes confirmado pelo usuário e aberto sem crash, permanecendo em primeiro plano na tela de login. A API responde ao health check, mas o isolamento do banco e do R2 não foi comprovado; `/health` não consulta PostgreSQL. Login e fluxos autenticados não foram executados. Não houve escrita remota, migration remota ou operação no R2.
 
 ## Ambientes e segurança
 
@@ -45,7 +45,7 @@ Foi adicionado `.github/workflows/android-homolog.yml`. Em Pull Requests para `d
 
 A migration `20261031000000_presigned_upload_tracking` é aditiva: cria enums e a tabela de intenções, índices únicos/consultas e FK para usuário; não atualiza conteúdo preexistente. A CI PostgreSQL 16 existente executa `prisma migrate deploy` em banco vazio e repete a operação, verificando o histórico. O CI do PR #12 já registrou sucesso com aplicação e reaplicação, além dos testes de integração PostgreSQL obrigatórios (run [41263867490](https://github.com/PatrickOtero/HortiVia-API/actions/runs/41263867490)). Isso comprova o comportamento em PostgreSQL descartável, não o estado do banco remoto.
 
-O Docker local não está disponível nesta máquina, por isso a migration não foi repetida localmente nesta etapa. Não foram executadas migration, seed ou reconciliação no Northflank, Supabase ou qualquer banco remoto. Antes de homologar: identificar no painel a configuração real do serviço, provar que banco e bucket são QA separados, confirmar backup, versão implantada e migration pendente, e aprovar explicitamente a operação no alvo identificado. Interromper se alvo, backup ou histórico de migration forem ambíguos ou se houver drift.
+A migration foi validada localmente em `hortivia-readiness-postgres-20261017`, PostgreSQL 16 descartável preexistente, banco `hortivia_training_test_ci`, usando volume Docker local dedicado. O estado inicial tinha 14 migrations aplicadas e a migration de rastreamento pendente. `prisma migrate deploy` aplicou `20261031000000_presigned_upload_tracking`; a segunda execução retornou `No pending migrations to apply` e `migrate status` confirmou schema atualizado. As contagens de registros preexistentes permaneceram iguais: Article 7, ArticleBlock 9, Product 19, ProductArticle 12, ProductGuideSection 20, TrainingQuestion 33 e User 25; as demais tabelas verificadas também ficaram inalteradas. A nova tabela ficou vazia e o histórico passou de 14 para 15 migrations. PostgreSQL e encaminhador temporário localhost foram parados; container, volume e banco foram preservados. Nenhuma migration, seed ou reconciliação foi executada no Northflank, Supabase ou outro banco remoto. Antes de homologar, comprovar no painel o isolamento de banco e bucket, confirmar backup, versão implantada e migration pendente, e aprovar explicitamente o alvo. Interromper diante de alvo, backup, histórico ou drift ambíguos.
 
 ## Validação executada
 
@@ -58,8 +58,8 @@ O Docker local não está disponível nesta máquina, por isso a migration não 
 | `:app:assembleHomolog` | APROVADO | APK, bundle, applicationId, label, versão, assinatura de debug e cleartext policy verificados |
 | API `GET /health` | APROVADO (somente processo) | HTTP 200; não testa o banco |
 | Isolamento remoto de banco/R2 | BLOQUEADO | Configuração do provedor não acessível/verificável; nenhuma operação com escrita executada |
-| Migration em PostgreSQL descartável | APROVADO EM CI ANTERIOR | CI backend do PR #12 aplicou e reaplicou migrations em PostgreSQL 16; teste local bloqueado por Docker indisponível |
-| Instalação e uso manual no Android | PENDENTE | ADB detecta Samsung SM-M236B, mas finalidade/conta de QA não confirmadas; nenhuma instalação feita |
+| Migration em PostgreSQL descartável | APROVADO LOCALMENTE | PostgreSQL 16 preexistente de testes; migration aplicada e reaplicada; status atualizado; contagens preexistentes inalteradas |
+| Instalação e inicialização no Android | APROVADO PARCIALMENTE | Instalado no Samsung M23 autorizado; versão homolog confirmada, Login em primeiro plano, sem crash. Login e fluxos autenticados pendentes |
 | CI Android do PR | APROVADO | Run [41332067510](https://github.com/PatrickOtero/HortiVia/actions/runs/41332067510): lint, typecheck, Jest, `assembleHomolog` e verificação do APK/bundle passaram; upload foi pulado no evento PR |
 | Workflow manual/artifact GitHub | PARCIAL | O botão `workflow_dispatch` depende do arquivo em `main`; artifact de PR interno habilitado no workflow e pendente de confirmação no novo run |
 | GitGuardian | APROVADO | Check do commit final: [124924062569](https://github.com/PatrickOtero/HortiVia/runs/124924062569) |
@@ -74,7 +74,7 @@ Executar somente depois de comprovar o isolamento e disponibilizar contas/dispos
 
 | Área / objetivo | Passos e resultado esperado | Estado atual / evidência |
 |---|---|---|
-| Instalação e início | Instalar em QA sem remover o app principal; abrir sem Metro; ver nome `HortiVia Homolog` | PENDENTE — aparelho QA não confirmado |
+| Instalação e início | Instalar sem remover o app principal; abrir sem Metro; ver nome `HortiVia Homolog` | APROVADO — Samsung M23 de teste confirmado; pacote homolog instalado e Login aberto sem crash |
 | Autenticação | Cadastro, confirmação, login, logout, recuperação, sessão persistida/expirada e reinício | PENDENTE manual; automatizado parcialmente coberto pelos testes frontend |
 | Catálogo no setor | Localizar produto, pesquisar, filtrar, abrir detalhe e voltar; confirmar guias e imagens | PENDENTE manual |
 | Artigos | Listar e abrir artigo; percorrer blocos, imagens, autor, selo; testar comentário/reação/salvo | PENDENTE manual |
@@ -91,7 +91,12 @@ Registrar para cada execução: objetivo, passos, resultado esperado, resultado 
 1. Comprovar no provedor o isolamento real de banco e R2 da instância de desenvolvimento/homologação; não basta o hostname nem `/health`.
 2. Confirmar backup e aplicar a migration no banco de homologação somente após autorização específica para o alvo verificado.
 3. Confirmar artifact, manifesto e checksum no novo run de PR interno e compartilhar somente com responsáveis pelo QA. Para disponibilizar futuramente o botão `Run workflow`, solicitar autorização separada para adicionar o workflow à `main`.
-4. Confirmar que o Samsung conectado é dispositivo de QA e que qualquer conta/dado nele é de teste; instalar sem desinstalar apps e executar a ficha funcional.
-5. Conferir Actions/GitGuardian no PR depois de aberto. O PR não libera migration, operação no bucket nem deploy.
+4. Executar no aparelho os fluxos de login, catálogo, artigos, treinamento, sessão e rede. Credenciais devem ser inseridas pelo usuário no aparelho; não foram usadas nesta validação.
+5. Conferir Actions/GitGuardian no commit mais recente do PR. O PR não libera migration, operação no bucket nem deploy.
 
 Até encerrar essas pendências, classificação operacional: **não apto para piloto com funcionários**. Build e testes automatizados aprovados não equivalem a homologação funcional ou prova de isolamento.
+
+
+## Nota: Gradle no Linux e build local
+
+O workflow Android do GitHub usa Linux/Ubuntu e chama `bash ./gradlew` porque o wrapper não tem bit executável no Git. Isso valida somente o runner Linux. O build local foi executado no Windows com `android\gradlew.bat`; o APK foi então instalado no celular por ADB.
