@@ -37,9 +37,9 @@ O APK local pode ser instalado com `adb install -r "C:\dev\Frutinavigator\FrutiN
 
 ## Workflow para gerar e baixar o APK
 
-Foi adicionado `.github/workflows/android-homolog.yml`. Em Pull Requests para `develop`, ele usa Node 22 e JDK 17, `npm ci`, lint, typecheck, Jest e `:app:assembleHomolog`, e verifica o bundle/APK. Em `workflow_dispatch`, também gera SHA-256 e manifesto, e publica APK + `manifest.json` como artifact por 14 dias. Actions estão fixadas em SHAs; as permissões do token são somente `contents: read`. Não há credenciais nem etapa de deploy/loja.
+Foi adicionado `.github/workflows/android-homolog.yml`. Em Pull Requests para `develop`, ele usa Node 22 e JDK 17, `npm ci`, lint, typecheck, Jest e `:app:assembleHomolog`, verifica o bundle/APK e gera SHA-256 e manifesto. Publica APK e `manifest.json` como artifact por 14 dias tanto em `workflow_dispatch` quanto em PRs internos originados neste repositório. Não publica artifacts em PRs de forks. Actions estão fixadas em SHAs; as permissões do token são somente `contents: read`. Não há credenciais nem etapa de deploy/loja.
 
-**Limitação de disponibilidade do botão manual:** a branch padrão do repositório é `main`. O GitHub exige que o YAML já exista na branch padrão para aceitar `workflow_dispatch`; esta etapa proíbe alterar `main`. Portanto, o PR pode validar a compilação Android, mas o botão manual e o artifact baixável só ficam disponíveis após uma mudança futura autorizada que disponibilize o workflow em `main`. Não foi criado artifact remoto; não existe link de download GitHub nesta etapa.
+**Limitação de disponibilidade do botão manual:** a branch padrão do repositório é `main`. O GitHub exige que o YAML já exista na branch padrão para aceitar `workflow_dispatch`; esta etapa proíbe alterar `main`. Portanto, **somente o botão manual** depende de futura mudança autorizada na `main`: não é necessário modificar a branch padrão para baixar um APK de um PR interno. A publicação do artifact ainda precisa ser confirmada no novo run do CI; execuções antigas não fizeram upload. A instalação continua restrita a um dispositivo QA autorizado.
 
 ## Migration e backend
 
@@ -61,7 +61,7 @@ O Docker local não está disponível nesta máquina, por isso a migration não 
 | Migration em PostgreSQL descartável | APROVADO EM CI ANTERIOR | CI backend do PR #12 aplicou e reaplicou migrations em PostgreSQL 16; teste local bloqueado por Docker indisponível |
 | Instalação e uso manual no Android | PENDENTE | ADB detecta Samsung SM-M236B, mas finalidade/conta de QA não confirmadas; nenhuma instalação feita |
 | CI Android do PR | APROVADO | Run [41332067510](https://github.com/PatrickOtero/HortiVia/actions/runs/41332067510): lint, typecheck, Jest, `assembleHomolog` e verificação do APK/bundle passaram; upload foi pulado no evento PR |
-| Workflow manual/artifact GitHub | BLOQUEADO | `workflow_dispatch` requer arquivo em `main`, branch padrão que não pode ser alterada nesta tarefa |
+| Workflow manual/artifact GitHub | PARCIAL | O botão `workflow_dispatch` depende do arquivo em `main`; artifact de PR interno habilitado no workflow e pendente de confirmação no novo run |
 | GitGuardian | APROVADO | Check do commit final: [124924062569](https://github.com/PatrickOtero/HortiVia/runs/124924062569) |
 
 Build apresentou avisos de APIs/dependências Android deprecated e aviso do Gradle sobre compatibilidade futura com Gradle 10. Não impediram a compilação e não foram alterados nesta etapa.
@@ -90,7 +90,7 @@ Registrar para cada execução: objetivo, passos, resultado esperado, resultado 
 
 1. Comprovar no provedor o isolamento real de banco e R2 da instância de desenvolvimento/homologação; não basta o hostname nem `/health`.
 2. Confirmar backup e aplicar a migration no banco de homologação somente após autorização específica para o alvo verificado.
-3. Autorizar separadamente a disponibilização do workflow em `main`; só então executar `workflow_dispatch`, compartilhar o artifact e seu checksum com os participantes.
+3. Confirmar artifact, manifesto e checksum no novo run de PR interno e compartilhar somente com responsáveis pelo QA. Para disponibilizar futuramente o botão `Run workflow`, solicitar autorização separada para adicionar o workflow à `main`.
 4. Confirmar que o Samsung conectado é dispositivo de QA e que qualquer conta/dado nele é de teste; instalar sem desinstalar apps e executar a ficha funcional.
 5. Conferir Actions/GitGuardian no PR depois de aberto. O PR não libera migration, operação no bucket nem deploy.
 

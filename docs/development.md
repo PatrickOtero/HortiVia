@@ -43,11 +43,11 @@ O APK mostra o nome **HortiVia Homolog** e usa o identificador `com.frutinavigat
 
 ### Gerar e baixar pelo GitHub Actions
 
-O workflow compila o APK em Pull Requests para `develop`, mas não publica artifacts nesses runs. O artifact é enviado somente em `workflow_dispatch`.
+O workflow compila e publica o APK e `manifest.json` em Pull Requests **originados neste repositório** e direcionados a `develop`. Em PRs de forks, o job não publica artifacts instaláveis. A publicação também funciona em `workflow_dispatch` quando o disparo manual estiver habilitado.
 
-O repositório tem `main` como branch padrão. O GitHub só habilita `workflow_dispatch` quando o arquivo do workflow existe na branch padrão. Como esta etapa não altera `main`, a execução manual e o download do artifact ficam bloqueados até que o workflow seja disponibilizado na branch padrão em uma mudança futura autorizada.
+O repositório tem `main` como branch padrão. O GitHub só habilita `workflow_dispatch` quando o arquivo do workflow existe na branch padrão. Como esta etapa não altera `main`, somente o **botão manual** permanece bloqueado. O APK pode ser baixado dos artifacts de runs de PRs internos, sem modificar a branch padrão.
 
-Quando habilitado: abra **Actions → Gerar APK HortiVia — Homologação**, clique em **Run workflow**, escolha a branch/commit e confirme. Após sucesso, baixe `hortivia-homolog-<commit>`. O artifact é um ZIP; extraia-o no computador ou celular, confira `manifest.json` e SHA-256 e instale `HortiVia-<commit>-homolog.apk`. A assinatura de debug serve somente para testes internos.
+Para baixar de um PR interno: abra o PR, clique no check **Validar e gerar APK de homologação**, acesse a execução no GitHub Actions e localize **Artifacts → `hortivia-homolog-<sha>`**. O `<sha>` de uma execução de PR pode identificar o commit de merge de teste, não o HEAD original da branch. Baixe o ZIP, extraia-o, confira `manifest.json` e SHA-256 e instale o APK somente em dispositivo de QA autorizado. Para execução manual futura: após disponibilizar o workflow na `main` mediante autorização separada, abra **Actions → Gerar APK HortiVia — Homologação → Run workflow** e selecione a branch. A assinatura debug serve somente para testes internos.
 
 O workflow executa lint, TypeScript, Jest e `assembleHomolog`. Não usa segredos, não publica na Google Play e retém o artifact por 14 dias. A verificação do banco remoto e qualquer operação com escrita continuam fora do workflow.
 

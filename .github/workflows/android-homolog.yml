@@ -119,7 +119,11 @@ jobs:
           NODE
 
       - name: Publicar APK e manifesto como artifact
-        if: github.event_name == 'workflow_dispatch'
+        # Distribuir apenas builds manuais e PRs originados neste repositório.
+        # Builds de forks não geram artifacts instaláveis.
+        if: >-
+          github.event_name == 'workflow_dispatch' ||
+          (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository)
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: hortivia-homolog-${{ github.sha }}
