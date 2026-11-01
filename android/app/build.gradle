@@ -132,7 +132,6 @@ android {
             versionNameSuffix "-homolog"
             signingConfig signingConfigs.debug
             manifestPlaceholders = [usesCleartextTraffic: "false"]
-            resValue "string", "app_name", "HortiVia Homolog"
             buildConfigField "String", "HORTIVIA_API_ENVIRONMENT", buildConfigString("homolog")
         }
     }

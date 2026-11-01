@@ -39,18 +39,6 @@ Na pasta `android`, gere os builds com:
 
 O APK de homologação fica em `android/app/build/outputs/apk/homolog/app-homolog.apk`. A variante `homolog` usa assinatura de debug para instalação controlada e não deve ser tratada como release de produção.
 
-O APK mostra o nome **HortiVia Homolog** e usa o identificador `com.frutinavigator.homolog`, permitindo instalá-lo ao lado do aplicativo principal. Ele se conecta à URL HTTPS de homologação definida em `src/config/apiConfig.ts`, inclui o bundle JavaScript e não depende de Metro nem de `adb reverse`.
-
-### Gerar e baixar pelo GitHub Actions
-
-O workflow compila e publica o APK e `manifest.json` em Pull Requests **originados neste repositório** e direcionados a `develop`. Em PRs de forks, o job não publica artifacts instaláveis. A publicação também funciona em `workflow_dispatch` quando o disparo manual estiver habilitado.
-
-O repositório tem `main` como branch padrão. O GitHub só habilita `workflow_dispatch` quando o arquivo do workflow existe na branch padrão. Como esta etapa não altera `main`, somente o **botão manual** permanece bloqueado. O APK pode ser baixado dos artifacts de runs de PRs internos, sem modificar a branch padrão.
-
-Para baixar de um PR interno: abra o PR, clique no check **Validar e gerar APK de homologação**, acesse a execução no GitHub Actions e localize **Artifacts → `hortivia-homolog-<sha>`**. O `<sha>` de uma execução de PR pode identificar o commit de merge de teste, não o HEAD original da branch. Baixe o ZIP, extraia-o, confira `manifest.json` e SHA-256 e instale o APK somente em dispositivo de QA autorizado. Para execução manual futura: após disponibilizar o workflow na `main` mediante autorização separada, abra **Actions → Gerar APK HortiVia — Homologação → Run workflow** e selecione a branch. A assinatura debug serve somente para testes internos.
-
-O workflow executa lint, TypeScript, Jest e `assembleHomolog`. Não usa segredos, não publica na Google Play e retém o artifact por 14 dias. A verificação do banco remoto e qualquer operação com escrita continuam fora do workflow.
-
 Artefatos de produção:
 
 - APK: `android/app/build/outputs/apk/release/app-release.apk`
