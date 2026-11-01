@@ -1,0 +1,116 @@
+name: Gerar APK HortiVia — Homologação
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-homolog:
+    name: Validar e gerar APK de homologação
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout do commit selecionado
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Configurar Node.js 22
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar cache do Gradle
+        uses: gradle/actions/setup-gradle@8da46b539cd8fe6ab27ca75128919a18d757604c # v6
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/develop' }}
+
+      - name: Instalar dependências do frontend
+        run: npm ci
+
+      - name: Verificar Android SDK do runner
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${ANDROID_HOME:-}"
+          test -x "$ANDROID_HOME/platform-tools/adb"
+          test -x "$(find "$ANDROID_HOME/build-tools" -mindepth 2 -maxdepth 2 -type f -name aapt | sort -V | tail -n 1)"
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Testes
+        run: npm test -- --runInBand
+
+      - name: Compilar variante Android homolog
+        working-directory: android
+        run: ./gradlew --no-daemon :app:assembleHomolog
+
+      - name: Verificar APK e gerar manifesto com SHA-256
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          apk="android/app/build/outputs/apk/homolog/app-homolog.apk"
+          bundle="android/app/build/generated/assets/react/homolog/index.android.bundle"
+          test -s "$apk"
+          test -s "$bundle"
+          unzip -l "$apk" | grep -F 'assets/index.android.bundle'
+
+          build_tools="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -n 1)"
+          aapt="$build_tools/aapt"
+          package_line="$("$aapt" dump badging "$apk" | grep '^package:')"
+          export PACKAGE_LINE="$package_line"
+          export APK_SHA256="$(sha256sum "$apk" | cut -d ' ' -f 1)"
+          export COMMIT_SHA="$GITHUB_SHA"
+          export BUILD_VARIANT="homolog"
+          export BUILT_AT="$(date -u +'%Y-%m-%dT%H:%M:%SZ')"
+          mkdir -p artifacts
+          export ARTIFACT_APK="HortiVia-${GITHUB_SHA:0:12}-homolog.apk"
+          cp "$apk" "artifacts/$ARTIFACT_APK"
+
+          node <<'NODE'
+          const fs = require('node:fs');
+          const packageInfo = process.env.PACKAGE_LINE;
+          const fields = Object.fromEntries(
+            [...packageInfo.matchAll(/(name|versionCode|versionName)='([^']*)'/g)]
+              .map(([, key, value]) => [key, value]),
+          );
+          if (!fields.name || !fields.versionCode || !fields.versionName) {
+            throw new Error('Não foi possível ler a identificação e a versão do APK.');
+          }
+          const manifest = {
+            commit: process.env.COMMIT_SHA,
+            variant: process.env.BUILD_VARIANT,
+            applicationId: fields.name,
+            versionCode: fields.versionCode,
+            versionName: fields.versionName,
+            apk: process.env.ARTIFACT_APK,
+            sha256: process.env.APK_SHA256,
+            builtAtUtc: process.env.BUILT_AT,
+          };
+          fs.writeFileSync('artifacts/manifest.json', `${JSON.stringify(manifest, null, 2)}\n`);
+          NODE
+
+      - name: Publicar APK e manifesto como artifact
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: hortivia-homolog-${{ github.sha }}
+          path: artifacts/
+          if-no-files-found: error
+          retention-days: 14

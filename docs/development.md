@@ -39,6 +39,18 @@ Na pasta `android`, gere os builds com:
 
 O APK de homologação fica em `android/app/build/outputs/apk/homolog/app-homolog.apk`. A variante `homolog` usa assinatura de debug para instalação controlada e não deve ser tratada como release de produção.
 
+O APK mostra o nome **HortiVia Homolog** e usa o identificador `com.frutinavigator.homolog`, permitindo instalá-lo ao lado do aplicativo principal. Ele se conecta à URL HTTPS de homologação definida em `src/config/apiConfig.ts`, inclui o bundle JavaScript e não depende de Metro nem de `adb reverse`.
+
+### Gerar e baixar pelo GitHub Actions
+
+1. Abra **Actions** no repositório e selecione **Gerar APK HortiVia — Homologação**.
+2. Clique em **Run workflow**, escolha a branch/commit a validar e confirme **Run workflow**.
+3. Após a execução terminar com sucesso, abra o run e baixe o artifact `hortivia-homolog-<commit>`.
+4. O artifact é um ZIP. Extraia-o no computador ou no celular e confira `manifest.json` e o SHA-256 do APK antes de instalar.
+5. Instale o arquivo `HortiVia-<commit>-homolog.apk`. A assinatura de debug é apenas para testes internos; o APK não é uma distribuição oficial.
+
+O workflow executa lint, TypeScript, Jest e `assembleHomolog`. Não usa segredos, não publica na Google Play e retém o artifact por 14 dias. A verificação do banco remoto e qualquer operação com escrita continuam fora do workflow.
+
 Artefatos de produção:
 
 - APK: `android/app/build/outputs/apk/release/app-release.apk`
