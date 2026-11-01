@@ -6,16 +6,18 @@ import { RootNavigator } from '../RootNavigator';
 import { probes } from './NavigationProbe';
 
 let renderer: ReactTestRenderer.ReactTestRenderer;
+let hasRenderer = false;
 
 beforeEach(() => {
   jest.useFakeTimers();
   probes.clear();
 });
 afterEach(async () => {
-  if (renderer) {
+  if (hasRenderer) {
     await act(async () => {
       renderer.unmount();
     });
+    hasRenderer = false;
   }
   jest.clearAllTimers();
   jest.useRealTimers();
@@ -42,8 +44,20 @@ export async function renderNavigation(children: React.ReactNode) {
     renderer = ReactTestRenderer.create(
       <ThemeProvider>{children}</ThemeProvider>,
     );
+    hasRenderer = true;
   });
   return renderer;
+}
+
+export async function unmountNavigation() {
+  if (!hasRenderer) {
+    return;
+  }
+
+  await act(async () => {
+    renderer.unmount();
+  });
+  hasRenderer = false;
 }
 
 export async function updateRoot(isAuthenticated: boolean, isLoading = false) {

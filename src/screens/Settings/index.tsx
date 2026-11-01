@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useState } from 'react';
 import { ActivityIndicator } from 'react-native';
 import { BottomTabScreenProps } from '@react-navigation/bottom-tabs';
 import { CompositeScreenProps } from '@react-navigation/native';
@@ -30,6 +30,9 @@ type SettingsScreenProps = CompositeScreenProps<
 export function SettingsScreen({ navigation }: SettingsScreenProps) {
   const { theme } = useTheme();
   const { signOut, user } = useAuth();
+  const signOutInFlightRef = useRef(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [signOutError, setSignOutError] = useState<string | null>(null);
   const {
     sections,
     isLoading,
@@ -40,6 +43,27 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
     togglePreference,
     reloadSettings,
   } = useSettings();
+
+  async function handleSignOut() {
+    if (signOutInFlightRef.current) {
+      return;
+    }
+
+    signOutInFlightRef.current = true;
+    setIsSigningOut(true);
+    setSignOutError(null);
+
+    try {
+      await signOut();
+    } catch {
+      setSignOutError(
+        'Não foi possível encerrar a sessão neste aparelho. Você continua conectado; tente novamente.',
+      );
+    } finally {
+      signOutInFlightRef.current = false;
+      setIsSigningOut(false);
+    }
+  }
 
   function handleRowPress(row: SettingsRowItem) {
     if (row.actionKey === 'editProfile') {
@@ -63,7 +87,7 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
     }
 
     if (row.actionKey === 'signOut') {
-      signOut();
+      handleSignOut().catch(() => undefined);
     }
   }
 
@@ -98,9 +122,22 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
       <SettingsRow
         key={row.id}
         label={row.label}
-        description={row.description}
+        description={
+          row.actionKey === 'signOut' && isSigningOut
+            ? 'Encerrando sessão...'
+            : row.description
+        }
         valueLabel={row.valueLabel}
-        onPress={isPressable ? () => handleRowPress(row) : undefined}
+        onPress={
+          isPressable && !(row.actionKey === 'signOut' && isSigningOut)
+            ? () => handleRowPress(row)
+            : undefined
+        }
+        accessory={
+          row.actionKey === 'signOut' && isSigningOut ? (
+            <ActivityIndicator size="small" color={theme.colors.danger} />
+          ) : undefined
+        }
         showChevron={row.type === 'navigation'}
         tone={row.tone}
       />
@@ -145,6 +182,12 @@ export function SettingsScreen({ navigation }: SettingsScreenProps) {
 
           {errorMessage && !isError ? (
             <S.FeedbackText>{errorMessage}</S.FeedbackText>
+          ) : null}
+
+          {signOutError ? (
+            <S.FeedbackText accessibilityRole="alert">
+              {signOutError}
+            </S.FeedbackText>
           ) : null}
 
           {!isLoading && !isError
