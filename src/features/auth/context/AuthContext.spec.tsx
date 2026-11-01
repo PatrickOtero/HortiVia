@@ -3,6 +3,10 @@ import ReactTestRenderer from 'react-test-renderer';
 import { AuthProvider, useAuth } from './AuthContext';
 import { authService } from '../services/auth.service';
 import { getToken, removeToken, setToken } from '../storage/authToken.storage';
+import {
+  setApiAccessToken,
+  setApiUnauthorizedHandler,
+} from '../../../services/api/apiClient';
 
 jest.mock('../services/auth.service', () => ({
   authService: {
@@ -32,6 +36,8 @@ const mockedAuthService = authService as jest.Mocked<typeof authService>;
 const mockedGetToken = getToken as jest.Mock;
 const mockedSetToken = setToken as jest.Mock;
 const mockedRemoveToken = removeToken as jest.Mock;
+const mockedSetApiAccessToken = setApiAccessToken as jest.Mock;
+const mockedSetApiUnauthorizedHandler = setApiUnauthorizedHandler as jest.Mock;
 
 describe('AuthContext', () => {
   type AuthContextSnapshot = ReturnType<typeof useAuth>;
@@ -114,5 +120,46 @@ describe('AuthContext', () => {
     expect(mockedRemoveToken).toHaveBeenCalledTimes(1);
     expect(latestContext?.user).toBeNull();
     expect(latestContext?.isAuthenticated).toBe(false);
+  });
+
+  it('revokes an expired session even when removing its stored token fails', async () => {
+    mockedGetToken.mockResolvedValue('expired-token');
+    mockedAuthService.getMe.mockRejectedValue({
+      isAxiosError: true,
+      response: { status: 401 },
+    });
+    mockedRemoveToken.mockRejectedValue(new Error('storage unavailable'));
+
+    await ReactTestRenderer.act(async () => {
+      ReactTestRenderer.create(
+        <AuthProvider>
+          <ContextProbe />
+        </AuthProvider>,
+      );
+    });
+
+    expect(mockedSetApiAccessToken).toHaveBeenLastCalledWith(null);
+    expect(mockedRemoveToken).toHaveBeenCalledTimes(1);
+    expect(latestContext?.user).toBeNull();
+    expect(latestContext?.accessToken).toBeNull();
+    expect(latestContext?.isAuthenticated).toBe(false);
+    expect(latestContext?.isLoading).toBe(false);
+    expect(mockedSetApiUnauthorizedHandler).toHaveBeenCalled();
+  });
+
+  it('finishes bootstrap safely when stored-token lookup fails', async () => {
+    mockedGetToken.mockRejectedValue(new Error('storage unavailable'));
+
+    await ReactTestRenderer.act(async () => {
+      ReactTestRenderer.create(
+        <AuthProvider>
+          <ContextProbe />
+        </AuthProvider>,
+      );
+    });
+
+    expect(latestContext?.isLoading).toBe(false);
+    expect(latestContext?.isAuthenticated).toBe(false);
+    expect(mockedAuthService.getMe).not.toHaveBeenCalled();
   });
 });

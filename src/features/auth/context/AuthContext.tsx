@@ -63,18 +63,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isLoading, setIsLoading] = useState(true);
 
   const clearSession = useCallback(async (removeStoredToken = true) => {
-    if (removeStoredToken) {
-      await removeToken();
-    }
-
     setApiAccessToken(null);
     setAccessTokenState(null);
     setUser(null);
+
+    if (removeStoredToken) {
+      try {
+        await removeToken();
+      } catch {
+        // The in-memory session is already revoked; /auth/me will validate any
+        // token that could not be removed before a later app restart.
+      }
+    }
   }, []);
 
   const loadAuthenticatedUser = useCallback(
     async (token?: string | null) => {
-      const tokenToUse = token ?? (await getToken());
+      let tokenToUse: string | null;
+
+      try {
+        tokenToUse = token ?? (await getToken());
+      } catch {
+        setApiAccessToken(null);
+        setAccessTokenState(null);
+        setUser(null);
+        return null;
+      }
 
       if (!tokenToUse) {
         setApiAccessToken(null);
@@ -195,6 +209,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
 
         await loadAuthenticatedUser(storedToken);
+      } catch {
+        if (isMounted) {
+          setApiAccessToken(null);
+          setAccessTokenState(null);
+          setUser(null);
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false);

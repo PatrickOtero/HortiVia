@@ -1,5 +1,6 @@
 import { perform, renderNavigation } from './testUtils/navigationHarness';
 import React from 'react';
+import { AxiosHeaders } from 'axios';
 import { AuthProvider, useAuth } from '../features/auth/context/AuthContext';
 import { authService } from '../features/auth/services/auth.service';
 import {
@@ -13,6 +14,9 @@ import {
 } from '../services/api/apiClient';
 import { RootNavigator } from './RootNavigator';
 import { focusedProbe } from './testUtils/NavigationProbe';
+import { apiClient } from '../services/api/apiClient';
+
+const defaultApiAdapter = apiClient.defaults.adapter;
 
 jest.mock('../features/auth/services/auth.service', () => ({
   authService: { login: jest.fn(), getMe: jest.fn(), register: jest.fn() },
@@ -64,6 +68,7 @@ describe('real AuthProvider connected to RootNavigator', () => {
     setApiUnauthorizedHandler(null);
   });
   afterEach(() => {
+    apiClient.defaults.adapter = defaultApiAdapter;
     setApiAccessToken(null);
     setApiUnauthorizedHandler(null);
   });
@@ -106,6 +111,53 @@ describe('real AuthProvider connected to RootNavigator', () => {
     expect(focusedProbe().route.name).toBe('Login');
     expect(focusedProbe().navigation.canGoBack()).toBe(false);
     expect(auth.isAuthenticated).toBe(false);
+  });
+
+  it('revokes an expired in-memory session when token storage removal fails', async () => {
+    await mount();
+    await perform(() => auth.signIn(credentials));
+    jest.mocked(removeToken).mockRejectedValue(new Error('storage unavailable'));
+
+    const authorizationHeaders: string[] = [];
+    let requestCount = 0;
+    apiClient.defaults.adapter = async config => {
+      authorizationHeaders.push(
+        String(AxiosHeaders.from(config.headers).get('Authorization') ?? ''),
+      );
+
+      if (requestCount++ === 0) {
+        throw {
+          isAxiosError: true,
+          config,
+          response: {
+            status: 401,
+            data: { message: 'Expired test session' },
+            headers: {},
+            statusText: 'Unauthorized',
+            config,
+          },
+        };
+      }
+
+      return {
+        data: { ok: true },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config,
+      };
+    };
+
+    await perform(async () => {
+      await expect(apiClient.get('/protected-test')).rejects.toMatchObject({
+        response: { status: 401 },
+      });
+    });
+
+    expect(focusedProbe().route.name).toBe('Login');
+    expect(auth.isAuthenticated).toBe(false);
+    await apiClient.get('/public-test');
+    expect(authorizationHeaders).toEqual(['Bearer test-token', '']);
   });
 
   it('keeps failed login on the authentication stack', async () => {
