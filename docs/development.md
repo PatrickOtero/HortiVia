@@ -43,11 +43,11 @@ O APK mostra o nome **HortiVia Homolog** e usa o identificador `com.frutinavigat
 
 ### Gerar e baixar pelo GitHub Actions
 
-1. Abra **Actions** no repositório e selecione **Gerar APK HortiVia — Homologação**.
-2. Clique em **Run workflow**, escolha a branch/commit a validar e confirme **Run workflow**.
-3. Após a execução terminar com sucesso, abra o run e baixe o artifact `hortivia-homolog-<commit>`.
-4. O artifact é um ZIP. Extraia-o no computador ou no celular e confira `manifest.json` e o SHA-256 do APK antes de instalar.
-5. Instale o arquivo `HortiVia-<commit>-homolog.apk`. A assinatura de debug é apenas para testes internos; o APK não é uma distribuição oficial.
+O workflow compila o APK em Pull Requests para `develop`, mas não publica artifacts nesses runs. O artifact é enviado somente em `workflow_dispatch`.
+
+O repositório tem `main` como branch padrão. O GitHub só habilita `workflow_dispatch` quando o arquivo do workflow existe na branch padrão. Como esta etapa não altera `main`, a execução manual e o download do artifact ficam bloqueados até que o workflow seja disponibilizado na branch padrão em uma mudança futura autorizada.
+
+Quando habilitado: abra **Actions → Gerar APK HortiVia — Homologação**, clique em **Run workflow**, escolha a branch/commit e confirme. Após sucesso, baixe `hortivia-homolog-<commit>`. O artifact é um ZIP; extraia-o no computador ou celular, confira `manifest.json` e SHA-256 e instale `HortiVia-<commit>-homolog.apk`. A assinatura de debug serve somente para testes internos.
 
 O workflow executa lint, TypeScript, Jest e `assembleHomolog`. Não usa segredos, não publica na Google Play e retém o artifact por 14 dias. A verificação do banco remoto e qualquer operação com escrita continuam fora do workflow.
 

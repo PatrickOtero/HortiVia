@@ -37,9 +37,9 @@ O APK local pode ser instalado com `adb install -r "C:\dev\Frutinavigator\FrutiN
 
 ## Workflow para gerar e baixar o APK
 
-Foi adicionado `.github/workflows/android-homolog.yml`, disparado manualmente por `workflow_dispatch`. O workflow usa Node 22 e JDK 17, `npm ci`, lint, typecheck, Jest, `:app:assembleHomolog`, confirma bundle e APK, calcula SHA-256 e publica APK mais `manifest.json` como artifact por 14 dias. Actions estão fixadas em SHAs; as permissões do token são somente `contents: read`. Não há credenciais nem etapa de deploy/publicação.
+Foi adicionado `.github/workflows/android-homolog.yml`. Em Pull Requests para `develop`, ele usa Node 22 e JDK 17, `npm ci`, lint, typecheck, Jest e `:app:assembleHomolog`, e verifica o bundle/APK. Em `workflow_dispatch`, também gera SHA-256 e manifesto, e publica APK + `manifest.json` como artifact por 14 dias. Actions estão fixadas em SHAs; as permissões do token são somente `contents: read`. Não há credenciais nem etapa de deploy/loja.
 
-**O workflow não foi disparado nesta execução.** A geração remota deixa um artifact persistente no GitHub, e esta tarefa proíbe interpretar a falta de autorização remota como autorização implícita. Após revisão/publicação do PR, alguém com acesso pode abrir **Actions → Gerar APK HortiVia — Homologação → Run workflow**, escolher a branch/commit e executar. No run concluído, baixe `hortivia-homolog-<commit>`; extraia o ZIP e confira `manifest.json` e checksum antes de instalar. Não há link de download remoto enquanto o workflow não for executado.
+**Limitação de disponibilidade do botão manual:** a branch padrão do repositório é `main`. O GitHub exige que o YAML já exista na branch padrão para aceitar `workflow_dispatch`; esta etapa proíbe alterar `main`. Portanto, o PR pode validar a compilação Android, mas o botão manual e o artifact baixável só ficam disponíveis após uma mudança futura autorizada que disponibilize o workflow em `main`. Não foi criado artifact remoto; não existe link de download GitHub nesta etapa.
 
 ## Migration e backend
 
@@ -60,7 +60,8 @@ O Docker local não está disponível nesta máquina, por isso a migration não 
 | Isolamento remoto de banco/R2 | BLOQUEADO | Configuração do provedor não acessível/verificável; nenhuma operação com escrita executada |
 | Migration em PostgreSQL descartável | APROVADO EM CI ANTERIOR | CI backend do PR #12 aplicou e reaplicou migrations em PostgreSQL 16; teste local bloqueado por Docker indisponível |
 | Instalação e uso manual no Android | PENDENTE | ADB detecta Samsung SM-M236B, mas finalidade/conta de QA não confirmadas; nenhuma instalação feita |
-| CI do workflow manual de APK | PENDENTE | Workflow criado, ainda não executado; a ação produziria artifact remoto persistente |
+| CI Android do PR | PENDENTE | O workflow compila em PR para `develop`; conferir check após atualização do commit |
+| Workflow manual/artifact GitHub | BLOQUEADO | `workflow_dispatch` requer arquivo em `main`, branch padrão que não pode ser alterada nesta tarefa |
 | GitGuardian no PR novo | PENDENTE | Só pode ser conferido depois da publicação do PR |
 
 Build apresentou avisos de APIs/dependências Android deprecated e aviso do Gradle sobre compatibilidade futura com Gradle 10. Não impediram a compilação e não foram alterados nesta etapa.
@@ -87,7 +88,7 @@ Registrar para cada execução: objetivo, passos, resultado esperado, resultado 
 
 1. Comprovar no provedor o isolamento real de banco e R2 da instância de desenvolvimento/homologação; não basta o hostname nem `/health`.
 2. Confirmar backup e aplicar a migration no banco de homologação somente após autorização específica para o alvo verificado.
-3. Executar o workflow manual após revisão/publicação do PR e compartilhar o artifact e seu checksum com os participantes.
+3. Autorizar separadamente a disponibilização do workflow em `main`; só então executar `workflow_dispatch`, compartilhar o artifact e seu checksum com os participantes.
 4. Confirmar que o Samsung conectado é dispositivo de QA e que qualquer conta/dado nele é de teste; instalar sem desinstalar apps e executar a ficha funcional.
 5. Conferir Actions/GitGuardian no PR depois de aberto. O PR não libera migration, operação no bucket nem deploy.
 

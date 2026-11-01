@@ -1,6 +1,8 @@
 name: Gerar APK HortiVia — Homologação
 
 on:
+  pull_request:
+    branches: [develop]
   workflow_dispatch:
 
 permissions:
@@ -108,6 +110,7 @@ jobs:
           NODE
 
       - name: Publicar APK e manifesto como artifact
+        if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
         with:
           name: hortivia-homolog-${{ github.sha }}
