@@ -147,6 +147,94 @@ describe('AuthContext', () => {
     expect(mockedSetApiUnauthorizedHandler).toHaveBeenCalled();
   });
 
+  it('keeps a voluntary logout retryable when persistent token removal fails', async () => {
+    mockedAuthService.login.mockResolvedValue({
+      accessToken: 'valid-test-token',
+      user: {
+        id: 'user-1',
+        name: 'QA User',
+        email: 'qa@example.invalid',
+        avatarUrl: null,
+        gender: null,
+        role: 'USER',
+        emailVerified: true,
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      },
+    });
+
+    await ReactTestRenderer.act(async () => {
+      ReactTestRenderer.create(
+        <AuthProvider>
+          <ContextProbe />
+        </AuthProvider>,
+      );
+    });
+    await ReactTestRenderer.act(async () => {
+      await latestContext?.signIn({
+        email: 'qa@example.invalid',
+        password: 'test-only-password',
+      });
+    });
+
+    mockedRemoveToken.mockRejectedValueOnce(new Error('storage unavailable'));
+    await ReactTestRenderer.act(async () => {
+      await expect(latestContext?.signOut()).rejects.toThrow(
+        'storage unavailable',
+      );
+    });
+
+    expect(latestContext?.isAuthenticated).toBe(true);
+    expect(latestContext?.accessToken).toBe('valid-test-token');
+    expect(mockedSetApiAccessToken).toHaveBeenLastCalledWith(
+      'valid-test-token',
+    );
+
+    mockedRemoveToken.mockResolvedValueOnce(undefined);
+    await ReactTestRenderer.act(async () => {
+      await latestContext?.signOut();
+    });
+
+    expect(latestContext?.isAuthenticated).toBe(false);
+    expect(latestContext?.accessToken).toBeNull();
+    expect(mockedSetApiAccessToken).toHaveBeenLastCalledWith(null);
+    expect(mockedRemoveToken).toHaveBeenCalledTimes(2);
+  });
+
+  it('shares an in-flight voluntary logout instead of removing the token twice', async () => {
+    let resolveRemoval: (() => void) | undefined;
+    mockedRemoveToken.mockImplementation(
+      () =>
+        new Promise<void>(resolve => {
+          resolveRemoval = resolve;
+        }),
+    );
+
+    await ReactTestRenderer.act(async () => {
+      ReactTestRenderer.create(
+        <AuthProvider>
+          <ContextProbe />
+        </AuthProvider>,
+      );
+    });
+
+    let firstAttempt: Promise<void> | undefined;
+    let secondAttempt: Promise<void> | undefined;
+    await ReactTestRenderer.act(async () => {
+      firstAttempt = latestContext?.signOut();
+      secondAttempt = latestContext?.signOut();
+    });
+
+    expect(secondAttempt).toBe(firstAttempt);
+    expect(mockedRemoveToken).toHaveBeenCalledTimes(1);
+
+    await ReactTestRenderer.act(async () => {
+      resolveRemoval?.();
+      await firstAttempt;
+    });
+    expect(latestContext?.isAuthenticated).toBe(false);
+  });
+
   it('finishes bootstrap safely when stored-token lookup fails', async () => {
     mockedGetToken.mockRejectedValue(new Error('storage unavailable'));
 

@@ -1,4 +1,8 @@
-import { perform, renderNavigation } from './testUtils/navigationHarness';
+import {
+  perform,
+  renderNavigation,
+  unmountNavigation,
+} from './testUtils/navigationHarness';
 import React from 'react';
 import { AxiosHeaders } from 'axios';
 import { AuthProvider, useAuth } from '../features/auth/context/AuthContext';
@@ -101,6 +105,32 @@ describe('real AuthProvider connected to RootNavigator', () => {
     expect(service.getMe).toHaveBeenCalledTimes(1);
     expect(focusedProbe().route.name).toBe('Home');
     expect(auth.isAuthenticated).toBe(true);
+  });
+
+  it('does not report logout complete when a valid stored token remains after failure', async () => {
+    jest.mocked(getToken).mockResolvedValue('valid-residual-test-token');
+    await mount();
+
+    expect(focusedProbe().route.name).toBe('Home');
+    expect(auth.isAuthenticated).toBe(true);
+
+    jest.mocked(removeToken).mockRejectedValueOnce(
+      new Error('storage unavailable'),
+    );
+    await perform(async () => {
+      await expect(auth.signOut()).rejects.toThrow('storage unavailable');
+    });
+
+    expect(auth.isAuthenticated).toBe(true);
+    expect(focusedProbe().route.name).toBe('Home');
+
+    await unmountNavigation();
+    jest.mocked(getToken).mockResolvedValue('valid-residual-test-token');
+    await mount();
+
+    expect(service.getMe).toHaveBeenCalledTimes(2);
+    expect(auth.isAuthenticated).toBe(true);
+    expect(focusedProbe().route.name).toBe('Home');
   });
 
   it('sends an expired stored session to Login and removes its token', async () => {

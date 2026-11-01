@@ -5,6 +5,7 @@ import React, {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from 'react';
 import { authService } from '../services/auth.service';
@@ -61,19 +62,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [accessToken, setAccessTokenState] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const signOutInFlightRef = useRef<Promise<void> | null>(null);
 
-  const clearSession = useCallback(async (removeStoredToken = true) => {
+  const revokeExpiredSession = useCallback(async () => {
     setApiAccessToken(null);
     setAccessTokenState(null);
     setUser(null);
 
-    if (removeStoredToken) {
-      try {
-        await removeToken();
-      } catch {
-        // The in-memory session is already revoked; /auth/me will validate any
-        // token that could not be removed before a later app restart.
-      }
+    try {
+      await removeToken();
+    } catch {
+      // A 401 still revokes the in-memory session when storage is unavailable.
     }
   }, []);
 
@@ -103,7 +102,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const authenticatedUser = await authService.getMe();
 
         if (!authenticatedUser.emailVerified) {
-          await clearSession(true);
+          await revokeExpiredSession();
           return null;
         }
 
@@ -115,7 +114,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         const apiError = toApiError(error);
 
         if (apiError.status === 401) {
-          await clearSession(true);
+          await revokeExpiredSession();
           return null;
         }
 
@@ -126,7 +125,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return null;
       }
     },
-    [clearSession],
+    [revokeExpiredSession],
   );
 
   const signIn = useCallback(async (payload: LoginPayload) => {
@@ -175,21 +174,40 @@ export function AuthProvider({ children }: AuthProviderProps) {
     return authService.resetPassword(payload);
   }, []);
 
-  const signOut = useCallback(async () => {
-    await clearSession(true);
-  }, [clearSession]);
+  const signOut = useCallback(() => {
+    if (signOutInFlightRef.current) {
+      return signOutInFlightRef.current;
+    }
+
+    const signOutTask = (async () => {
+      await removeToken();
+      setApiAccessToken(null);
+      setAccessTokenState(null);
+      setUser(null);
+    })();
+
+    signOutInFlightRef.current = signOutTask;
+    const releaseSignOutLock = () => {
+      if (signOutInFlightRef.current === signOutTask) {
+        signOutInFlightRef.current = null;
+      }
+    };
+    signOutTask.then(releaseSignOutLock, releaseSignOutLock);
+
+    return signOutTask;
+  }, []);
 
   const syncUser = useCallback((nextUser: AuthUser) => {
     setUser(nextUser);
   }, []);
 
   useEffect(() => {
-    setApiUnauthorizedHandler(() => clearSession(true));
+    setApiUnauthorizedHandler(() => revokeExpiredSession());
 
     return () => {
       setApiUnauthorizedHandler(null);
     };
-  }, [clearSession]);
+  }, [revokeExpiredSession]);
 
   useEffect(() => {
     let isMounted = true;
