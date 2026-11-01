@@ -61,7 +61,7 @@ jobs:
 
       - name: Compilar variante Android homolog
         working-directory: android
-        run: ./gradlew --no-daemon :app:assembleHomolog
+        run: bash ./gradlew --no-daemon :app:assembleHomolog
 
       - name: Verificar APK e gerar manifesto com SHA-256
         shell: bash
