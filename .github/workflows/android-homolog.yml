@@ -3,6 +3,15 @@ name: Gerar APK HortiVia — Homologação
 on:
   pull_request:
     branches: [develop]
+    paths:
+      - '.github/workflows/android-homolog.yml'
+      - 'android/**'
+      - 'src/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - 'babel.config.js'
+      - 'metro.config.js'
+      - 'index.js'
   workflow_dispatch:
 
 permissions:

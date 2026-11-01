@@ -60,11 +60,13 @@ O Docker local não está disponível nesta máquina, por isso a migration não 
 | Isolamento remoto de banco/R2 | BLOQUEADO | Configuração do provedor não acessível/verificável; nenhuma operação com escrita executada |
 | Migration em PostgreSQL descartável | APROVADO EM CI ANTERIOR | CI backend do PR #12 aplicou e reaplicou migrations em PostgreSQL 16; teste local bloqueado por Docker indisponível |
 | Instalação e uso manual no Android | PENDENTE | ADB detecta Samsung SM-M236B, mas finalidade/conta de QA não confirmadas; nenhuma instalação feita |
-| CI Android do PR | PENDENTE | O workflow compila em PR para `develop`; conferir check após atualização do commit |
+| CI Android do PR | APROVADO | Run [41332067510](https://github.com/PatrickOtero/HortiVia/actions/runs/41332067510): lint, typecheck, Jest, `assembleHomolog` e verificação do APK/bundle passaram; upload foi pulado no evento PR |
 | Workflow manual/artifact GitHub | BLOQUEADO | `workflow_dispatch` requer arquivo em `main`, branch padrão que não pode ser alterada nesta tarefa |
-| GitGuardian no PR novo | PENDENTE | Só pode ser conferido depois da publicação do PR |
+| GitGuardian | APROVADO | Check do commit final: [124924062569](https://github.com/PatrickOtero/HortiVia/runs/124924062569) |
 
 Build apresentou avisos de APIs/dependências Android deprecated e aviso do Gradle sobre compatibilidade futura com Gradle 10. Não impediram a compilação e não foram alterados nesta etapa.
+
+A primeira execução do workflow Android falhou porque o wrapper `gradlew` não tem bit executável no Git (`Permission denied` em Linux). A chamada foi corrigida para `bash ./gradlew`; o run seguinte acima passou. A CI geral do commit final passou no run [41332067606](https://github.com/PatrickOtero/HortiVia/actions/runs/41332067606).
 
 ## Ficha para homologação por funcionários
 
