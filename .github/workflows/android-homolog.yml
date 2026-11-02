@@ -1,0 +1,39 @@
+name: APK de homologação
+
+on:
+  pull_request:
+    branches: [develop]
+    types: [closed]
+
+permissions:
+  contents: write
+
+jobs:
+  gerar-apk:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
+        with:
+          node-version: '22'
+          cache: npm
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        with:
+          distribution: temurin
+          java-version: '17'
+      - run: npm ci
+      - run: bash ./gradlew --no-daemon :app:assembleHomolog
+        working-directory: android
+      - name: Publicar APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          cp android/app/build/outputs/apk/homolog/app-homolog.apk HortiVia-Homolog.apk
+          gh release create "homolog-${GITHUB_SHA:0:12}" HortiVia-Homolog.apk \
+            --target "$GITHUB_SHA" \
+            --title "HortiVia Homolog - PR #${{ github.event.pull_request.number }}" \
+            --notes "APK para testes." \
+            --prerelease --latest=false
